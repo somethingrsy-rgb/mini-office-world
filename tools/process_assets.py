@@ -155,14 +155,18 @@ def align_floors(img, shifts, out_h):
 def main(src):
     meta = {'avatars': {}}
     # 하우스와 방: 배경색 제거
-    house = trim(to_rgba(load(src, 'house'), color_fg(load(src, 'house'), 14)))
+    _, house = load_alpha(src, 'house')  # 투명 PNG: 알파 얼룩 정리
+    house = trim(house)
     house = house.resize((1000, round(house.height * 1000 / house.width)), Image.LANCZOS)
     house = house.crop((0, 0, house.width, min(house.height, 1272)))  # 바닥 아래 그림자 잔여물 제거
     save(house, f'{OUT}/house.webp', 90)
     meta['house'] = {'w': house.width, 'h': house.height}
     for r in ['reception', 'office', 'result', 'library', 'writing', 'cafe', 'garden']:
-        im = load(src, r)
-        rg = trim(to_rgba(im, color_fg(im, ROOM_TOL.get(r, 12))))
+        if r in ('office', 'result', 'library', 'writing', 'cafe'):  # 투명 PNG로 받은 방: 알파 얼룩 정리
+            _, rg = load_alpha(src, r); rg = trim(rg)
+        else:
+            im = load(src, r)
+            rg = trim(to_rgba(im, color_fg(im, ROOM_TOL.get(r, 12))))
         wmax = 900
         rg = rg.resize((wmax, round(rg.height * wmax / rg.width)), Image.LANCZOS)
         save(rg, f'{OUT}/rooms/{r}.webp', 86)

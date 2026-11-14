@@ -193,7 +193,7 @@ export const ASSET_META = {
   },
   "office": {
    "w": 900,
-   "h": 664
+   "h": 654
   },
   "result": {
    "w": 900,
@@ -201,15 +201,15 @@ export const ASSET_META = {
   },
   "library": {
    "w": 900,
-   "h": 669
+   "h": 660
   },
   "writing": {
    "w": 900,
-   "h": 675
+   "h": 667
   },
   "cafe": {
    "w": 900,
-   "h": 673
+   "h": 663
   },
   "garden": {
    "w": 900,
