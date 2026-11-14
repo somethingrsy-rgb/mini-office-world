@@ -308,6 +308,7 @@ export default function App() {
     save(t)
     if (!old) return
     // '진행 중'으로 바꾸면 담당 아바타가 일하는 자리로 가요
+    if (old.status !== 'doing' && t.status === 'doing') sfx('start')
     if (old.status !== 'doing' && t.status === 'doing') notify(`🛠 일하러 가요: ${names([...staffOf(t)])}`)
     // 일을 끝내면 담당 아바타가 완료 칸으로 가서 보고하고 환호해요
     if (old.status !== 'done' && t.status === 'done') {

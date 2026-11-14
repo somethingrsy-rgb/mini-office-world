@@ -65,10 +65,10 @@ export function initAudio() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) syncBgm() })
 }
 
-export type Sfx = 'assign' | 'done' | 'wait'
-const SFX_VOL: Record<Sfx, number> = { assign: 0.7, done: 0.8, wait: 0.6 }
+export type Sfx = 'assign' | 'done' | 'wait' | 'start'
+const SFX_VOL: Record<Sfx, number> = { assign: 0.7, done: 0.8, wait: 0.6, start: 0.7 }
 const cache: Partial<Record<Sfx, HTMLAudioElement>> = {}
-/** 효과음: 업무 분배(assign), 완료(done), 대기(wait) */
+/** 효과음: 업무 분배(assign), 진행(start), 완료(done), 대기(wait) */
 export function sfx(name: Sfx) {
   if (!prefs.sfx) return
   try {
