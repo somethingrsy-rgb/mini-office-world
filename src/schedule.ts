@@ -228,17 +228,8 @@ const WALLS: number[][] = [
 ]
 
 /** 층이 다르면 벽 자리를 따라 이동 (offset은 아바타별로 벽 폭 안에서 어긋나게) */
-const GROUND_Y = 1232 // 정원 길(정문 앞 바닥)
-/** 업무 접수실 앞 자리: 접수실은 벽으로 막혀 있어서 사무실 쪽에서 걸어 들어가지 않고, 정원 길을 따라 와서 앞쪽으로만 드나들어요 */
-const inReception = (p: { x: number; y: number }) => p.x < 400 && p.y >= 1000 && p.y < 1100
-export function route(from: { x: number; y: number }, to: { x: number; y: number }, offset = 0): { x: number; y: number }[] {
+export function route(from: { x: number; y: number }, to: { x: number; y: number }, offset = 0) {
   if (from.x === to.x && from.y === to.y) return []
-  if (inReception(to) && !inReception(from)) {
-    return [...route(from, { x: 500 + offset, y: GROUND_Y }, offset), { x: to.x, y: GROUND_Y }, to]
-  }
-  if (inReception(from) && !inReception(to)) {
-    return [{ x: from.x, y: GROUND_Y }, { x: 500 + offset, y: GROUND_Y }, ...route({ x: 500 + offset, y: GROUND_Y }, to, offset)]
-  }
   const a = floorIndex(from.y)
   const b = floorIndex(to.y)
   if (a === b) return [to]
