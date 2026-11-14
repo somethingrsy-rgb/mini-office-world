@@ -103,7 +103,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   const W = m.w * U
   const H = m.h * U
   const flip = (key === 'walk' || key === 'stand') && w.face === 'l'
-  const bubbleName = !w.moving && !happy && !talk && !activity.shared ? BUBBLE[pose] : undefined
+  const bubbleName: string | undefined = undefined // 머리 위 그림 말풍선(☕ 등)은 쓰지 않아요
   const bm = bubbleName ? FX[bubbleName] : undefined
   const bw = bm ? bm.w * 0.8 : 0
   const bh = bm ? bm.h * 0.8 : 0
