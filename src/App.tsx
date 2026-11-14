@@ -28,6 +28,7 @@ import RichText from './components/RichText'
 import QuickBox from './components/QuickBox'
 import { initAudio, sfx } from './audio'
 import { useSync } from './sync'
+import ReminderBar from './components/ReminderBar'
 import { useLoungeChat } from './chat'
 import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
@@ -370,7 +371,7 @@ export default function App() {
         <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
         <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
-          remaining={items.length} reminders={reminders} hush={!!userSay} selected={pipAv}
+          remaining={items.length} selected={pipAv}
           onRoom={() => {}} onSelect={(id) => setPipAv((cur) => (id === 'user' || cur === id ? null : id))} />
         {pi && pw && pa ? (
           <div className="sheet glass pippanel">
@@ -403,7 +404,7 @@ export default function App() {
   })
 
   return (
-    <div className={`app ${revealed ? '' : 'pre'}`}>
+    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''}`}>
       {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
       <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
@@ -420,7 +421,7 @@ export default function App() {
       {toast && <div className="toast" key={toast.key}><RichText text={toast.text} /></div>}
 
       <main className="stage">
-        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} onReceived={onReceived} selected={selected} onRoom={setRoom}
+        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
 
@@ -450,6 +451,7 @@ export default function App() {
           <img src={asset('ui/list.webp')} alt="" /><span>업무 목록</span>{urgent > 0 && <span className="notif">{urgent}</span>}
         </button>
       </nav>
+      <ReminderBar reminders={reminders} hush={!!userSay} />
 
       {view === 'brief' && (
         <Sheet glass tall title="💛 오늘의 업무 브리핑" onClose={close}>

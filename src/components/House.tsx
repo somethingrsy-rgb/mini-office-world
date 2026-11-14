@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react'
 import Avatar from './Avatar'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
@@ -20,10 +19,6 @@ interface Props {
   dark?: boolean
   /** 접수대에서 일을 받기 시작한 아바타 */
   onReceived?: (id: AvatarId) => void
-  /** 나(관리자)가 말하는 중이면 마감 알림 말풍선을 잠깐 숨겨요 */
-  hush?: boolean
-  /** 마감이 2일 이내(오늘·기한 초과 포함)인 일 — 접수대의 내가 번갈아 알려줘요 */
-  reminders: { text: string; level: 'soon' | 'urgent' }[]
   selected: AvatarId | null
   onSelect: (id: AvatarId) => void
   onRoom: (id: RoomId) => void
@@ -32,20 +27,8 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false, hush = false, onReceived }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, dark = false, onReceived }: Props) {
   const th = themed(dark)
-  // 마감이 가까운 일을 4.5초마다 번갈아 알려줘요
-  const [ri, setRi] = useState(0)
-  useEffect(() => {
-    if (reminders.length < 2) return
-    const t = window.setInterval(() => setRi((i) => i + 1), 4500)
-    return () => window.clearInterval(t)
-  }, [reminders.length])
-  const rem = reminders.length && !hush ? reminders[ri % reminders.length] : null
-  const remText = rem ? `⏰ ${rem.text}` : ''
-  const remW = rem ? tw(remText, 24) + 40 : 0
-  const remCx = Math.max(COUNTER.bodyCenterX, remW / 2 + 36) // 집 가장자리에 붙지 않게 안쪽으로
-
   return (
     <svg viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className="houseimg" href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
@@ -71,14 +54,6 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </text>
       </g>
       </g>
-      {rem && (
-        <g pointerEvents="none" className="remind" key={ri}>
-          <rect x={remCx - remW / 2} y="716" width={remW} height="50" rx="25" fill="#fff" fillOpacity=".97" stroke={rem.level === 'urgent' ? '#ff4d6d' : '#f5b301'} strokeWidth="4" />
-          <path d={`M${COUNTER.bodyCenterX - 9} 766 l9 14 9 -14z`} fill="#fff" stroke={rem.level === 'urgent' ? '#ff4d6d' : '#f5b301'} strokeWidth="3" strokeLinejoin="round" />
-          <rect x={COUNTER.bodyCenterX - 12} y="760" width="24" height="8" fill="#fff" />
-          <text x={remCx} y="750" textAnchor="middle" fontSize="24" fontWeight="800" fill="#5b4a78">{remText}</text>
-        </g>
-      )}
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />

@@ -145,24 +145,17 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
       {taskLabel && !(w.moving && w.x < 440 && w.y > 940) && (() => {
         const text = clip(taskLabel.text, 9) + (taskLabel.more > 0 ? ` +${taskLabel.more}` : '')
         const fs = 30
-        const tw = textWidth(text, fs) + 40
+        const wt = taskLabel.worked ? ` · ${taskLabel.worked}` : '' // 일한 시간은 같은 이름표 안에 이어서 보여요
+        const tw = textWidth(text, fs) + textWidth(wt, 22) + 40
         // 일하는 중이면 방마다 한 명이라 겹치지 않아요. 방을 같이 쓰는 두 번째 자리만 더 높이 띄워요
         const lift = activity.task ? (activity.seat === 1 ? 92 : 0) : activity.enter ? (LABEL_LIFT[info.id] ?? 0) : 0
         const top = H + 26 + lift
         return (
           <g className="tasktag" pointerEvents="none">
             <rect x={-tw / 2} y={-top - 46} width={tw} height="46" rx="23" fill="#fff" fillOpacity=".96" stroke="#ff86b6" strokeWidth="4" />
-            <text x="0" y={-top - 14} textAnchor="middle" fontSize={fs} fontWeight="800" fill="#5b4a78">{text}</text>
-            {taskLabel.worked && (() => {
-              const wt = `⏱ ${taskLabel.worked}`
-              const ww = textWidth(wt, 24) + 30
-              return (
-                <g className="worktime">
-                  <rect x={-ww / 2} y={-top - 46 - 40} width={ww} height="34" rx="17" fill="#fff6d6" fillOpacity=".97" stroke="#f5b301" strokeWidth="3" />
-                  <text x="0" y={-top - 46 - 15} textAnchor="middle" fontSize="24" fontWeight="800" fill="#8a5a00">{wt}</text>
-                </g>
-              )
-            })()}
+            <text x="0" y={-top - 14} textAnchor="middle" fontSize={fs} fontWeight="800" fill="#5b4a78">
+              {text}{wt && <tspan fontSize="22" fill="#a06a00">{wt}</tspan>}
+            </text>
           </g>
         )
       })()}
@@ -171,7 +164,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
         const fs = 28
         const bw2 = textWidth(text, fs) + 44
         const bh2 = 54
-        const top2 = H + 26 + (activity.task ? (activity.seat === 1 ? 92 : 0) : activity.enter ? (LABEL_LIFT[info.id] ?? 0) : 0) + (taskLabel ? 58 : 0) + (taskLabel?.worked ? 40 : 0) + 14
+        const top2 = H + 26 + (activity.task ? (activity.seat === 1 ? 92 : 0) : activity.enter ? (LABEL_LIFT[info.id] ?? 0) : 0) + (taskLabel ? 58 : 0) + 14
         // 집 가장자리 밖으로 나가지 않게 가로 위치를 안쪽으로 보정
         const dx = Math.max(-(w.x - bw2 / 2 - 20), Math.min(0, 980 - (w.x + bw2 / 2)))
         return (
