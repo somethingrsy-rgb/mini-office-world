@@ -17,7 +17,7 @@ SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
-    'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
+    'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
@@ -214,6 +214,11 @@ def main(src):
     bd = trim(bd); bd = bd.resize((720, round(bd.height * 720 / bd.width)), Image.LANCZOS)
     save(bd, f'{OUT}/ui/box-dark.webp', 92)
     meta['boxDark'] = {'w': bd.width, 'h': bd.height}
+
+    # 업무 목록 버튼 아이콘(투명 PNG)
+    _, li = load_alpha(src, 'listicon')
+    li = trim(li); li = li.resize((round(li.width * 192 / li.height), 192), Image.LANCZOS)
+    save(li, f'{OUT}/ui/list.webp', 92)
 
     # 설정 버튼(투명 PNG): 가장 큰 덩어리만 남겨 알파 얼룩을 지우고, 화면에서 쓰는 크기(2배)로 줄여요
     im = Image.open(os.path.join(src, 'settings-button.png')).convert('RGBA')

@@ -275,6 +275,14 @@ export default function App() {
     }, FINISH_MS)
   }
 
+  /** 업무 목록 전체 리셋: 등록한 업무를 모두 지우고 아바타를 처음 상태(나만 있는 건물)로 되돌려요. 이름·시간표 같은 설정은 그대로예요 */
+  const resetTasks = async () => {
+    if (!(await replaceAll([]))) { notify('⚠️ 리셋하지 못했어요. 저장 공간을 확인해 주세요'); return }
+    updateSettings({ ...settings, order: [] })
+    setPickups({}); setFinishes({}); setLeaves({}); setUserSay(null); setSelected(null);
+    notify('🔄 모든 업무를 리셋했어요')
+  }
+
   const saveTask = (t: Task) => {
     const old = tasks.find((x) => x.id === t.id)
     const next = tasks.map((x) => (x.id === t.id ? t : x))
@@ -382,7 +390,7 @@ export default function App() {
           <img src={asset('props/calendar.webp')} alt="" /><span>일정표</span>
         </button>
         <button onClick={() => setView('list')}>
-          <img src={asset('props/bookshelf.webp')} alt="" /><span>업무 목록</span>{urgent > 0 && <span className="notif">{urgent}</span>}
+          <img src={asset('ui/list.webp')} alt="" /><span>업무 목록</span>{urgent > 0 && <span className="notif">{urgent}</span>}
         </button>
       </nav>
 
@@ -464,7 +472,7 @@ export default function App() {
       )}
       {view === 'list' && (
         <Sheet glass tall title="업무 목록" onClose={close}>
-          <TaskList tasks={tasks} onSave={saveTask} onDelete={remove} onEdit={(t) => { setEditing(t); setView('form') }} />
+          <TaskList tasks={tasks} onSave={saveTask} onDelete={remove} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
         </Sheet>
       )}
     </div>

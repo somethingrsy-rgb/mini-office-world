@@ -26,9 +26,10 @@ interface Props {
   onSave: (t: Task) => void
   onEdit: (t: Task) => void
   onDelete: (id: string) => void
+  onResetAll?: () => void
 }
 
-export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
+export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [open, setOpen] = useState<string | null>(null)
   const today = todayStr()
@@ -114,6 +115,14 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
           </article>
         )
       })}
+      {onResetAll && tasks.length > 0 && (
+        <button
+          className="ghost danger resetall"
+          onClick={() => window.confirm(`등록된 업무 ${tasks.length}건을 모두 지우고 처음 상태로 리셋할까요?\n\n되돌릴 수 없어요. 아바타 이름·시간표 같은 설정은 그대로예요.\n(필요하면 설정에서 먼저 백업해 두세요)`) && onResetAll()}
+        >
+          🔄 전체 리셋 · 업무 {tasks.length}건 모두 지우기
+        </button>
+      )}
     </div>
   )
 }

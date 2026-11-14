@@ -690,3 +690,6 @@ html[data-theme="dark"] .sheet.glass .tabs button, html[data-theme="dark"] .shee
 html[data-theme="dark"] .sheet.glass .tabs button.on { background:#d9ae5c; color:#241b08; }
 html[data-theme="dark"] .sheet.glass .statusbtns button.on { background:#d9ae5c; border-color:#d9ae5c; color:#241b08; }
 html[data-theme="dark"] .sheet.glass .nt-row { border-top-color:rgba(255,235,190,.16); }
+
+.resetall { width:100%; margin-top:14px; padding:12px 0; font-size:13px; }
+.dock button img { height:34px; }
