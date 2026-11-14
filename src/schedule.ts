@@ -223,13 +223,22 @@ const FLOOR_LIST = [FLOOR_Y.attic, FLOOR_Y.f2, FLOOR_Y.f1, FLOOR_Y.out]
 /** 층 사이를 오르내리는 벽 자리 (하우스 좌표). 같은 벽에서 아바타끼리 겹치지 않게 사람마다 조금씩 어긋나요 */
 const WALLS: number[][] = [
   [543],       // 다락 ↔ 2층: 자료실과 문서작성실 사이의 가운데 벽
-  [347, 662],  // 2층 ↔ 1층: 접수실|사무실, 사무실|결과 확인 사이의 벽 (가까운 쪽을 써요)
+  [662],       // 2층 ↔ 1층: 사무실|결과 확인 사이의 벽 (업무 접수실 벽으로는 오르내리지 않아요)
   [500],       // 1층 ↔ 정원: 정문
 ]
 
 /** 층이 다르면 벽 자리를 따라 이동 (offset은 아바타별로 벽 폭 안에서 어긋나게) */
-export function route(from: { x: number; y: number }, to: { x: number; y: number }, offset = 0) {
+const GROUND_Y = 1232 // 정원 길(정문 앞 바닥)
+/** 업무 접수실 앞 자리: 접수실은 벽으로 막혀 있어서 사무실 쪽에서 걸어 들어가지 않고, 정원 길을 따라 와서 앞쪽으로만 드나들어요 */
+const inReception = (p: { x: number; y: number }) => p.x < 400 && p.y >= 1000 && p.y < 1100
+export function route(from: { x: number; y: number }, to: { x: number; y: number }, offset = 0): { x: number; y: number }[] {
   if (from.x === to.x && from.y === to.y) return []
+  if (inReception(to) && !inReception(from)) {
+    return [...route(from, { x: 500 + offset, y: GROUND_Y }, offset), { x: to.x, y: GROUND_Y }, to]
+  }
+  if (inReception(from) && !inReception(to)) {
+    return [{ x: from.x, y: GROUND_Y }, { x: 500 + offset, y: GROUND_Y }, ...route({ x: 500 + offset, y: GROUND_Y }, to, offset)]
+  }
   const a = floorIndex(from.y)
   const b = floorIndex(to.y)
   if (a === b) return [to]
