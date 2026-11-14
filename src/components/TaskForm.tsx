@@ -9,7 +9,7 @@ const nameOf = (id: string) => { const a = AVATARS.find((x) => x.id === id)!; re
 function AssigneeSelect({ value, onChange, auto }: { value: Assignee; onChange: (v: Assignee) => void; auto?: string }) {
   return (
     <select value={value ?? ''} onChange={(e) => onChange((e.target.value || null) as Assignee)} aria-label="담당 아바타">
-      <option value="">{auto ? `자동 배정 → ${auto}` : '자동 배정'}</option>
+      <option value="">{auto ? `자동 → ${auto}` : '자동 배정'}</option>
       {STAFF.map((a) => (
         <option key={a.id} value={a.id}>{a.emoji} {a.name}</option>
       ))}

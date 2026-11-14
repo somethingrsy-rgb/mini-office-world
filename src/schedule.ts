@@ -95,7 +95,7 @@ export function periodName(m: number, s: ScheduleCfg = DEFAULT_SCHEDULE) {
 }
 
 /** 업무 연동 정보: 진행 중인 대표 업무 (없으면 null → 자유로운 생활) */
-export interface Job { title: string; urgent: boolean }
+export interface Job { title: string; urgent: boolean; /** 사용자가 직접 일을 시켜서 시간표와 상관없이 바로 일하러 감 */ forced?: boolean }
 
 function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
   const r = hash(id, slot + 7919)
@@ -109,6 +109,12 @@ export function getActivity(id: AvatarId, minutes: number, job: Job | null = nul
   const m = Math.floor(minutes)
   const idx = ORDER.indexOf(id)
   const period = periodName(m, s)
+
+  // 일을 시키면 시간표(출퇴근·점심·커피)와 상관없이 바로 자기 일 장소로 가서 일함
+  if (job?.forced && id !== 'user') {
+    const w = work(id, Math.floor(m / 4))
+    return { ...w, period, task: job.title, label: `「${job.title}」 ${w.label}` }
+  }
 
   // 출근: 아바타마다 1~2분씩 간격을 두고 도착, 퇴근도 순서대로
   const arriveAt = s.arrive - 9 + idx * 2

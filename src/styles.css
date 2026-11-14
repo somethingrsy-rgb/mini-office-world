@@ -52,7 +52,8 @@ html, body { margin:0; background:linear-gradient(#f3e8ff,#ffe6f2); color:var(--
 .lbl { font-size:12px; font-weight:700; }
 input, textarea, select { font:inherit; font-size:16px; font-weight:500; color:var(--ink); padding:9px 10px; border:1.5px solid #e4d9fb; border-radius:12px; background:#fbf8ff; min-width:0; width:100%; }
 input:focus, textarea:focus, select:focus { outline:2px solid var(--pink); border-color:transparent; }
-.row2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.row2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px; align-items:start; }
+.row2 > *, .subrow > *, .form label { min-width:0; }
 .chips { display:flex; gap:8px; }
 .chip { flex:1; border:1.5px solid #e4d9fb; background:#fff; border-radius:12px; padding:8px 0; font-weight:700; color:var(--ink); }
 .chip.on.imp-high { background:#ff6b8b; color:#fff; border-color:#ff6b8b; }
@@ -192,3 +193,21 @@ body { background:transparent; }
 .who { margin-top:10px; }
 .face { height:44px; width:auto; }
 .spark { animation:spark 2.4s ease-out forwards; opacity:0; }
+
+/* 입력 칸 겹침 방지: iOS의 날짜·선택 칸이 제멋대로 넓어지지 않게 */
+input[type=date], input[type=time], select { -webkit-appearance:none; appearance:none; min-width:0; max-width:100%; min-height:44px; text-align:left; box-sizing:border-box; }
+select { background-image:linear-gradient(45deg,transparent 50%,#9b7be0 50%),linear-gradient(135deg,#9b7be0 50%,transparent 50%); background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%; background-size:5px 5px,5px 5px; background-repeat:no-repeat; padding-right:30px; text-overflow:ellipsis; }
+input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2em; }
+.assignbtn { width:100%; margin:6px 0 4px; padding:10px 0; }
+.chip.sm { padding:8px 0; font-size:13px; }
+.assign .row2 { align-items:end; }
+.erow .primary.sm { margin:0; flex:none; }
+.assign .et small { display:block; margin-top:2px; }
+
+.avbar { display:flex; gap:6px; justify-content:space-between; margin-top:12px; }
+.avchip { position:relative; flex:1; min-width:0; border:2px solid transparent; border-radius:16px; background:rgba(255,255,255,.88); padding:4px 2px 5px; display:flex; flex-direction:column; align-items:center; gap:1px; font:inherit; color:var(--ink); box-shadow:0 2px 8px rgba(120,70,170,.18); }
+.avchip img { height:46px; width:auto; display:block; }
+.avchip span { font-size:12px; font-weight:800; }
+.avchip small { position:absolute; top:3px; right:4px; font-size:9px; font-weight:800; background:#c9b9f0; color:#fff; border-radius:8px; padding:0 5px; }
+.avchip.on { border-color:#ff86b6; background:#fff; }
+.avchip.away img { opacity:.45; filter:grayscale(.4); }

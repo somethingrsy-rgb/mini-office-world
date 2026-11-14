@@ -17,8 +17,9 @@ import BriefingView from './components/BriefingView'
 import { makeBriefing, overallProgress } from './entries'
 import { subAssignee, taskAssignee } from './assign'
 import AvatarCard from './components/AvatarCard'
-import { buildItems, workByAvatar } from './work'
-import type { Staff, Task } from './types'
+import { buildItems, workByAvatar, type WorkItem } from './work'
+import AssignSheet from './components/AssignSheet'
+import { newId, type Importance, type Staff, type Task } from './types'
 
 const realMinutes = () => {
   const d = new Date()
@@ -39,6 +40,9 @@ export default function App() {
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)
+  const [assignFor, setAssignFor] = useState<Staff | null>(null)
+  // 일을 시킨 아바타: 20분 동안은 시간표와 상관없이 일 장소에서 일해요
+  const [orders, setOrders] = useState<Partial<Record<Staff, { title: string; until: number }>>>({})
   useEffect(() => { preloadAssets() }, [])
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
@@ -80,11 +84,14 @@ export default function App() {
         AVATARS.map((a) => {
           const w = a.id === 'user' ? undefined : works[a.id as Staff]
           const top = w?.doing[0]
-          const job = top ? { title: top.title, urgent: w!.doing.some((i) => i.level === 'urgent' || i.level === 'overdue') } : null
+          const ord = a.id === 'user' ? undefined : orders[a.id as Staff]
+          const job = ord && ord.until > Date.now()
+            ? { title: ord.title, urgent: true, forced: true }
+            : top ? { title: top.title, urgent: w!.doing.some((i) => i.level === 'urgent' || i.level === 'overdue') } : null
           return [a.id, getActivity(a.id, now, job, settings.schedule)]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>,
-    [now, works, settings],
+    [now, works, settings, orders, real],
   )
   const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
   const totals = {
@@ -104,6 +111,29 @@ export default function App() {
     const t = window.setTimeout(() => setToast(null), 3200)
     return () => window.clearTimeout(t)
   }, [toast])
+
+  const giveOrder = (id: Staff, title: string) => {
+    setOrders((o) => ({ ...o, [id]: { title, until: Date.now() + 20 * 60000 } }))
+    const a = AVATARS.find((x) => x.id === id)!
+    notify(`${a.emoji} ${a.name}에게 「${title}」를 맡겼어요. 일하러 가요!`)
+    setSelected(id)
+  }
+  const createAndAssign = (v: { title: string; due: string; importance: Importance }) => {
+    if (!assignFor) return
+    save({ id: newId(), title: v.title, desc: '', due: v.due || null, importance: v.importance, status: 'doing', assignee: assignFor, subtasks: [], createdAt: Date.now(), completedAt: null })
+    giveOrder(assignFor, v.title)
+    setAssignFor(null)
+  }
+  const assignExisting = (it: WorkItem) => {
+    if (!assignFor) return
+    let t = it.sub
+      ? { ...it.task, subtasks: it.task.subtasks.map((s) => (s.id === it.sub!.id ? { ...s, assignee: assignFor } : s)) }
+      : { ...it.task, assignee: assignFor }
+    if (t.status === 'todo') t = { ...t, status: 'doing' }
+    save(t)
+    giveOrder(assignFor, it.title)
+    setAssignFor(null)
+  }
 
   const saveTask = (t: Task) => {
     const old = tasks.find((x) => x.id === t.id)
@@ -176,9 +206,21 @@ export default function App() {
           onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
       </main>
 
+      <div className="avbar" role="tablist" aria-label="아바타 선택">
+        {AVATARS.map((a) => (
+          <button key={a.id} className={`avchip ${selected === a.id ? 'on' : ''} ${activities[a.id].away ? 'away' : ''}`}
+            onClick={() => setSelected((cur) => (cur === a.id ? null : a.id))} aria-label={`${a.name} 선택`}>
+            <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
+            <span>{a.name}</span>
+            {activities[a.id].away && <small>퇴근</small>}
+          </button>
+        ))}
+      </div>
+
       <section className="card">
         {info && act ? (
-          <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals} />
+          <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals}
+            onAssign={info.id === 'user' ? undefined : () => setAssignFor(info.id as Staff)} />
         ) : (
           <p className="muted">아바타를 터치하면 정보를, 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
         )}
@@ -207,6 +249,11 @@ export default function App() {
       {view === 'schedule' && (
         <Sheet title="일정표" onClose={close}>
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
+        </Sheet>
+      )}
+      {assignFor && (
+        <Sheet title={`${AVATARS.find((a) => a.id === assignFor)!.emoji} ${AVATARS.find((a) => a.id === assignFor)!.name}에게 일 시키기`} onClose={() => setAssignFor(null)}>
+          <AssignSheet who={assignFor} items={items} onCreate={createAndAssign} onAssign={assignExisting} />
         </Sheet>
       )}
       {room && (

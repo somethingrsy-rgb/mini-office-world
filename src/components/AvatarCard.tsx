@@ -28,13 +28,15 @@ interface Props {
   activity: Activity
   work?: AvatarWork
   totals: { doing: number; planned: number; soon: number }
+  onAssign?: () => void
 }
 
-export default function AvatarCard({ info, activity, work, totals }: Props) {
+export default function AvatarCard({ info, activity, work, totals, onAssign }: Props) {
   return (
     <>
       <div className="card-title">{info.emoji} {info.name} <span>{info.role}</span></div>
       <p>{activity.label}</p>
+      {onAssign && <button className="primary assignbtn" onClick={onAssign}>＋ {info.name}에게 일 시키기</button>}
       {work ? (
         work.items.length === 0 ? (
           <p className="muted">맡은 업무가 없어요. 느긋하게 쉬는 중이에요 ☕</p>
