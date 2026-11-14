@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AVATARS, defaultName, type AvatarId } from '../avatars'
+import { asset } from '../assets'
 import { backupFileName, makeBackup, parseBackup } from '../backup'
 import { DEFAULT_SCHEDULE } from '../schedule'
 import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
@@ -157,12 +158,18 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
 
       <section>
         <h3 className="sh">🧑‍💼 아바타 이름</h3>
-        {AVATARS.map((a) => (
-          <label key={a.id} className="namerow">
-            <span>{a.emoji} <small>{a.role}</small></span>
-            <input value={settings.names[a.id] ?? a.name} maxLength={6} placeholder={defaultName(a.id)} onChange={(e) => setName(a.id, e.target.value)} />
-          </label>
-        ))}
+        <div className="nametable" role="table" aria-label="아바타 이름">
+          <div className="nt-head" role="row"><span>업무</span><span>이름</span></div>
+          {AVATARS.map((a) => (
+            <label key={a.id} className="nt-row" role="row">
+              <span className="nt-role">{a.role}</span>
+              <span className="nt-name">
+                <input value={settings.names[a.id] ?? a.name} maxLength={6} placeholder={defaultName(a.id)} onChange={(e) => setName(a.id, e.target.value)} aria-label={`${a.role} 이름`} />
+                <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
+              </span>
+            </label>
+          ))}
+        </div>
       </section>
 
       <section>

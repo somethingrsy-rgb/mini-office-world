@@ -646,3 +646,17 @@ html[data-theme="dark"] .pipinfo .urgent { color:#ff8fa3; } html[data-theme="dar
 /* 항상 위 창: 창 크기가 바뀌어도 하우스가 창 안에 맞게 줄어들어요 */
 .pipapp { height:100vh; min-height:0; overflow:hidden; }
 .pipapp .house { height:auto; flex:1 1 0; min-height:0; width:100%; }
+
+/* 아바타 이름: 업무 | 이름 표 */
+.nametable { margin-top:2px; }
+.nt-head, .nt-row { display:grid; grid-template-columns:42% 1fr; align-items:center; column-gap:12px; }
+.nt-head { padding:10px 2px 12px; font-size:17px; font-weight:800; }
+.nt-row { padding:6px 2px; min-height:64px; border-top:1px solid rgba(80,60,110,.16); font-size:16px; cursor:text; }
+.nt-role { font-size:15px; }
+.nt-name { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+.nt-name input { flex:1; min-width:0; width:auto; border:0; background:transparent; box-shadow:none; padding:6px 0; min-height:0;
+  font-size:19px; font-weight:800; color:inherit; border-radius:0; }
+.nt-name input:focus { outline:0; border-bottom:2px solid var(--pink); }
+.nt-name img { height:46px; width:auto; flex:none; filter:drop-shadow(0 2px 3px rgba(60,30,100,.2)); }
+html[data-theme="dark"] .nt-row { border-top-color:rgba(255,235,190,.16); }
+html[data-theme="dark"] .nt-name input, html[data-theme="dark"] .nt-name input:focus { background:transparent; box-shadow:none; }
