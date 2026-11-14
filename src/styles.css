@@ -359,3 +359,15 @@ html, body { height:100%; overflow:hidden; overscroll-behavior:none; }
 .house { width:100%; height:100%; }
 .avbar { flex:none; margin-top:10px; }
 .warn { flex:none; }
+
+/* ── 사진과 같은 크기·위치로 다시 맞춤 ─────────────────────────────────────
+   하우스는 화면 너비 가득(원래 크기)이고, 화면 높이가 모자랄 때만 줄어들어요.
+   로고 → 하우스 → 아바타 줄이 간격 없이 이어지고, 그 아래에 고정 버튼이 와요 */
+:root {
+  --pt: calc(max(env(safe-area-inset-top), 28px) + 52px);   /* 위 여백(카메라 영역 피함) */
+  --pb: calc(76px + env(safe-area-inset-bottom));            /* 아래 고정 버튼 자리 */
+}
+.app { display:block; height:100dvh; overflow:hidden; padding-top:var(--pt); padding-bottom:var(--pb); }
+.stage { display:block; flex:none; }
+.house { width:100%; height:auto; max-height:calc(100dvh - var(--pt) - var(--pb) - 171px); }
+.avbar { margin-top:12px; }
