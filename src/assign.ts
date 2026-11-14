@@ -23,8 +23,8 @@ export function autoAssign(text: string): Staff | null {
 
 type TaskLike = Pick<Task, 'title' | 'desc' | 'assignee'>
 
-/** 업무 담당: 사용자가 고른 아바타 우선, 없으면 자동 배정(키워드 없으면 민원·접수를 맡은 미니) */
-export const taskAssignee = (t: TaskLike): Staff => t.assignee ?? autoAssign(`${t.title} ${t.desc}`) ?? 'mimi'
+/** 업무 담당: 사용자가 고른 아바타 우선, 없으면 자동 배정(키워드가 없으면 기타 업무를 맡은 키키) */
+export const taskAssignee = (t: TaskLike): Staff => t.assignee ?? autoAssign(`${t.title} ${t.desc}`) ?? 'kiki'
 
 /** 세부 할 일 담당: 할 일에 직접 지정 > 업무에 직접 지정 > 할 일 키워드 > 업무 자동 배정 */
 export const subAssignee = (t: TaskLike, s: Pick<SubTask, 'title' | 'assignee'>): Staff =>

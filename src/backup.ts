@@ -15,7 +15,7 @@ export const makeBackup = (tasks: Task[], settings: Settings): BackupFile => ({
   app: BACKUP_APP, version: 1, exportedAt: new Date().toISOString(), tasks, settings,
 })
 
-const STAFF = ['momo', 'luna', 'coco', 'mimi']
+const STAFF = ['momo', 'luna', 'coco', 'mimi', 'kiki']
 const asAssignee = (v: unknown): Assignee => (typeof v === 'string' && STAFF.includes(v) ? (v as Assignee) : null)
 const asDate = (v: unknown): string | null => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null)
 const asStr = (v: unknown, max: number) => (typeof v === 'string' ? v.slice(0, max) : '')

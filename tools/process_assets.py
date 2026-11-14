@@ -15,7 +15,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
-    'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
+    'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'kiki': 'avatar-kiki', 'user': 'avatar-user',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
     'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
@@ -172,7 +172,7 @@ def main(src):
     save(bg, f'{OUT}/bg.webp', 82)
 
     # 아바타 6자세 (투명 배경 PNG만 받아요. 알파의 옅은 얼룩·테두리 번짐은 지워요)
-    for av in ['momo', 'luna', 'coco', 'mimi', 'user']:
+    for av in ['momo', 'luna', 'coco', 'mimi', 'kiki', 'user']:
         im, rgba = load_alpha(src, av)
         fg = np.asarray(rgba)[:, :, 3] > 8
         _, comps = components(fg, min_area=300)

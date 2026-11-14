@@ -66,7 +66,7 @@ export interface AvatarWork {
 
 export function workByAvatar(items: WorkItem[]): Record<Staff, AvatarWork> {
   const res = {} as Record<Staff, AvatarWork>
-  for (const id of ['momo', 'luna', 'coco', 'mimi'] as Staff[]) {
+  for (const id of ['momo', 'luna', 'coco', 'mimi', 'kiki'] as Staff[]) {
     const mine = items.filter((i) => i.assignee === id)
     const soon = mine.filter((i) => ['soon', 'urgent', 'overdue'].includes(i.level))
     res[id] = {

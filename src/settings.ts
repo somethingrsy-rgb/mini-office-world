@@ -33,7 +33,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   }
   const names: Settings['names'] = {}
   if (r.names && typeof r.names === 'object') {
-    for (const id of ['momo', 'luna', 'coco', 'mimi', 'user'] as AvatarId[]) {
+    for (const id of ['momo', 'luna', 'coco', 'mimi', 'kiki', 'user'] as AvatarId[]) {
       const v = (r.names as Record<string, unknown>)[id]
       if (typeof v === 'string' && v.trim()) names[id] = v.trim().slice(0, 6)
     }

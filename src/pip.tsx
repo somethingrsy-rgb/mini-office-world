@@ -42,7 +42,7 @@ export function useAlwaysOnTop(dark: boolean, render: () => ReactNode) {
     if (!a) return false
     if (a.window) { a.window.close(); return true }
     try {
-      const w = await a.requestWindow({ width: 340, height: 560 })
+      const w = await a.requestWindow({ width: 360, height: 680 })
       copyStyles(document, w.document)
       w.document.documentElement.dataset.theme = dark ? 'dark' : 'light'
       w.document.body.className = 'pipbody'

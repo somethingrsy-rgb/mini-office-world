@@ -1,4 +1,4 @@
-export type AvatarId = 'momo' | 'luna' | 'coco' | 'mimi' | 'user'
+export type AvatarId = 'momo' | 'luna' | 'coco' | 'mimi' | 'kiki' | 'user'
 
 export interface AvatarInfo {
   id: AvatarId
@@ -16,6 +16,7 @@ export const AVATARS: AvatarInfo[] = [
   { id: 'luna', name: '머니', emoji: '⟦luna⟧', role: '예산', action: '예산 업무를 처리하고 있어요', hair: '#9b7be0', outfit: '#c7b2f5', hairStyle: 'bun' },
   { id: 'coco', name: '로이', emoji: '⟦coco⟧', role: '법', action: '법 업무를 처리하고 있어요', hair: '#5cc3d6', outfit: '#a8e6ef', hairStyle: 'bob' },
   { id: 'mimi', name: '미니', emoji: '⟦mimi⟧', role: '민원', action: '민원 업무를 처리하고 있어요', hair: '#f2b84b', outfit: '#ffe29a', hairStyle: 'long' },
+  { id: 'kiki', name: '키키', emoji: '🎧', role: '기타', action: '기타 업무를 처리하고 있어요', hair: '#9b2d4a', outfit: '#2f7f78', hairStyle: 'long' },
   { id: 'user', name: '나', emoji: '👩', role: '관리자', action: '미니 회사를 둘러보는 중이에요', hair: '#8a4a3c', outfit: '#ffffff', hairStyle: 'short' },
 ]
 

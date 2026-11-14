@@ -25,6 +25,7 @@ import type { QuickEntry } from './quick'
 import AvatarTasks from './components/AvatarTasks'
 import Intro from './components/Intro'
 import RichText from './components/RichText'
+import QuickBox from './components/QuickBox'
 import { useLoungeChat } from './chat'
 import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
@@ -350,6 +351,7 @@ export default function App() {
         {reminders.slice(0, 3).map((r, i) => <span key={i} className={r.level}>⏰ {r.text}</span>)}
         {reminders.length === 0 && items.length > 0 && <span>급한 일은 없어요</span>}
       </div>
+      <QuickBox compact onQuick={quickDistribute} />
     </div>
   ))
 

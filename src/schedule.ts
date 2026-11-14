@@ -45,16 +45,16 @@ const { attic: AT, f2: F2, f1: F1, out: OUT } = FLOOR_Y
 const spot = (x: number, y: number, face: 'l' | 'r' = 'r'): Spot => ({ x, y, face })
 
 const SEATS_LUNCH: Record<AvatarId, Spot> = {
-  momo: spot(190, AT), coco: spot(300, AT), mimi: spot(430, AT), luna: spot(570, AT, 'l'), user: spot(750, AT, 'l'),
+  momo: spot(190, AT), coco: spot(300, AT), mimi: spot(430, AT), luna: spot(570, AT, 'l'), kiki: spot(660, AT, 'l'), user: spot(750, AT, 'l'),
 }
 const SEATS_COFFEE = SEATS_LUNCH
 const CHAT_SPOTS: Record<AvatarId, Spot> = {
-  momo: spot(720, AT, 'l'), luna: spot(780, AT, 'l'), coco: spot(840, AT, 'l'), mimi: spot(880, AT, 'l'), user: spot(650, AT, 'r'),
+  momo: spot(720, AT, 'l'), luna: spot(780, AT, 'l'), coco: spot(840, AT, 'l'), mimi: spot(880, AT, 'l'), kiki: spot(820, AT, 'l'), user: spot(650, AT, 'r'),
 }
 const STROLL: Spot[] = [spot(200, 1205), spot(320, 1225), spot(700, 1225), spot(810, 1205, 'l')]
 const SOFA: Record<AvatarId, Spot> = {
   // 소파 두 자리 + 카운터 의자 + 테이블 쪽으로 흩어져 앉아 이름표가 겹치지 않게
-  momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), user: spot(500, AT - 14),
+  momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), kiki: spot(235, AT), user: spot(500, AT - 14),
 }
 /** 정문(아치 앞 길 끝): 새로 일을 받은 아바타는 여기서 들어와 계단 쪽 통로를 지나 접수대로 걸어가요 */
 const gateSpot = (id: AvatarId): Spot => spot(500 + HUB_OFFSET[id], 1246, 'r')
@@ -66,11 +66,11 @@ const exitSpot = (id: AvatarId): Spot => spot(500 + HUB_OFFSET[id], 1264, 'r')
 // 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
 const RECEPTION: Spot = spot(207, 910)
 const PICKUP: Record<AvatarId, Spot> = {
-  momo: spot(325, 1020, 'l'), luna: spot(95, 1020), coco: spot(345, 1022, 'l'), mimi: spot(135, 1022), user: RECEPTION,
+  momo: spot(325, 1020, 'l'), luna: spot(95, 1020), coco: spot(345, 1022, 'l'), mimi: spot(135, 1022), kiki: spot(270, 1024, 'l'), user: RECEPTION,
 }
 /** 완료 칸(결과 확인 방): 일을 끝낸 아바타가 가서 보고하는 곳 */
 const DONE: Record<AvatarId, Spot> = {
-  momo: spot(710, F1), luna: spot(775, F1), coco: spot(840, F1), mimi: spot(905, F1), user: spot(775, F1),
+  momo: spot(710, F1), luna: spot(775, F1), coco: spot(840, F1), mimi: spot(905, F1), kiki: spot(745, F1), user: spot(775, F1),
 }
 
 function hash(s: string, n: number) {
@@ -80,9 +80,9 @@ function hash(s: string, n: number) {
 }
 
 /** 계단·현관에서 아바타끼리 겹치지 않도록 통로 위치를 조금씩 달리함 */
-export const HUB_OFFSET: Record<AvatarId, number> = { momo: -12, luna: -6, coco: 0, mimi: 6, user: 12 }
+export const HUB_OFFSET: Record<AvatarId, number> = { momo: -12, luna: -6, coco: 0, mimi: 6, kiki: 9, user: 12 }
 
-const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'user']
+const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'kiki', 'user']
 
 /** 일하는 방은 세 곳: 자료실·문서작성실·중앙 사무실. 한 방에 한 명씩 일하도록 나눠서 배정해요 */
 export type WorkRoom = 'library' | 'writing' | 'office'
@@ -91,7 +91,7 @@ export const WORK_ROOMS: WorkRoom[] = ['library', 'writing', 'office']
 export const WORK_ROOM_NAME: Record<WorkRoom, string> = { library: '자료실', writing: '문서작성실', office: '중앙 사무실' }
 
 /** 각자 가장 잘 맞는 방 (이 방이 비어 있으면 여기서 일해요) */
-export const PREFERRED_ROOM: Record<string, WorkRoom> = { luna: 'library', coco: 'writing', momo: 'office', mimi: 'office' }
+export const PREFERRED_ROOM: Record<string, WorkRoom> = { luna: 'library', coco: 'writing', momo: 'office', mimi: 'office', kiki: 'writing' }
 
 /** 방마다 가운데 x (방 사이 벽 사이의 한가운데) */
 const ROOM_CENTER: Record<WorkRoom, number> = { library: 300, writing: 750, office: 505 }

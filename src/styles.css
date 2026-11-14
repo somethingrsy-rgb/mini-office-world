@@ -727,3 +727,8 @@ html[data-theme="dark"] .qprev li.bad { background:rgba(255,77,109,.18); color:#
 .avtasks .todorow .primary.sm { margin:0; flex:none; padding:7px 10px; font-size:12px; }
 .atdesc { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; opacity:.75; }
 .avtasks .tmain b { white-space:normal; }
+
+/* 항상 위 작은 창 안의 빠른 분배 */
+.quickbox.compact { flex:none; width:100%; box-sizing:border-box; padding:8px 10px; gap:6px; }
+.quickbox.compact textarea { font-size:13px; }
+.quickbox.compact .primary { padding:9px 0; font-size:14px; }

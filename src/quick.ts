@@ -98,7 +98,7 @@ export function parseQuickLine(line: string, today = todayStr()): QuickEntry {
       if (all) { assignee = all; out.auto = true }
     }
   }
-  if (!assignee) { out.error = '분류를 앞에 적어 주세요 (국회 / 예산 / 법 / 민원)'; return out }
+  if (!assignee) { out.error = '분류를 앞에 적어 주세요 (국회 / 예산 / 법 / 민원 / 기타)'; return out }
 
   // 4) 마감일: // 뒤에 적은 값 (없으면, 주소가 없는 줄에 한해 예전 방식으로 맨 뒤 칸을 날짜로 봐요)
   let due: string | null = null
