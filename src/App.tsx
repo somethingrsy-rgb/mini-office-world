@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import House from './components/House'
-import { AVATARS, type AvatarId } from './avatars'
+import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { getActivity, periodName } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
+import SettingsView from './components/SettingsView'
+import { loadSettings, saveSettings, getLastBackup, type Settings } from './settings'
 import { useTasks } from './useTasks'
 import { addDays, dueInfo, todayStr } from './dates'
 import ScheduleView from './components/ScheduleView'
@@ -27,8 +29,13 @@ export default function App() {
   const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
   const [playing, setPlaying] = useState(false)
   const [panel, setPanel] = useState(false)
-  const { tasks, ready, storageError, save, remove } = useTasks()
-  const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief'>(null)
+  const { tasks, ready, storageError, save, remove, replaceAll } = useTasks()
+  const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
+  const [backupTick, setBackupTick] = useState(0)
+  const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
+  const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
+  const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
+  const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
   const briefing = useMemo(() => makeBriefing(tasks, todayStr(), addDays(todayStr(), 1)), [tasks, real])
@@ -69,10 +76,10 @@ export default function App() {
           const w = a.id === 'user' ? undefined : works[a.id as Staff]
           const top = w?.doing[0]
           const job = top ? { title: top.title, urgent: w!.doing.some((i) => i.level === 'urgent' || i.level === 'overdue') } : null
-          return [a.id, getActivity(a.id, now, job)]
+          return [a.id, getActivity(a.id, now, job, settings.schedule)]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>,
-    [now, works],
+    [now, works, settings],
   )
   const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
   const totals = {
@@ -121,12 +128,15 @@ export default function App() {
   return (
     <div className="app">
       <header className="top">
+        <button className="gear" onClick={() => setView('settings')} aria-label="설정">
+          ⚙️{needBackup && <span className="dotbadge" />}
+        </button>
         <h1>🏠 MINI OFFICE WORLD</h1>
         <p>나만의 작은 세상, 아바타들이 일하는 미니 회사</p>
       </header>
 
       <div className="clock" onClick={() => setPanel((v) => !v)}>
-        🕘 {fmt(now)} · {periodName(Math.floor(now))} {sim !== null && <em>(시험 시각)</em>}
+        🕘 {fmt(now)} · {periodName(Math.floor(now), settings.schedule)} {sim !== null && <em>(시험 시각)</em>}
       </div>
       {panel && (
         <div className="timebox">
@@ -186,6 +196,17 @@ export default function App() {
       {view === 'schedule' && (
         <Sheet title="일정표" onClose={close}>
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
+        </Sheet>
+      )}
+      {view === 'settings' && (
+        <Sheet title="설정" onClose={close}>
+          <SettingsView
+            tasks={tasks}
+            settings={settings}
+            onSettings={updateSettings}
+            onBackedUp={() => setBackupTick((n) => n + 1)}
+            onReplace={async (next, st) => { const ok = await replaceAll(next); if (ok) updateSettings(st); return ok }}
+          />
         </Sheet>
       )}
       {view === 'form' && (

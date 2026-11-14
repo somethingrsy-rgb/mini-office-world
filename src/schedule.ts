@@ -19,7 +19,7 @@ export interface Activity {
 }
 
 /** 기본 생활 시간표 (분 단위). 나중에 사용자가 바꿀 수 있게 한곳에 모아 둠 */
-export const SCHEDULE = {
+export const DEFAULT_SCHEDULE = {
   arrive: 9 * 60,
   lunchStart: 12 * 60,
   lunchEnd: 13 * 60,
@@ -27,6 +27,7 @@ export const SCHEDULE = {
   coffeeEnd: 15 * 60 + 20,
   leave: 18 * 60,
 }
+export type ScheduleCfg = typeof DEFAULT_SCHEDULE
 
 // ── 장소(발 위치 기준 좌표) ─────────────────────────
 export const FLOOR_Y = { attic: 164, f2: 296, f1: 426, out: 470 }
@@ -84,8 +85,7 @@ function work(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'lab
   }
 }
 
-export function periodName(m: number) {
-  const s = SCHEDULE
+export function periodName(m: number, s: ScheduleCfg = DEFAULT_SCHEDULE) {
   if (m < s.arrive - 10) return '출근 전'
   if (m < s.arrive) return '출근 시간'
   if (m < s.lunchStart) return '오전 업무'
@@ -107,11 +107,10 @@ function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 
   return { spot: SOFA[id], pose: 'sit', label: '소파에서 잠깐 쉬고 있어요' }
 }
 
-export function getActivity(id: AvatarId, minutes: number, job: Job | null = null): Activity {
+export function getActivity(id: AvatarId, minutes: number, job: Job | null = null, s: ScheduleCfg = DEFAULT_SCHEDULE): Activity {
   const m = Math.floor(minutes)
-  const s = SCHEDULE
   const idx = ORDER.indexOf(id)
-  const period = periodName(m)
+  const period = periodName(m, s)
 
   // 출근: 아바타마다 1~2분씩 간격을 두고 도착, 퇴근도 순서대로
   const arriveAt = s.arrive - 9 + idx * 2

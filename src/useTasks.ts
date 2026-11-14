@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { dbDelete, dbGetAll, dbPut } from './db'
+import { dbDelete, dbGetAll, dbPut, dbReplaceAll } from './db'
 import type { Task } from './types'
 
 export function useTasks() {
@@ -26,5 +26,17 @@ export function useTasks() {
     dbDelete(id).catch(() => setStorageError(true))
   }, [])
 
-  return { tasks, ready, storageError, save, remove }
+  /** 백업 복원·초기화용: 업무를 통째로 바꿈 (저장 실패 시 false) */
+  const replaceAll = useCallback(async (next: Task[]) => {
+    try {
+      await dbReplaceAll(next)
+      setTasks(next)
+      return true
+    } catch {
+      setStorageError(true)
+      return false
+    }
+  }, [])
+
+  return { tasks, ready, storageError, save, remove, replaceAll }
 }

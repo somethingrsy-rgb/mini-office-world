@@ -18,3 +18,11 @@ export const AVATARS: AvatarInfo[] = [
   { id: 'mimi', name: '미미', emoji: '💛', role: '일정·진행 관리', action: '달력을 확인하고 있어요', hair: '#f2b84b', outfit: '#ffe29a', hairStyle: 'long' },
   { id: 'user', name: '나', emoji: '👩', role: '관리자', action: '미니 회사를 둘러보는 중이에요', hair: '#7a4a3a', outfit: '#ffffff', hairStyle: 'short' },
 ]
+
+const DEFAULT_NAMES = Object.fromEntries(AVATARS.map((a) => [a.id, a.name])) as Record<AvatarId, string>
+
+/** 사용자가 바꾼 이름을 반영 (비어 있으면 기본 이름) */
+export function applyNames(names: Partial<Record<AvatarId, string>>) {
+  for (const a of AVATARS) a.name = names[a.id]?.trim() || DEFAULT_NAMES[a.id]
+}
+export const defaultName = (id: AvatarId) => DEFAULT_NAMES[id]

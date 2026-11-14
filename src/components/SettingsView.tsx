@@ -1,0 +1,138 @@
+import { useRef, useState } from 'react'
+import { AVATARS, defaultName, type AvatarId } from '../avatars'
+import { backupFileName, makeBackup, parseBackup } from '../backup'
+import { DEFAULT_SCHEDULE } from '../schedule'
+import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
+import type { Task } from '../types'
+
+const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+const toMin = (v: string) => { const [h, m] = v.split(':').map(Number); return h * 60 + m }
+
+const SCHEDULE_FIELDS: [keyof typeof DEFAULT_SCHEDULE, string][] = [
+  ['arrive', '출근'], ['lunchStart', '점심 시작'], ['lunchEnd', '점심 끝'],
+  ['coffeeStart', '커피타임 시작'], ['coffeeEnd', '커피타임 끝'], ['leave', '퇴근'],
+]
+
+interface Props {
+  tasks: Task[]
+  settings: Settings
+  onSettings: (s: Settings) => void
+  onReplace: (tasks: Task[], settings: Settings) => Promise<boolean>
+  onBackedUp: () => void
+}
+
+export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp }: Props) {
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
+  const [schedErr, setSchedErr] = useState('')
+  const last = getLastBackup()
+  const days = last ? Math.floor((Date.now() - last) / 86400000) : null
+
+  const say = (ok: boolean, text: string) => setMsg({ ok, text })
+
+  const exportFile = async () => {
+    const json = JSON.stringify(makeBackup(tasks, settings), null, 2)
+    const name = backupFileName()
+    const file = new File([json], name, { type: 'application/json' })
+    try {
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'MINI OFFICE WORLD 백업' })
+      } else {
+        const url = URL.createObjectURL(file)
+        const a = document.createElement('a')
+        a.href = url; a.download = name
+        document.body.appendChild(a); a.click(); a.remove()
+        setTimeout(() => URL.revokeObjectURL(url), 2000)
+      }
+      markBackup(); onBackedUp()
+      say(true, `업무 ${tasks.length}건을 백업했어요. 파일을 안전한 곳에 보관해 주세요.`)
+    } catch (e) {
+      if ((e as Error).name !== 'AbortError') say(false, '백업 파일을 만들지 못했어요. 아래 "복사하기"를 이용해 보세요.')
+    }
+  }
+
+  const copyJson = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(makeBackup(tasks, settings)))
+      markBackup(); onBackedUp()
+      say(true, '백업 내용을 복사했어요. 메모 앱 등에 붙여 넣어 보관한 뒤, 복원할 때 파일로 저장해서 사용하세요.')
+    } catch {
+      say(false, '복사하지 못했어요. 파일로 내보내기를 이용해 주세요.')
+    }
+  }
+
+  const importFile = async (f: File | undefined) => {
+    if (!f) return
+    try {
+      const { tasks: next, settings: s, skipped } = parseBackup(await f.text())
+      const ok = window.confirm(`백업 파일의 업무 ${next.length}건으로 복원할까요?\n지금 저장된 업무 ${tasks.length}건은 모두 바뀌어요.`)
+      if (!ok) return
+      if (await onReplace(next, s)) say(true, `업무 ${next.length}건을 복원했어요.${skipped ? ` (읽을 수 없는 ${skipped}건 제외)` : ''}`)
+      else say(false, '복원하지 못했어요. 저장 공간을 확인해 주세요.')
+    } catch (e) {
+      say(false, (e as Error).message)
+    } finally {
+      if (fileRef.current) fileRef.current.value = ''
+    }
+  }
+
+  const setTime = (k: keyof typeof DEFAULT_SCHEDULE, v: string) => {
+    if (!v) return
+    const schedule = { ...settings.schedule, [k]: toMin(v) }
+    const err = validateSchedule(schedule)
+    setSchedErr(err ?? '')
+    if (!err) onSettings({ ...settings, schedule })
+  }
+
+  const setName = (id: AvatarId, v: string) => onSettings({ ...settings, names: { ...settings.names, [id]: v.slice(0, 6) } })
+
+  const resetAll = async () => {
+    if (!window.confirm('모든 업무와 설정을 지울까요?\n되돌릴 수 없어요. 먼저 백업해 두면 안전해요.')) return
+    if (await onReplace([], DEFAULT_SETTINGS)) say(true, '모든 데이터를 초기화했어요.')
+  }
+
+  return (
+    <div className="settings">
+      <section>
+        <h3 className="sh">💾 데이터 백업·복원</h3>
+        <p className="muted">업무는 이 기기의 브라우저에만 저장돼요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니 가끔 백업해 두세요.</p>
+        <p className={`bk ${days === null || days > 14 ? 'old' : ''}`}>
+          {last ? `마지막 백업: ${new Date(last).toLocaleDateString('ko-KR')} (${days === 0 ? '오늘' : `${days}일 전`})` : '아직 백업한 적이 없어요.'}
+        </p>
+        <div className="btnrow">
+          <button className="primary" onClick={exportFile}>파일로 내보내기</button>
+          <button className="ghost" onClick={() => fileRef.current?.click()}>파일에서 복원</button>
+          <button className="ghost" onClick={copyJson}>복사하기</button>
+        </div>
+        <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(e) => importFile(e.target.files?.[0])} />
+        {msg && <p className={msg.ok ? 'okmsg' : 'err'}>{msg.text}</p>}
+      </section>
+
+      <section>
+        <h3 className="sh">🕘 생활 시간표</h3>
+        <div className="timegrid">
+          {SCHEDULE_FIELDS.map(([k, label]) => (
+            <label key={k}>{label}<input type="time" value={toHHMM(settings.schedule[k])} onChange={(e) => setTime(k, e.target.value)} /></label>
+          ))}
+        </div>
+        {schedErr && <p className="err">{schedErr}</p>}
+        <button className="ghost sm" onClick={() => { setSchedErr(''); onSettings({ ...settings, schedule: { ...DEFAULT_SCHEDULE } }) }}>기본 시간표로</button>
+      </section>
+
+      <section>
+        <h3 className="sh">🧑‍💼 아바타 이름</h3>
+        {AVATARS.map((a) => (
+          <label key={a.id} className="namerow">
+            <span>{a.emoji} <small>{a.role}</small></span>
+            <input value={settings.names[a.id] ?? a.name} maxLength={6} placeholder={defaultName(a.id)} onChange={(e) => setName(a.id, e.target.value)} />
+          </label>
+        ))}
+      </section>
+
+      <section>
+        <h3 className="sh">🧹 초기화</h3>
+        <button className="ghost danger" onClick={resetAll}>모든 데이터 지우기</button>
+      </section>
+    </div>
+  )
+}

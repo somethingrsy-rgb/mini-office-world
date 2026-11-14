@@ -34,3 +34,21 @@ function run<T>(mode: IDBTransactionMode, fn: (s: IDBObjectStore) => IDBRequest<
 export const dbGetAll = () => run<Task[]>('readonly', (s) => s.getAll())
 export const dbPut = (t: Task) => run('readwrite', (s) => s.put(t))
 export const dbDelete = (id: string) => run('readwrite', (s) => s.delete(id))
+
+export const dbClear = () => run('readwrite', (s) => s.clear())
+
+/** 전체 교체: 기존 업무를 모두 지우고 새 목록을 한 번에 저장 */
+export function dbReplaceAll(tasks: Task[]): Promise<void> {
+  return open().then(
+    (db) =>
+      new Promise<void>((resolve, reject) => {
+        const tx = db.transaction(STORE, 'readwrite')
+        const st = tx.objectStore(STORE)
+        st.clear()
+        tasks.forEach((t) => st.put(t))
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => reject(tx.error)
+        tx.onabort = () => reject(tx.error)
+      }),
+  )
+}
