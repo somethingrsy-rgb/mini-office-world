@@ -13,7 +13,7 @@ export default function BriefingView({ b, hasTasks, ordered, onGo, onTodo, onClo
 
   return (
     <div className="brief">
-      <div className="brief-head"><img className="face" src={asset('avatars/mimi-stand.webp')} alt="" /><b>{mimi.name}</b><small>일정 담당</small></div>
+      <div className="brief-head"><img className="face" src={asset('avatars/mimi-stand.webp')} alt="" /><b>{mimi.name}</b><small>오늘의 브리핑</small></div>
       <div className="bubble-msg">
         <p><b>{greet}</b></p>
         {!hasTasks ? (

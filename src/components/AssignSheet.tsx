@@ -26,7 +26,7 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
   return (
     <div className="assign">
       <p className="muted">일을 나눠 주면 {info.name}이(가) 접수대로 와서 일을 받아가요. 일을 시작하려면 "진행 중"으로 바꾸거나 아래 "바로 시작"을 켜 주세요.</p>
-      <label className="startrow"><input type="checkbox" checked={start} onChange={(e) => setStart(e.target.checked)} /> 바로 시작 (받은 뒤 {info.role} 자리로 가서 일해요)</label>
+      <label className="startrow"><input type="checkbox" checked={start} onChange={(e) => setStart(e.target.checked)} /> 바로 시작 (받은 뒤 바로 일하는 방으로 가서 일해요)</label>
 
       <h3 className="sh">✏️ 새 일 나눠 주기</h3>
       <form

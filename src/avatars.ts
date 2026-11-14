@@ -12,10 +12,10 @@ export interface AvatarInfo {
 }
 
 export const AVATARS: AvatarInfo[] = [
-  { id: 'momo', name: '모모', emoji: '🩷', role: '업무 접수·분류', action: '새 업무를 정리하고 있어요', hair: '#f59bc0', outfit: '#ffb3d1', hairStyle: 'twin' },
-  { id: 'luna', name: '루나', emoji: '💜', role: '자료 검토', action: '책장에서 자료를 찾고 있어요', hair: '#9b7be0', outfit: '#c7b2f5', hairStyle: 'bun' },
-  { id: 'coco', name: '코코', emoji: '🩵', role: '문서 작성', action: '컴퓨터로 문서를 쓰고 있어요', hair: '#5cc3d6', outfit: '#a8e6ef', hairStyle: 'bob' },
-  { id: 'mimi', name: '미미', emoji: '💛', role: '일정·진행 관리', action: '달력을 확인하고 있어요', hair: '#f2b84b', outfit: '#ffe29a', hairStyle: 'long' },
+  { id: 'momo', name: '쿠키', emoji: '🩷', role: '국회', action: '국회 업무를 처리하고 있어요', hair: '#f59bc0', outfit: '#ffb3d1', hairStyle: 'twin' },
+  { id: 'luna', name: '머니', emoji: '💜', role: '예산', action: '예산 업무를 처리하고 있어요', hair: '#9b7be0', outfit: '#c7b2f5', hairStyle: 'bun' },
+  { id: 'coco', name: '로이', emoji: '🩵', role: '법', action: '법 업무를 처리하고 있어요', hair: '#5cc3d6', outfit: '#a8e6ef', hairStyle: 'bob' },
+  { id: 'mimi', name: '미니', emoji: '💛', role: '민원', action: '민원 업무를 처리하고 있어요', hair: '#f2b84b', outfit: '#ffe29a', hairStyle: 'long' },
   { id: 'user', name: '나', emoji: '👩', role: '관리자', action: '미니 회사를 둘러보는 중이에요', hair: '#8a4a3c', outfit: '#ffffff', hairStyle: 'short' },
 ]
 
