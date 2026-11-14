@@ -66,7 +66,8 @@ const exitSpot = (id: AvatarId): Spot => spot(500 + HUB_OFFSET[id], 1264, 'r')
 // 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
 const RECEPTION: Spot = spot(207, 910)
 const PICKUP: Record<AvatarId, Spot> = {
-  momo: spot(325, 1020, 'l'), luna: spot(95, 1020), coco: spot(345, 1022, 'l'), mimi: spot(135, 1022), kiki: spot(270, 1024, 'l'), user: RECEPTION,
+  // 5명이 한꺼번에 와도 겹치지 않게 카운터 앞에 두 줄로 서요 (이름표 높이가 엇갈리는 아바타끼리 이웃하도록 배치)
+  momo: spot(90, 1016), coco: spot(190, 1016), kiki: spot(290, 1016, 'l'), luna: spot(140, 1048), mimi: spot(240, 1048, 'l'), user: RECEPTION,
 }
 /** 완료 칸(결과 확인 방): 일을 끝낸 아바타가 가서 보고하는 곳 */
 const DONE: Record<AvatarId, Spot> = {
@@ -252,4 +253,24 @@ export function routeLength(from: { x: number; y: number }, to: { x: number; y: 
   let px = from.x, py = from.y, sum = 0
   for (const p of route(from, to, offset)) { sum += Math.hypot(p.x - px, p.y - py); px = p.x; py = p.y }
   return sum
+}
+
+/** 라운지·정원에서 쉬는 아바타끼리 같은 자리에 서지 않도록 가로 위치를 벌려 줘요 (일하는 방·접수대는 자리가 따로 정해져 있어서 건드리지 않아요) */
+export function spreadSpots<T extends { spot: Spot; task?: string; leaving?: boolean; enter?: Spot }>(acts: Record<AvatarId, T>): Record<AvatarId, T> {
+  const out = { ...acts }
+  const free = (id: AvatarId) => !acts[id].task && !acts[id].leaving && !acts[id].enter && id !== 'user' && (Math.abs(acts[id].spot.y - AT) < 30 || acts[id].spot.y >= 1190)
+  const placed: Spot[] = []
+  for (const id of ORDER.filter(free)) {
+    const base = acts[id].spot
+    let x = base.x
+    for (const d of [0, 100, -100, 200, -200, 300, -300]) {
+      const nx = base.x + d
+      if (nx < 130 || nx > 870) continue
+      if (!placed.some((p) => Math.abs(p.y - base.y) < 40 && Math.abs(p.x - nx) < 100)) { x = nx; break }
+    }
+    const spot = { ...base, x }
+    placed.push(spot)
+    out[id] = { ...acts[id], spot }
+  }
+  return out
 }

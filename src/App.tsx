@@ -4,7 +4,7 @@ import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { asset, preloadAssets, themed } from './assets'
 import { ROOMS, type RoomId } from './rooms'
 import RoomView from './components/RoomView'
-import { getActivity } from './schedule'
+import { getActivity, spreadSpots } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
@@ -154,7 +154,7 @@ export default function App() {
   const activities = useMemo(
     () => {
       const t = Date.now()
-      return Object.fromEntries(
+      return spreadSpots(Object.fromEntries(
         AVATARS.map((a) => {
           const w = a.id === 'user' ? undefined : works[a.id as Staff]
           const top = w?.doing[0] // '진행 중'인 일이 있으면 일하는 자리로 가요
@@ -165,7 +165,7 @@ export default function App() {
             : (finishes[a.id] ?? 0) > t ? 'finish' : (leaves[a.id] ?? 0) > t ? 'leave' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
           return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander, stations[a.id])]
         }),
-      ) as Record<AvatarId, ReturnType<typeof getActivity>>
+      ) as Record<AvatarId, ReturnType<typeof getActivity>>)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real],
