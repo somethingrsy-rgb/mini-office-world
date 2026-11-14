@@ -1,0 +1,9 @@
+{
+  "name": "MINI OFFICE WORLD",
+  "short_name": "미니 오피스",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3e8ff",
+  "theme_color": "#d9c8f5",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
