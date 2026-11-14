@@ -22,6 +22,7 @@ import TodoSheet from './components/TodoSheet'
 import { orderTasks, rankMap } from './order'
 import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
+import WorkingPanel from './components/WorkingPanel'
 import { newId, type Importance, type Staff, type Task } from './types'
 
 const realMinutes = () => {
@@ -372,15 +373,27 @@ export default function App() {
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
         </Sheet>
       )}
-      {info && act && info.id !== 'user' && !assignFor && (
-        <Sheet glass title={`${info.emoji} ${info.name} · ${info.role}`} onClose={() => setSelected(null)}>
-          <QuickAssign info={info} onSubmit={(v) => quickAssign(info.id as Staff, v)} />
-          <div className="glassdiv" />
-          <AvatarCard hideTitle info={info} activity={act} work={works[info.id as Staff]} totals={totals}
-            onAssign={() => setAssignFor(info.id as Staff)}
-            onStart={startItem} onWait={waitItem} onComplete={completeItem} />
-        </Sheet>
-      )}
+      {info && act && info.id !== 'user' && !assignFor && (() => {
+        const w = works[info.id as Staff]
+        const working = w.doing.length > 0
+        return (
+          <Sheet glass title={working ? `${info.emoji} ${info.name} · 일하는 중` : `${info.emoji} ${info.name} · ${info.role}`} onClose={() => setSelected(null)}>
+            {working ? (
+              // 일하는 중이면 대기·완료 버튼만
+              <WorkingPanel info={info} activity={act} doing={w.doing} onWait={waitItem} onComplete={completeItem} />
+            ) : (
+              // 일이 없거나 대기 중이면 새 일 나눠 주기(제목·마감일) + 진행하기
+              <>
+                <QuickAssign info={info} onSubmit={(v) => quickAssign(info.id as Staff, v)} />
+                <div className="glassdiv" />
+                <AvatarCard hideTitle info={info} activity={act} work={w} totals={totals}
+                  onAssign={() => setAssignFor(info.id as Staff)}
+                  onStart={startItem} onWait={waitItem} onComplete={completeItem} />
+              </>
+            )}
+          </Sheet>
+        )
+      })()}
       {assignFor && (
         <Sheet title={`${AVATARS.find((a) => a.id === assignFor)!.emoji} ${AVATARS.find((a) => a.id === assignFor)!.name}에게 일 시키기`} onClose={() => setAssignFor(null)}>
           <AssignSheet who={assignFor} items={items} onCreate={createAndAssign} onAssign={assignExisting} />

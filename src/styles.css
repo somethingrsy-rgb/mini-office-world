@@ -277,3 +277,12 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .form.quick { gap:10px; }
 .form.quick .primary { padding:13px 0; font-size:15px; }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) { .sheet.glass { background:rgba(255,255,255,.93); } }
+
+/* 일하는 중인 아바타 시트: 대기·완료만 */
+.working-panel { display:flex; flex-direction:column; gap:12px; padding-bottom:4px; }
+.wlabel { margin:0; font-size:14px; opacity:.8; }
+.wjob { display:flex; flex-direction:column; gap:8px; padding:10px; border-radius:18px; background:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.7); }
+.wtitle { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:15px; font-weight:800; }
+.wtitle small { font-weight:500; opacity:.6; }
+.wjob .btnrow2 .ghost, .wjob .btnrow2 .primary { padding:14px 0; font-size:16px; }
+.sheet.glass .wjob .ghost { background:rgba(255,255,255,.6); }
