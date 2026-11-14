@@ -27,7 +27,8 @@ import Intro from './components/Intro'
 import RichText from './components/RichText'
 import QuickBox from './components/QuickBox'
 import { initAudio, sfx } from './audio'
-import { useSync } from './sync'
+import { useSync, markSettingsDirty } from './sync'
+import { stampReplace } from './tombs'
 import { useTheme } from './useTheme'
 import { useClock } from './useClock'
 import BottomBar from './components/BottomBar'
@@ -53,11 +54,11 @@ export default function App() {
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
   const [backupTick, setBackupTick] = useState(0)
   const dark = useTheme(settings.theme)
-  const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
+  const updateSettings = (s: Settings, fromSync = false) => { applyNames(s.names); saveSettings(s); setSettingsState(s); if (!fromSync) markSettingsDirty() }
   // 자동 백업: 업무가 바뀌면 (30분에 한 번까지) 이 기기에 보관해요
   useEffect(() => { if (ready) takeSnapshot(tasks, settings, '자동') }, [tasks, settings, ready])
   // 기기끼리 동기화 (설정 > 기기 동기화에서 켜요)
-  useSync({ tasks, settings, apply: async (t, s) => { takeSnapshot(tasks, settings, '동기화 받기 전', true); const ok = await replaceAll(t); if (ok) updateSettings(s); return ok } }, ready)
+  useSync({ tasks, settings, apply: async (t, s) => { takeSnapshot(tasks, settings, '동기화 받기 전', true); const ok = await replaceAll(t); if (ok && s) updateSettings(s, true); return ok } }, ready)
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)
@@ -249,7 +250,7 @@ export default function App() {
   const resetTasks = async () => {
     takeSnapshot(tasks, settings, '전체 리셋 전', true)
     armUndo('전체 리셋')
-    if (!(await replaceAll([]))) { notify('⚠️ 리셋하지 못했어요. 저장 공간을 확인해 주세요'); return }
+    if (!(await replaceAll(stampReplace(tasks, [])))) { notify('⚠️ 리셋하지 못했어요. 저장 공간을 확인해 주세요'); return }
     updateSettings({ ...settings, order: [] })
     setPickups({}); setFinishes({}); setLeaves({}); setUserSay(null); setSelected(null);
     notify('🔄 모든 업무를 리셋했어요')
@@ -258,7 +259,7 @@ export default function App() {
   const armUndo = (label: string) => setUndo({ label, tasks, order: settings.order, key: Date.now() })
   const doUndo = async () => {
     if (!undo) return
-    if (await replaceAll(undo.tasks)) { updateSettings({ ...settings, order: undo.order }); notify(`↩️ ${undo.label}을(를) 되돌렸어요`) }
+    if (await replaceAll(stampReplace(tasks, undo.tasks))) { updateSettings({ ...settings, order: undo.order }); notify(`↩️ ${undo.label}을(를) 되돌렸어요`) }
     setUndo(null)
   }
   const removeTask = (id: string) => {
@@ -442,7 +443,7 @@ export default function App() {
             onSettings={updateSettings}
             onBackedUp={() => setBackupTick((n) => n + 1)}
             time={{ now, simulated: sim !== null, playing, setSim, setPlaying }}
-            onReplace={async (next, st) => { takeSnapshot(tasks, settings, '복원·초기화 전', true); const ok = await replaceAll(next); if (ok) updateSettings(st); return ok }}
+            onReplace={async (next, st) => { takeSnapshot(tasks, settings, '복원·초기화 전', true); const ok = await replaceAll(stampReplace(tasks, next)); if (ok) updateSettings(st); return ok }}
           />
         </Sheet>
       )}

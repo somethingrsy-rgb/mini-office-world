@@ -30,6 +30,8 @@ export interface Task {
   startedAt?: number | null
   /** 지금까지 일한 시간(ms) — 진행 중이던 시간의 합 */
   workedMs?: number
+  /** 마지막으로 고친 시각 — 기기끼리 동기화할 때 업무를 하나씩 합치는 기준 */
+  updatedAt?: number
 }
 
 export const IMPORTANCE_LABEL: Record<Importance, string> = { high: '높음', normal: '보통', low: '낮음' }

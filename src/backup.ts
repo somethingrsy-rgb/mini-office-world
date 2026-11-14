@@ -45,6 +45,7 @@ function cleanTask(raw: unknown): Task | null {
     completedAt: status === 'done' ? asTime(t.completedAt) ?? Date.now() : null,
     startedAt: status === 'doing' ? asTime(t.startedAt) ?? Date.now() : null,
     workedMs: Math.max(0, asTime(t.workedMs) ?? 0),
+    ...(asTime(t.updatedAt) ? { updatedAt: asTime(t.updatedAt)! } : {}),
   }
 }
 

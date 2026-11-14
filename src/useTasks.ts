@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { dbDelete, dbGetAll, dbPut, dbReplaceAll } from './db'
 import type { Task } from './types'
 import { stampWork } from './worktime'
+import { addTombs } from './tombs'
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([])
@@ -28,13 +29,14 @@ export function useTasks() {
 
   const save = useCallback((input: Task) => {
     const prevTask = ref.current.find((t) => t.id === input.id)
-    const task = stampWork(prevTask, input) // 진행 시작·대기·완료에 맞춰 일한 시간을 갱신
+    const task = { ...stampWork(prevTask, input), updatedAt: Date.now() } // 진행 시작·대기·완료에 맞춰 일한 시간을 갱신
     ref.current = prevTask ? ref.current.map((t) => (t.id === task.id ? task : t)) : [...ref.current, task]
     setTasks(ref.current)
     dbPut(task).catch(() => setStorageError(true))
   }, [])
 
   const remove = useCallback((id: string) => {
+    addTombs([id])
     ref.current = ref.current.filter((t) => t.id !== id)
     setTasks(ref.current)
     dbDelete(id).catch(() => setStorageError(true))
