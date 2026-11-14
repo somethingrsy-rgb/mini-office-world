@@ -175,8 +175,6 @@ input:focus, textarea:focus, select:focus { outline:2px solid var(--pink); borde
 html { background:#c8a8ee; }
 body { background:transparent; }
 .sky { position:fixed; inset:0; z-index:-1; background-size:cover; background-position:center bottom; background-repeat:no-repeat; }
-/* 라이트 모드 배경: 채도를 낮춰 차분하게 (원본 그림은 그대로) */
-.sky { filter:saturate(.42) brightness(1.04) contrast(.94); }
 .app { position:relative; }
 .top h1 { color:#fff; text-shadow:0 2px 8px rgba(90,40,140,.55); }
 .top p { color:#fff; opacity:.92; text-shadow:0 1px 5px rgba(90,40,140,.5); }
