@@ -27,6 +27,7 @@ import Intro from './components/Intro'
 import RichText from './components/RichText'
 import QuickBox from './components/QuickBox'
 import { initAudio, sfx } from './audio'
+import { useSync } from './sync'
 import { useLoungeChat } from './chat'
 import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
@@ -69,6 +70,8 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b0f14' : '#c8a8ee')
   }, [dark])
   const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
+  // 기기끼리 동기화 (설정 > 기기 동기화에서 켜요)
+  useSync({ tasks, settings, apply: async (t, s) => { const ok = await replaceAll(t); if (ok) updateSettings(s); return ok } }, ready)
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)

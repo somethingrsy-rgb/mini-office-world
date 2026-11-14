@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Set
 import type { Task } from '../types'
 import { CURRENT_BUILD, fetchLatestBuild, updateApp } from '../update'
 import { setSoundPrefs, useSoundPrefs } from '../audio'
+import { clearSyncConfig, setSyncConfig, syncRequest, useSyncStatus } from '../sync'
 
 const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 const toMin = (v: string) => { const [h, m] = v.split(':').map(Number); return h * 60 + m }
@@ -28,6 +29,9 @@ interface Props {
 
 export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp, time }: Props) {
   const sound = useSoundPrefs()
+  const sync = useSyncStatus()
+  const [syncRepo, setSyncRepo] = useState(sync.repo)
+  const [syncToken, setSyncToken] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [schedErr, setSchedErr] = useState('')
@@ -139,6 +143,27 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
           ))}
         </div>
         <p className="muted">자동은 휴대폰의 다크 모드 설정을 따라가요.</p>
+      </section>
+
+      <section>
+        <h3 className="sh">🔁 기기 동기화</h3>
+        <p className="muted">GitHub 비공개 저장소에 업무·설정을 저장해서 아이패드·휴대폰·PC가 같은 내용을 보게 해요. 앱을 켤 때, 바꾼 뒤 2초 뒤, 1분마다 자동으로 맞춰요. 같은 저장소와 토큰을 각 기기에 한 번씩 넣어 주세요.</p>
+        <div className="syncform">
+          <input value={syncRepo} onChange={(e) => setSyncRepo(e.target.value)} placeholder="저장소 이름 (예: 내아이디/mini-office-data)" autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+          <input value={syncToken} onChange={(e) => setSyncToken(e.target.value)} type="password" placeholder={sync.hasToken ? '토큰 저장됨 (바꿀 때만 입력)' : 'GitHub 토큰'} autoCapitalize="off" autoCorrect="off" spellCheck={false} />
+        </div>
+        <div className="btnrow">
+          <button className="primary" disabled={!syncRepo.trim() || (!syncToken.trim() && !sync.hasToken)} onClick={() => { setSyncConfig(syncRepo, syncToken); setSyncToken(''); syncRequest() }}>저장하고 동기화</button>
+          <button className="ghost" disabled={sync.state === 'off' || sync.state === 'syncing'} onClick={() => syncRequest()}>지금 동기화</button>
+          {sync.state !== 'off' && <button className="ghost" onClick={() => { clearSyncConfig(); setSyncRepo(''); setSyncToken('') }}>해제</button>}
+        </div>
+        <p className={`muted ${sync.state === 'error' ? 'err' : ''}`}>
+          {sync.state === 'off' && '아직 연결하지 않았어요.'}
+          {sync.state === 'idle' && '연결 정보를 저장했어요.'}
+          {sync.state === 'syncing' && '동기화하는 중…'}
+          {sync.state === 'ok' && `✅ 동기화됐어요 (${new Date(sync.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})`}
+          {sync.state === 'error' && `⚠️ ${sync.text}`}
+        </p>
       </section>
 
       <section>
