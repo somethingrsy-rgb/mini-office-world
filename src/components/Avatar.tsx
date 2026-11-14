@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AvatarInfo } from '../avatars'
 import { asset, BUBBLE, FX, spriteFor, SPRITES, U, type SpriteKey } from '../assets'
 import { HUB_OFFSET, route, type Activity } from '../schedule'
+import { darkDrop } from '../rooms'
 
 const WALK_SPEED = 190 // 하우스 좌표/초 (일하러 가거나 접수대로 갈 때)
 const SLOW_SPEED = 85 // 산책·라운지 이동은 천천히
@@ -18,6 +19,8 @@ interface Props {
   speech?: string | null
   delay?: number
   hideName?: boolean
+  /** 다크 하우스인지 (층 바닥 높이가 달라서 발 위치를 보정해요) */
+  dark?: boolean
   /** 접수대 앞에 도착해서 일을 받기 시작할 때(한 번) */
   onReceived?: (id: AvatarInfo['id']) => void
   onSelect: (id: AvatarInfo['id']) => void
@@ -60,7 +63,7 @@ const textWidth = (t: string, size: number) => [...t].reduce((n, c) => n + (c.ch
 const LABEL_LIFT: Record<string, number> = { momo: 0, luna: 44, coco: 0, mimi: 44, user: 0 }
 const clip = (t: string, max = 16) => ([...t].length > max ? [...t].slice(0, max).join('') + '…' : t)
 
-export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, speech, delay = 0, hideName, onReceived, onSelect }: Props) {
+export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, speech, delay = 0, hideName, dark = false, onReceived, onSelect }: Props) {
   const w = useWalker(info.id, activity.spot, !!activity.slow, activity.enter)
   // 환호는 이동을 시작한 뒤 목적지에 도착하면 시작하고, 3초쯤 뒤 끝나요
   const [wantCheer, setWantCheer] = useState(false)
@@ -107,7 +110,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   return (
     <g
       className="avatar appear"
-      style={{ transform: `translate(${w.x}px, ${w.y}px)`, transition: `transform ${w.dur}s linear, opacity .7s ease`, opacity: gone ? 0 : 1, pointerEvents: gone ? 'none' : undefined }}
+      style={{ transform: `translate(${w.x}px, ${w.y + (dark && info.id !== 'user' ? darkDrop(w.y) : 0)}px)`, transition: `transform ${w.dur}s linear, opacity .7s ease`, opacity: gone ? 0 : 1, pointerEvents: gone ? 'none' : undefined }}
       onClick={() => onSelect(info.id)}
       role="button"
       aria-label={`${info.name} 선택`}

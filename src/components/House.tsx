@@ -80,7 +80,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </g>
       )}
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived}
+        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
     </svg>
