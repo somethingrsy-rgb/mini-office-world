@@ -74,9 +74,6 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
     return () => window.clearTimeout(t)
   }, [happy])
 
-  // 퇴근해서 화면 밖에 도착한 아바타는 그리지 않아요
-  if (activity.away && !w.moving) return null
-
   const pose = w.moving ? 'walk' : activity.pose
   const isUser = info.id === 'user'
   let key: SpriteKey = happy ? (isUser ? 'desk-cheer' : 'cheer') : spriteFor(info.id, pose)

@@ -14,8 +14,6 @@ export interface Activity {
   period: string
   /** 지금 처리 중인 업무 이름 */
   task?: string
-  /** 집 밖(퇴근 상태)인지 */
-  away?: boolean
 }
 
 /** 기본 생활 시간표 (분 단위). 나중에 사용자가 바꿀 수 있게 한곳에 모아 둠 */
@@ -32,7 +30,6 @@ export type ScheduleCfg = typeof DEFAULT_SCHEDULE
 // ── 장소(하우스 이미지 좌표 기준 · 폭 1000, 발 위치) ──────────────
 export const FLOOR_Y = { attic: 408, f2: 690, f1: 1002, out: 1212 }
 export const HUB_X = 500 // 계단·현관이 있는 중앙 통로
-const OFF: Spot = { x: -140, y: FLOOR_Y.out, face: 'r' }
 const { attic: AT, f2: F2, f1: F1, out: OUT } = FLOOR_Y
 
 const spot = (x: number, y: number, face: 'l' | 'r' = 'r'): Spot => ({ x, y, face })
@@ -108,6 +105,13 @@ export interface Job { title: string }
 /** 사용자가 일을 나눠 주거나(pickup) 일을 끝냈을 때(finish) 잠깐 하는 특별한 행동 */
 export type AvatarEvent = 'pickup' | 'finish' | null
 
+/** 대기: 일을 받았거나 일을 마친 아바타는 맨 위 라운지에서 기다려요 */
+function lounge(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
+  return hash(id, slot + 31) < 50
+    ? { spot: SEATS_COFFEE[id], pose: 'coffee', label: '라운지에서 커피를 마시며 대기하고 있어요' }
+    : { spot: SOFA[id], pose: 'sit', label: '라운지 소파에서 대기하고 있어요' }
+}
+
 function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
   const r = hash(id, slot + 7919)
   if (r < 30) return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '커피를 마시며 쉬고 있어요' }
@@ -122,7 +126,8 @@ export function getActivity(
   job: Job | null = null,
   s: ScheduleCfg = DEFAULT_SCHEDULE,
   event: AvatarEvent = null,
-  home = false,
+  /** 일을 받았거나 마쳐서 라운지에서 대기해야 하는지 (진행 중인 일이 있으면 무시) */
+  waiting = false,
 ): Activity {
   const m = Math.floor(minutes)
   const idx = ORDER.indexOf(id)
@@ -140,29 +145,22 @@ export function getActivity(
   // 일을 나눠 줬어요 → 접수대로 와서 일을 받아감
   if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period }
 
-  // 일을 끝내고 퇴근했어요 → 화면 밖으로 나가요 (새 일을 받으면 다시 출근)
-  if (home && !job) return { spot: OFF, pose: 'stand', label: '일을 마치고 퇴근했어요', period, away: true }
-
   // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
   if (job) {
     const w = work(id, Math.floor(m / 4))
     return { ...w, period, task: job.title, label: `「${job.title}」 ${w.label}` }
   }
 
-  // 일이 없으면 시간표대로 생활: 출근 → 라운지·정원에서 쉬기 → 점심·커피 → 퇴근
-  const arriveAt = s.arrive - 9 + idx * 2
-  const leaveAt = s.leave + idx * 2
-  if (m < arriveAt || m >= leaveAt) {
-    return { spot: OFF, pose: 'stand', label: m < arriveAt ? '아직 출근 전이에요' : '퇴근했어요', period, away: true }
-  }
-  if (m < s.arrive) return { spot: SEATS_LUNCH[id], pose: 'stand', label: '출근해서 라운지로 가고 있어요', period }
+  // 일을 받았거나 마친 아바타는 라운지에서 대기해요 (퇴근하지 않아요)
+  if (waiting) return { ...lounge(id, Math.floor(m / 4)), period }
+
+  // 아무 일도 없으면 시간표대로 생활: 라운지·정원에서 쉬기 → 점심·커피 (퇴근하지 않아요)
   if (m >= s.lunchStart && m < s.lunchEnd) {
     return { spot: SEATS_LUNCH[id], pose: 'eat', label: '카페에서 점심을 먹고 있어요', period }
   }
   if (m >= s.coffeeStart && m < s.coffeeEnd) {
     return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '커피타임을 갖고 있어요', period }
   }
-  if (m >= leaveAt - 4) return { spot: spot(HUB_X, F1), pose: 'stand', label: '퇴근 준비를 하고 있어요', period }
   return { ...life(id, Math.floor(m / 4), idx), period }
 }
 

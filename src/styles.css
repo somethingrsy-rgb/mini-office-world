@@ -212,7 +212,6 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .avchip span { font-size:12px; font-weight:800; }
 .avchip small { position:absolute; top:3px; right:4px; font-size:9px; font-weight:800; background:#c9b9f0; color:#fff; border-radius:8px; padding:0 5px; }
 .avchip.on { border-color:#ff86b6; background:#fff; }
-.avchip.away img { opacity:.45; filter:grayscale(.4); }
 
 .startrow { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; margin:6px 0 2px; }
 .startrow input { width:20px; height:20px; min-height:0; padding:0; accent-color:#ff86b6; flex:none; }
