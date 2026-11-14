@@ -387,13 +387,13 @@ export default function App() {
       </nav>
 
       {view === 'brief' && (
-        <Sheet title="💛 오늘의 업무 브리핑" onClose={close}>
+        <Sheet glass tall title="💛 오늘의 업무 브리핑" onClose={close}>
           <BriefingView b={briefing} hasTasks={tasks.length > 0} ordered={ordered} onClose={close} onTodo={() => setView('todo')}
             onGo={() => { tasks.length > 0 ? setView('list') : (setEditing(undefined), setView('form')) }} />
         </Sheet>
       )}
       {view === 'todo' && (
-        <Sheet glass title="📌 해야 할 일" onClose={close}>
+        <Sheet glass tall title="📌 해야 할 일" onClose={close}>
           <TodoSheet
             tasks={ordered}
             manual={settings.order.length > 0}
@@ -405,7 +405,7 @@ export default function App() {
         </Sheet>
       )}
       {view === 'schedule' && (
-        <Sheet title="일정표" onClose={close}>
+        <Sheet glass tall title="일정표" onClose={close}>
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
         </Sheet>
       )}
@@ -432,17 +432,17 @@ export default function App() {
         )
       })()}
       {assignFor && (
-        <Sheet title={`${AVATARS.find((a) => a.id === assignFor)!.emoji} ${AVATARS.find((a) => a.id === assignFor)!.name}에게 일 시키기`} onClose={() => setAssignFor(null)}>
+        <Sheet glass tall title={`${AVATARS.find((a) => a.id === assignFor)!.emoji} ${AVATARS.find((a) => a.id === assignFor)!.name}에게 일 시키기`} onClose={() => setAssignFor(null)}>
           <AssignSheet who={assignFor} items={items} onCreate={createAndAssign} onAssign={assignExisting} />
         </Sheet>
       )}
       {room && (
-        <Sheet title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
+        <Sheet glass tall title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
           <RoomView room={room} activities={activities} shown={shown} dark={dark} />
         </Sheet>
       )}
       {view === 'settings' && (
-        <Sheet title="설정" onClose={close}>
+        <Sheet glass tall title="설정" onClose={close}>
           <SettingsView
             tasks={tasks}
             settings={settings}
@@ -454,7 +454,7 @@ export default function App() {
         </Sheet>
       )}
       {view === 'form' && (
-        <Sheet title={editing ? '업무 수정' : '신규 업무 등록'} onClose={close}>
+        <Sheet glass tall title={editing ? '업무 수정' : '신규 업무 등록'} onClose={close}>
           <TaskForm
             initial={editing}
             onCancel={close}
@@ -463,7 +463,7 @@ export default function App() {
         </Sheet>
       )}
       {view === 'list' && (
-        <Sheet title="업무 목록" onClose={close}>
+        <Sheet glass tall title="업무 목록" onClose={close}>
           <TaskList tasks={tasks} onSave={saveTask} onDelete={remove} onEdit={(t) => { setEditing(t); setView('form') }} />
         </Sheet>
       )}

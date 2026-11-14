@@ -665,3 +665,28 @@ html[data-theme="dark"] .nt-name input, html[data-theme="dark"] .nt-name input:f
 .form textarea { resize:none; line-height:1.45; }
 .wdesc { margin:0; font-size:13px; line-height:1.45; opacity:.85; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
 .it-title .idesc { display:block; margin-top:2px; font-weight:500; opacity:.7; font-size:11px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; }
+
+/* ═══ 모든 시트를 글라스모피즘으로: 목록·카드·입력 칸도 반투명 유리 위에 얹혀요 ═══ */
+.sheet.glass.tall { max-height:84dvh; }
+.sheet.glass .task, .sheet.glass .cell, .sheet.glass .goal, .sheet.glass .subrow, .sheet.glass .wday.today, .sheet.glass .bubble-msg, .sheet.glass .hint {
+  background:rgba(255,255,255,.42); border-color:rgba(255,255,255,.7); }
+.sheet.glass .task.lv-soon { background:rgba(255,238,190,.55); }
+.sheet.glass .task.lv-urgent, .sheet.glass .task.lv-overdue { background:rgba(255,214,222,.58); }
+.sheet.glass .task.is-done { background:rgba(255,255,255,.26); }
+.sheet.glass .erow.lv-soon, .sheet.glass .item.lv-soon { background:rgba(255,238,190,.55); }
+.sheet.glass .erow.lv-urgent, .sheet.glass .erow.lv-overdue, .sheet.glass .item.lv-urgent, .sheet.glass .item.lv-overdue { background:rgba(255,214,222,.58); }
+.sheet.glass .cell.sel { background:rgba(255,255,255,.7); }
+.sheet.glass .tabs button, .sheet.glass .statusbtns button, .sheet.glass .chip, .sheet.glass .nav button { background:rgba(255,255,255,.45); border-color:rgba(255,255,255,.75); }
+.sheet.glass .tabs button.on { background:var(--pink); color:#fff; }
+.sheet.glass .statusbtns button.on { background:#9b7be0; border-color:#9b7be0; color:#fff; }
+.sheet.glass .chip.on.imp-high { background:#ff6b8b; color:#fff; } .sheet.glass .chip.on.imp-normal { background:#9b7be0; color:#fff; } .sheet.glass .chip.on.imp-low { background:#7fd6c2; color:#fff; }
+.sheet.glass .bar { background:rgba(255,255,255,.5); }
+.sheet.glass .brief-head, .sheet.glass .settings section { border-color:rgba(255,255,255,.55); }
+.sheet.glass .nt-row { border-top-color:rgba(255,255,255,.7); }
+.sheet.glass .roomstage { border-radius:18px; box-shadow:0 6px 18px rgba(60,30,100,.18); }
+.sheet.glass .empty p { opacity:.8; }
+html[data-theme="dark"] .sheet.glass .task, html[data-theme="dark"] .sheet.glass .cell, html[data-theme="dark"] .sheet.glass .goal, html[data-theme="dark"] .sheet.glass .subrow,
+html[data-theme="dark"] .sheet.glass .tabs button, html[data-theme="dark"] .sheet.glass .statusbtns button, html[data-theme="dark"] .sheet.glass .chip, html[data-theme="dark"] .sheet.glass .nav button { background:rgba(255,255,255,.07); border-color:rgba(255,235,190,.16); }
+html[data-theme="dark"] .sheet.glass .tabs button.on { background:#d9ae5c; color:#241b08; }
+html[data-theme="dark"] .sheet.glass .statusbtns button.on { background:#d9ae5c; border-color:#d9ae5c; color:#241b08; }
+html[data-theme="dark"] .sheet.glass .nt-row { border-top-color:rgba(255,235,190,.16); }

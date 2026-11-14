@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 
-export default function Sheet({ title, onClose, glass, children }: { title: string; onClose: () => void; glass?: boolean; children: ReactNode }) {
+export default function Sheet({ title, onClose, glass, tall, children }: { title: string; onClose: () => void; glass?: boolean; tall?: boolean; children: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -9,7 +9,7 @@ export default function Sheet({ title, onClose, glass, children }: { title: stri
 
   return (
     <div className={`backdrop ${glass ? 'glass' : ''}`} onClick={onClose}>
-      <div className={`sheet ${glass ? 'glass' : ''}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div className={`sheet ${glass ? 'glass' : ''} ${tall ? 'tall' : ''}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
         {glass && <div className="grab" aria-hidden />}
         <div className="sheet-head">
           <h2>{title}</h2>
