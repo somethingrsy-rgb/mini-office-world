@@ -26,3 +26,6 @@ export function roomOf(p: { x: number; y: number }): RoomId | null {
   if (p.y < 1100) return p.x < 347 ? 'reception' : p.x < 662 ? 'office' : 'result'
   return 'garden'
 }
+
+/** 접수대(카운터+우체통) 그림이 하우스 위에 놓이는 자리. 폭 230, 바닥은 y=992 */
+export const COUNTER = { x: 70, w: 230, bottom: 992, bodyCenterX: 207 }

@@ -228,3 +228,5 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .item { flex-wrap:wrap; }
 .item-actions { display:flex; gap:6px; margin-left:auto; }
 .item-actions .sm { padding:6px 10px; font-size:12px; margin:0; }
+.roomcounter { position:absolute; height:auto; display:block; pointer-events:none; }
+.occupant.front { z-index:2; }

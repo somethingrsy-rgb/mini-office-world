@@ -6,9 +6,11 @@ import type { Pose } from './schedule'
 export const asset = (path: string) => `${import.meta.env.BASE_URL}assets/${path}`
 
 export type SpriteKey = 'stand' | 'walk' | 'work1' | 'work2' | 'coffee' | 'cheer'
+  | 'desk-idle' | 'desk-receive' | 'desk-hand' | 'desk-stamp' | 'desk-wave' | 'desk-cheer' // 나(관리자)의 접수대 자세
 type Dim = { w: number; h: number }
 
-export const SPRITES = ASSET_META.avatars as unknown as Record<AvatarId, Record<SpriteKey, Dim>>
+export const SPRITES = ASSET_META.avatars as unknown as Record<AvatarId, Partial<Record<SpriteKey, Dim>>>
+export const COUNTER_IMG = ASSET_META.counter as { w: number; h: number }
 export const FX = ASSET_META.fx as unknown as Record<string, Dim>
 export const ROOM_IMG = ASSET_META.rooms as unknown as Record<string, Dim>
 export const HOUSE = ASSET_META.house as { w: number; h: number }
@@ -18,6 +20,7 @@ export const U = 0.56
 
 /** 활동 자세 → 어떤 그림을 쓸지. 책상·책장이 함께 그려진 자세는 work1/work2 */
 export function spriteFor(id: AvatarId, pose: Pose): SpriteKey {
+  if (id === 'user') return pose === 'receive' ? 'desk-hand' : pose === 'done' ? 'desk-stamp' : 'desk-idle'
   switch (pose) {
     case 'type': return id === 'mimi' ? 'work2' : 'work1'
     case 'sort': return id === 'luna' ? 'work1' : 'work2'

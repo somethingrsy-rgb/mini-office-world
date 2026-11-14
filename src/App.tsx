@@ -45,6 +45,19 @@ export default function App() {
   const [pickups, setPickups] = useState<Record<string, number>>({})
   const [finishes, setFinishes] = useState<Record<string, number>>({})
   const [tick, setTick] = useState(0)
+  // 일을 끝내고 퇴근한 아바타 (오늘 하루 기억해요. 새 일을 받으면 다시 출근)
+  const [home, setHome] = useState<Record<string, boolean>>(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem('mow-home') ?? 'null')
+      return v && v.day === todayStr() ? v.ids : {}
+    } catch { return {} }
+  })
+  const updateHome = (fn: (h: Record<string, boolean>) => Record<string, boolean>) =>
+    setHome((h) => {
+      const n = fn(h)
+      try { localStorage.setItem('mow-home', JSON.stringify({ day: todayStr(), ids: n })) } catch { /* 저장 불가 환경 */ }
+      return n
+    })
   const startEvent = (kind: 'pickup' | 'finish', ids: string[], ms: number) => {
     const until = Date.now() + ms
     const set = kind === 'pickup' ? setPickups : setFinishes
@@ -94,13 +107,16 @@ export default function App() {
           const w = a.id === 'user' ? undefined : works[a.id as Staff]
           const top = w?.doing[0] // '진행 중'인 일이 있으면 일하는 자리로 가요
           const job = top ? { title: top.title } : null
-          const event = a.id === 'user' ? null : (finishes[a.id] ?? 0) > t ? 'finish' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
-          return [a.id, getActivity(a.id, now, job, settings.schedule, event)]
+          const anyOf = (m: Record<string, number>) => Object.values(m).some((u) => u > t)
+          const event = a.id === 'user'
+            ? (anyOf(finishes) ? 'finish' : anyOf(pickups) ? 'pickup' : null)
+            : (finishes[a.id] ?? 0) > t ? 'finish' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
+          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!home[a.id])]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, tick, real],
+    [now, works, settings, pickups, finishes, home, tick, real],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(
@@ -144,6 +160,7 @@ export default function App() {
     const prev = old ? staffOf(old) : new Set<Staff>()
     const fresh = [...staffOf(t)].filter((id) => !prev.has(id))
     if (fresh.length === 0) return
+    updateHome((h) => { const n = { ...h }; fresh.forEach((id) => delete n[id]); return n })
     startEvent('pickup', fresh, 18000)
     notify(`📥 일을 받으러 접수대로 와요: ${names(fresh)}`)
   }
@@ -165,8 +182,19 @@ export default function App() {
     setAssignFor(null)
   }
 
+  /** 일을 끝낸 아바타 중 남은 일이 없는 아바타는 완료 칸에서 인사한 뒤 퇴근해요 */
+  const sendHomeIfIdle = (ids: string[], next: Task[]) => {
+    const left = buildItems(next)
+    const leaving = [...new Set(ids)].filter((id) => id !== 'user' && !left.some((i) => i.assignee === id))
+    if (leaving.length === 0) return
+    startEvent('finish', leaving, 9000)
+    updateHome((h) => { const n = { ...h }; leaving.forEach((id) => (n[id] = true)); return n })
+    notify(`🏠 일을 마쳤어요! 퇴근해요: ${names(leaving)}`)
+  }
+
   const saveTask = (t: Task) => {
     const old = tasks.find((x) => x.id === t.id)
+    const next = tasks.map((x) => (x.id === t.id ? t : x))
     save(t)
     if (!old) return
     // '진행 중'으로 바꾸면 담당 아바타가 일하는 자리로 가요
@@ -176,22 +204,24 @@ export default function App() {
       const ids = new Set<string>([taskAssignee(t), ...t.subtasks.map((s) => subAssignee(t, s))])
       const allDone = tasks.every((x) => x.id === t.id || x.status === 'done')
       if (allDone) {
-        startEvent('finish', ['momo', 'luna', 'coco', 'mimi'], 26000)
+        startEvent('finish', ['momo', 'luna', 'coco', 'mimi'], 10000)
         cheerUp(['momo', 'luna', 'coco', 'mimi', 'user'])
         notify('🎊 등록된 모든 업무를 끝냈어요! 정말 수고했어요')
       } else {
-        startEvent('finish', [...ids], 26000)
+        startEvent('finish', [...ids], 10000)
         cheerUp([...ids, 'user'])
         notify(`🎉 「${t.title}」 업무 완료! 완료 칸으로 가요`)
       }
+      window.setTimeout(() => sendHomeIfIdle([...ids], next), 0)
       return
     }
     const newly = t.subtasks.filter((s) => s.done && !old.subtasks.find((o) => o.id === s.id)?.done)
     if (newly.length) {
       const ids = newly.map((s) => subAssignee(t, s))
-      startEvent('finish', ids, 26000)
+      startEvent('finish', ids, 10000)
       cheerUp(ids)
       notify(`✅ 「${newly[0].title}」 완료! 완료 칸으로 가요`)
+      window.setTimeout(() => sendHomeIfIdle(ids, next), 0)
     }
   }
   /** 대기 중인 아바타의 일을 '진행 중'으로: 담당 아바타가 일하는 자리로 가요 (업무 단위) */

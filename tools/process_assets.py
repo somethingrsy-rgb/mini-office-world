@@ -7,7 +7,7 @@
 """
 import json, os, sys
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image
 from scipy import ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,10 +16,12 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
+    'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
 
+ROOM_TOL = {'reception': 28}  # 배경 색이 고르지 않은 그림은 허용치를 높여서 지워요
 POSES = ['stand', 'walk', 'work1', 'work2', 'coffee', 'cheer']  # 3x2 칸 순서(왼→오, 위→아래)
 STAND_PX = 300  # 서 있는 모습의 높이(px). 모든 아바타를 이 크기로 맞춰 앱에서 같은 배율로 그려요.
 PROPS = ['desk', 'monitor', 'bookshelf', 'sofa', 'coffee-table', 'mailbox', 'calendar', 'plant', 'lamp', 'trophy', 'cake', 'tree']
@@ -49,9 +51,10 @@ def border_connected(cand, erode=1):
     return m
 
 
-def to_rgba(img, fg):
+def to_rgba(img, fg, fill=True):
     """전경 마스크 fg로 알파를 만들어 가장자리를 부드럽게"""
-    fg = ndi.binary_fill_holes(fg)
+    if fill:
+        fg = ndi.binary_fill_holes(fg)
     core = ndi.binary_erosion(fg, iterations=1)
     a = ndi.gaussian_filter(core.astype(np.float32), 0.9)
     a = np.clip((a - 0.15) / 0.7, 0, 1)
@@ -109,29 +112,6 @@ def crop_rgba(rgba, boxes, pad=4):
     return rgba.crop((x0, y0, x1, y1))
 
 
-# 접수대(카운터) 앞면: 나(관리자)가 카운터 '안쪽'에 서 있는 것처럼 보이게 아바타 위에 덮는 그림.
-# 좌표는 하우스 이미지(폭 1000) 기준이에요.
-COUNTER_BOX = (125, 850, 295, 1012)
-COUNTER_SHAPES = [
-    [(133, 925), (150, 917), (180, 912), (210, 910), (240, 912), (270, 917), (288, 925), (288, 1012), (133, 1012)],  # 카운터 몸통
-    [(154, 919), (152, 913), (158, 905), (163, 899), (169, 894), (172, 892), (176, 894), (181, 899), (186, 905), (190, 913), (188, 919)],  # 종
-    [(243, 899), (266, 899), (270, 908), (268, 917), (262, 919), (247, 919), (242, 912)],  # 꽃병
-    [(228, 880), (235, 872), (242, 868), (248, 858), (255, 856), (262, 858), (268, 862), (275, 868), (280, 878), (274, 886), (266, 890), (268, 899), (243, 899), (244, 893), (236, 890), (228, 884)],  # 튤립
-]
-
-
-def make_counter(house):
-    x0, y0, x1, y1 = COUNTER_BOX
-    mask = Image.new('L', (house.width, house.height), 0)
-    d = ImageDraw.Draw(mask)
-    for poly in COUNTER_SHAPES:
-        d.polygon(poly, fill=255)
-    mask = mask.filter(ImageFilter.GaussianBlur(0.8))
-    layer = house.copy()
-    layer.putalpha(Image.fromarray((np.asarray(mask).astype(np.float32) * (np.asarray(house)[:, :, 3] / 255.0)).astype(np.uint8)))
-    save(layer.crop(COUNTER_BOX), f'{OUT}/counter.webp', 92)
-
-
 def main(src):
     meta = {'avatars': {}}
     # 하우스와 방: 배경색 제거
@@ -140,10 +120,9 @@ def main(src):
     house = house.crop((0, 0, house.width, min(house.height, 1272)))  # 바닥 아래 그림자 잔여물 제거
     save(house, f'{OUT}/house.webp', 90)
     meta['house'] = {'w': house.width, 'h': house.height}
-    make_counter(house)
     for r in ['reception', 'office', 'result', 'library', 'writing', 'cafe', 'garden']:
         im = load(src, r)
-        rg = trim(to_rgba(im, color_fg(im, 12)))
+        rg = trim(to_rgba(im, color_fg(im, ROOM_TOL.get(r, 12))))
         wmax = 900
         rg = rg.resize((wmax, round(rg.height * wmax / rg.width)), Image.LANCZOS)
         save(rg, f'{OUT}/rooms/{r}.webp', 86)
@@ -168,11 +147,58 @@ def main(src):
         # 서 있는 모습의 몸 높이(깃털 같은 효과 제외)를 기준으로 배율 결정
         s = STAND_PX / sprites['stand'].height
         meta['avatars'][av] = {}
+        if av == 'user':
+            user_ref = {'sprite': trim(sprites['stand']), 'scale': s}
         for p, sp in sprites.items():
             sp = trim(sp)
             sp = sp.resize((max(1, round(sp.width * s)), max(1, round(sp.height * s))), Image.LANCZOS)
             save(sp, f'{OUT}/avatars/{av}-{p}.webp', 88)
             meta['avatars'][av][p] = {'w': sp.width, 'h': sp.height}
+
+    # 접수대 카운터(우체통 포함): 나(관리자) 앞에 놓는 앞면 조각
+    im = load(src, 'counter')
+    fgc = white_fg(im, 236)
+    a = np.asarray(im).astype(np.int16)
+    lab, n = ndi.label((a.min(axis=2) >= 232) & (a.max(axis=2) - a.min(axis=2) <= 14))  # 기둥·바닥 사이에 갇힌 순백 영역도 배경이에요
+    for i in range(1, n + 1):
+        if (lab == i).sum() > 400:
+            fgc &= ~(lab == i)
+    # 우체통 기둥과 카운터 사이 틈(옅은 그림자)과 카운터 아래 그림자도 지워요
+    gap = np.zeros(fgc.shape, bool)
+    h_, w_ = fgc.shape
+    sat = a.max(axis=2) - a.min(axis=2)
+    lowsat = (a.min(axis=2) >= 205) & (sat <= 26)
+    gx0, gx1 = int(w_ * 0.13), int(w_ * 0.205)
+    gap[int(h_ * 0.52):int(h_ * 0.97), gx0:gx1] = True
+    gap[int(h_ * 0.93):, :] = True
+    fgc &= ~(gap & lowsat)
+    ct = trim(to_rgba(im, fgc, fill=False))
+    ct = ct.resize((700, round(ct.height * 700 / ct.width)), Image.LANCZOS)
+    save(ct, f'{OUT}/counter.webp', 90)
+    meta['counter'] = {'w': ct.width, 'h': ct.height}
+
+    # 카운터 뒤에 선 나(허리 위) 6자세. 머리 크기가 서 있는 그림과 같아지게 배율을 맞춰요
+    im = load(src, 'userdesk'); rgba = to_rgba(im, white_fg(im)); fg = np.asarray(rgba)[:, :, 3] > 8
+    _, comps = components(fg, min_area=120)
+    W, H = im.size; cells = {}
+    for c in comps:
+        col = min(int(c['cx'] // (W / 3)), 2); row = min(int(c['cy'] // (H / 2)), 1)
+        cells.setdefault(row * 3 + col, []).append((c['sl'][1].start, c['sl'][0].start, c['sl'][1].stop, c['sl'][0].stop))
+    assert len(cells) == 6, sorted(cells)
+    DESK = ['idle', 'receive', 'hand', 'stamp', 'wave', 'cheer']
+    desk = {n: trim(crop_rgba(rgba, cells[i])) for i, n in enumerate(DESK)}
+
+    def head_width(sp, frac):
+        a = np.asarray(sp)[:, :, 3] > 8
+        rows = a[: int(a.shape[0] * frac)]
+        return max((np.ptp(np.where(r)[0]) for r in rows if r.any()), default=1)
+    ratio = head_width(user_ref['sprite'], 0.55) / head_width(desk['idle'], 0.72)
+    ds = user_ref['scale'] * ratio
+    print('나 머리 크기 배율', round(ratio, 3))
+    for n, sp in desk.items():
+        sp = sp.resize((max(1, round(sp.width * ds)), max(1, round(sp.height * ds))), Image.LANCZOS)
+        save(sp, f'{OUT}/avatars/user-desk-{n}.webp', 88)
+        meta['avatars']['user'][f'desk-{n}'] = {'w': sp.width, 'h': sp.height}
 
     # 소품 4x3
     im = load(src, 'props'); rgba = to_rgba(im, white_fg(im)); fg = np.asarray(rgba)[:, :, 3] > 8

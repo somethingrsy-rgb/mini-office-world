@@ -33,5 +33,5 @@ npm run build   # 빌드
 ## 디자인 이미지 작업
 
 AI로 만든 원본 이미지를 앱용 투명 WebP로 자르는 스크립트가 `tools/process_assets.py`예요.
-원본이 바뀌면 `pip install numpy scipy pillow` 후 `python3 tools/process_assets.py <원본 폴더>`를 실행하면
+원본이 바뀌면 `pip install numpy scipy pillow` 후 `python3 tools/process_assets.py <원본 폴더>`(원본에는 `reception-counter`, `avatar-user-desk` 포함)를 실행하면
 `public/assets/`, `public/*.png`(앱 아이콘), `src/assets.gen.ts`가 다시 만들어져요.

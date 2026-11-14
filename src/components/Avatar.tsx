@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AvatarInfo } from '../avatars'
-import { asset, BUBBLE, FX, spriteFor, SPRITES, U } from '../assets'
+import { asset, BUBBLE, FX, spriteFor, SPRITES, U, type SpriteKey } from '../assets'
 import { HUB_OFFSET, HUB_X, route, type Activity } from '../schedule'
 
 const WALK_SPEED = 210 // 하우스 좌표/초
@@ -74,9 +74,14 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
     return () => window.clearTimeout(t)
   }, [happy])
 
+  // 퇴근해서 화면 밖에 도착한 아바타는 그리지 않아요
+  if (activity.away && !w.moving) return null
+
   const pose = w.moving ? 'walk' : activity.pose
-  const key = happy ? 'cheer' : spriteFor(info.id, pose)
-  const m = SPRITES[info.id][key]
+  const isUser = info.id === 'user'
+  let key: SpriteKey = happy ? (isUser ? 'desk-cheer' : 'cheer') : spriteFor(info.id, pose)
+  if (isUser && key === 'desk-idle' && selected) key = 'desk-wave' // 누르면 손을 흔들어 인사해요
+  const m = SPRITES[info.id][key]!
   const W = m.w * U
   const H = m.h * U
   const flip = (key === 'walk' || key === 'stand') && w.face === 'l'

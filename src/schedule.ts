@@ -50,10 +50,10 @@ const SOFA: Record<AvatarId, Spot> = {
   momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), user: spot(500, AT - 14),
 }
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
-// 카운터 '안쪽'(뒤)에 서 있어요. 카운터 앞면 그림이 아바타 아랫부분을 가려 줘요 (House.tsx)
-const RECEPTION: Spot = spot(210, 956)
+// 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
+const RECEPTION: Spot = spot(207, 910)
 const PICKUP: Record<AvatarId, Spot> = {
-  momo: spot(300, F1, 'l'), luna: spot(95, F1), coco: spot(335, F1, 'l'), mimi: spot(130, F1), user: RECEPTION,
+  momo: spot(325, 1020, 'l'), luna: spot(95, 1020), coco: spot(345, 1022, 'l'), mimi: spot(135, 1022), user: RECEPTION,
 }
 /** 완료 칸(결과 확인 방): 일을 끝낸 아바타가 가서 보고하는 곳 */
 const DONE: Record<AvatarId, Spot> = {
@@ -122,18 +122,26 @@ export function getActivity(
   job: Job | null = null,
   s: ScheduleCfg = DEFAULT_SCHEDULE,
   event: AvatarEvent = null,
+  home = false,
 ): Activity {
   const m = Math.floor(minutes)
   const idx = ORDER.indexOf(id)
   const period = periodName(m, s)
 
   // 나(관리자)는 접수대에 계속 있어요
-  if (id === 'user') return { spot: RECEPTION, pose: 'stand', label: '접수대에서 업무를 받고 있어요', period }
+  if (id === 'user') {
+    if (event === 'finish') return { spot: RECEPTION, pose: 'done', label: '완료된 일에 확인 도장을 찍고 있어요', period }
+    if (event === 'pickup') return { spot: RECEPTION, pose: 'receive', label: '접수대에서 일을 나눠 주고 있어요', period }
+    return { spot: RECEPTION, pose: 'stand', label: '접수대에서 업무를 받고 있어요', period }
+  }
 
   // 일을 끝냈어요 → 완료 칸으로 가서 보고
   if (event === 'finish') return { spot: DONE[id], pose: 'done', label: '완료 칸에 가서 일을 마쳤다고 보고하고 있어요', period }
   // 일을 나눠 줬어요 → 접수대로 와서 일을 받아감
   if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period }
+
+  // 일을 끝내고 퇴근했어요 → 화면 밖으로 나가요 (새 일을 받으면 다시 출근)
+  if (home && !job) return { spot: OFF, pose: 'stand', label: '일을 마치고 퇴근했어요', period, away: true }
 
   // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
   if (job) {

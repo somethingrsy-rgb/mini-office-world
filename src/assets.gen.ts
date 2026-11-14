@@ -129,6 +129,30 @@ export const ASSET_META = {
    "cheer": {
     "w": 267,
     "h": 305
+   },
+   "desk-idle": {
+    "w": 208,
+    "h": 225
+   },
+   "desk-receive": {
+    "w": 228,
+    "h": 224
+   },
+   "desk-hand": {
+    "w": 213,
+    "h": 232
+   },
+   "desk-stamp": {
+    "w": 206,
+    "h": 227
+   },
+   "desk-wave": {
+    "w": 229,
+    "h": 222
+   },
+   "desk-cheer": {
+    "w": 255,
+    "h": 220
    }
   }
  },
@@ -139,7 +163,7 @@ export const ASSET_META = {
  "rooms": {
   "reception": {
    "w": 900,
-   "h": 709
+   "h": 745
   },
   "office": {
    "w": 900,
@@ -165,6 +189,10 @@ export const ASSET_META = {
    "w": 900,
    "h": 285
   }
+ },
+ "counter": {
+  "w": 700,
+  "h": 463
  },
  "props": {
   "desk": {
