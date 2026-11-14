@@ -760,3 +760,31 @@ html[data-theme="dark"] .pipapp { background-color:#0b0f14; }
 html[data-theme="dark"] .pipbar { color:#f1e6cc; background:rgba(20,25,33,.9); border-bottom-color:rgba(255,235,190,.18); }
 .pipcontent { position:relative; z-index:1; flex:1 1 0; min-height:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:6px 8px 8px; opacity:var(--pf,1); transition:opacity .25s ease; }
 .pipapp.pclear:hover .pipbg, .pipapp.pclear:hover .pipcontent, .pipapp.pclear:focus-within .pipbg, .pipapp.pclear:focus-within .pipcontent { opacity:1; }
+
+/* 작은 창 흐림 조절줄: 튀지 않게 회색 톤으로 */
+.pipbar { padding:3px 8px; gap:7px; font-size:10.5px; color:#6b7078; background:rgba(245,246,248,.92); border-bottom:1px solid rgba(100,105,115,.18); }
+.pipbar > span[aria-hidden] { filter:grayscale(1) opacity(.7); font-size:11px; }
+.pipbar b { color:#6b7078; font-weight:700; }
+.pipbar input[type=range] { -webkit-appearance:none; appearance:none; height:14px; accent-color:#8b9098; }
+.pipbar input[type=range]::-webkit-slider-runnable-track { height:3px; border-radius:2px; background:#c9ccd2; }
+.pipbar input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; appearance:none; width:11px; height:11px; margin-top:-4px; border-radius:50%; background:#8b9098; border:0; }
+.pipbar input[type=range]::-moz-range-track { height:3px; border-radius:2px; background:#c9ccd2; }
+.pipbar input[type=range]::-moz-range-thumb { width:11px; height:11px; border-radius:50%; background:#8b9098; border:0; }
+.pipbar .pclr input { accent-color:#8b9098; }
+html[data-theme="dark"] .pipbar { color:#9a9ea6; background:rgba(24,26,30,.92); border-bottom-color:rgba(255,255,255,.1); }
+html[data-theme="dark"] .pipbar b { color:#9a9ea6; }
+html[data-theme="dark"] .pipbar input[type=range]::-webkit-slider-runnable-track { background:#3b3f46; }
+html[data-theme="dark"] .pipbar input[type=range]::-webkit-slider-thumb { background:#9a9ea6; }
+html[data-theme="dark"] .pipbar input[type=range]::-moz-range-track { background:#3b3f46; }
+html[data-theme="dark"] .pipbar input[type=range]::-moz-range-thumb { background:#9a9ea6; }
+html[data-theme="dark"] .pipbar .pclr input { accent-color:#9a9ea6; }
+
+/* 흐림 조절줄을 창 맨 아래로: 위쪽 경계선 대신 아래쪽에 붙어요 */
+.pipbar { border-bottom:0 !important; border-top:1px solid rgba(100,105,115,.18); }
+html[data-theme="dark"] .pipbar { border-top-color:rgba(255,255,255,.1); }
+/* 조절줄 슬라이더·체크박스에는 입력칸용 테두리·포커스 색을 쓰지 않아요 */
+.pipbar input[type=range], .pipbar input[type=range]:focus, .pipbar input[type=checkbox], .pipbar input[type=checkbox]:focus {
+  outline:0 !important; border:0 !important; box-shadow:none !important; background-color:transparent; }
+.pipbar input[type=range]:focus-visible { outline:0 !important; }
+.pipbar input[type=checkbox]:focus-visible { outline:1px solid #9a9ea6 !important; outline-offset:1px; }
+.pipbar input[type=checkbox] { -webkit-appearance:auto; appearance:auto; }

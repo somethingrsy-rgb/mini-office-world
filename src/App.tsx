@@ -356,13 +356,6 @@ export default function App() {
     return (
       <div className={`pipapp ${pipClear ? 'pclear' : ''}`} style={{ ['--pf' as string]: pipFade }}>
         <div className="pipbg" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
-        {/* 흐림 조절바: 이 줄은 흐려지지 않아요 */}
-        <div className="pipbar">
-          <span aria-hidden>💧</span>
-          <input type="range" min={20} max={100} step={5} value={Math.round(pipFade * 100)} onChange={(e) => setPipFade(Number(e.target.value) / 100)} aria-label="흐림 정도(왼쪽일수록 흐려요)" />
-          <b>{Math.round(pipFade * 100)}%</b>
-          <label className="pclr"><input type="checkbox" checked={pipClear} onChange={(e) => setPipClear(e.target.checked)} /> 올리면 선명</label>
-        </div>
         <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
         <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
@@ -386,6 +379,13 @@ export default function App() {
         ) : (
           <QuickBox compact onQuick={quickDistribute} />
         )}
+        </div>
+        {/* 흐림 조절바: 창 맨 아래(업무분배 밑)에 있고, 이 줄은 흐려지지 않아요 */}
+        <div className="pipbar">
+          <span aria-hidden>💧</span>
+          <input type="range" min={20} max={100} step={5} value={Math.round(pipFade * 100)} onChange={(e) => setPipFade(Number(e.target.value) / 100)} aria-label="흐림 정도(왼쪽일수록 흐려요)" />
+          <b>{Math.round(pipFade * 100)}%</b>
+          <label className="pclr"><input type="checkbox" checked={pipClear} onChange={(e) => setPipClear(e.target.checked)} /> 올리면 선명</label>
         </div>
       </div>
     )
