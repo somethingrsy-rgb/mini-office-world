@@ -3,7 +3,11 @@
 import webpush from 'web-push'
 import { buildMessages } from './messages.mjs'
 
-const { DATA_REPO, DATA_TOKEN, VAPID_PUBLIC, VAPID_PRIVATE } = process.env
+// 붙여넣을 때 섞여 들어가는 공백·따옴표·줄바꿈·끝의 '='를 지워 줘요
+const clean = (v) => (v ?? '').replace(/[\s"'`]/g, '').replace(/=+$/, '')
+const DATA_REPO = clean(process.env.DATA_REPO), DATA_TOKEN = clean(process.env.DATA_TOKEN), VAPID_PUBLIC = clean(process.env.VAPID_PUBLIC), VAPID_PRIVATE = clean(process.env.VAPID_PRIVATE)
+const okKey = (v, n) => v.length === n && /^[A-Za-z0-9_-]+$/.test(v)
+if (!okKey(VAPID_PUBLIC, 87) || !okKey(VAPID_PRIVATE, 43)) { console.error(`VAPID 키 모양이 이상해요 (공개 키 길이 ${VAPID_PUBLIC.length}/87, 비밀 키 길이 ${VAPID_PRIVATE.length}/43). 키를 다시 복사해서 Secrets에 붙여 주세요.`); process.exit(1) }
 if (!DATA_REPO || !DATA_TOKEN || !VAPID_PUBLIC || !VAPID_PRIVATE) { console.error('필요한 설정(Secrets)이 비어 있어요.'); process.exit(1) }
 webpush.setVapidDetails('mailto:noreply@example.com', VAPID_PUBLIC, VAPID_PRIVATE)
 
