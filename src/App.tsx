@@ -330,10 +330,6 @@ export default function App() {
         ))}
       </div>
 
-      <section className="card">
-        <p className="muted">{shown.length === 0 ? '흐린 아바타를 눌러 일을 나눠 주면 라운지에 나타나요 ☕' : '아바타를 터치하면 일을 나눠 줄 수 있어요. 방을 터치하면 확대한 모습을 볼 수 있어요 ✨'}</p>
-      </section>
-
       {storageError && <p className="warn">⚠️ 이 환경에서는 업무를 저장할 수 없어요. (사생활 보호 모드인지 확인해 주세요)</p>}
 
       <nav className="dock">

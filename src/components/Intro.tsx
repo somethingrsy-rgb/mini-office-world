@@ -7,8 +7,8 @@ const HOLD_MS = 1100 // 상자가 닫힌 채 보이는 시간
 const OPEN_MS = 1300 // 상자가 열리는 시간
 
 /**
- * 앱을 열면 로고가 붙은 상자가 나타났다가, 가운데 걸쇠가 열리듯 양쪽으로 갈라지면서 사라지고
- * 뒤에서 하우스 화면이 나타나요. 상자를 누르면 바로 열려요.
+ * 앱을 열면 로고가 붙은 상자가 나타났다가, 걸쇠가 풀리면서 뚜껑이 위에서 앞쪽으로
+ * 쏟아지듯 열리고, 뒤에서 하우스 화면이 나타나요. 상자를 누르면 바로 열려요.
  * onReveal: 상자가 열리기 시작할 때(뒤 화면을 보여 줄 때), onDone: 완전히 끝났을 때
  */
 export default function Intro({ onReveal, onDone }: { onReveal: () => void; onDone: () => void }) {
@@ -46,8 +46,8 @@ export default function Intro({ onReveal, onDone }: { onReveal: () => void; onDo
   return (
     <div className={`intro ${phase}`} onClick={() => phase === 'closed' && setPhase('open')} aria-hidden>
       <div className="introbox">
-        <div className="half l" style={{ backgroundImage: url }} />
-        <div className="half r" style={{ backgroundImage: url }} />
+        <div className="base" style={{ backgroundImage: url }} />
+        <div className="lid" style={{ backgroundImage: url }} />
         <div className="glint" />
       </div>
     </div>
