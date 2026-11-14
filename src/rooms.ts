@@ -33,13 +33,17 @@ export const COUNTER = { x: 70, w: 230, bottom: 992, bodyCenterX: 207 }
 /** 다크 하우스에서 카운터·나를 바닥 쪽으로 내리는 거리(하우스 좌표) */
 export const COUNTER_DARK_DROP = 26
 
-/** 다크 하우스는 층 바닥이 라이트보다 아래에 있어서, 아바타 발을 바닥에 붙이려고 층마다 내리는 거리 (y: 층 높이 → 내릴 거리) */
-const DARK_DROPS: [number, number][] = [[408, 10], [690, 24], [1002, 26], [1212, 14]]
-export function darkDrop(y: number): number {
-  if (y <= DARK_DROPS[0][0]) return DARK_DROPS[0][1]
-  for (let i = 1; i < DARK_DROPS.length; i++) {
-    const [y1, d1] = DARK_DROPS[i], [y0, d0] = DARK_DROPS[i - 1]
+/** 층 바닥의 앞쪽 가장자리가 아바타 서는 선보다 아래에 있어서, 발이 바닥에 닿도록 층마다 내려요 (y: 층 높이 → 내릴 거리) */
+const DROPS: Record<'light' | 'dark', [number, number][]> = {
+  light: [[408, 8], [690, 14], [1002, 14], [1212, 8]],
+  dark: [[408, 10], [690, 24], [1002, 26], [1212, 14]], // 다크 하우스는 바닥이 더 아래에 있어요
+}
+export function floorDrop(y: number, dark: boolean): number {
+  const pts = DROPS[dark ? 'dark' : 'light']
+  if (y <= pts[0][0]) return pts[0][1]
+  for (let i = 1; i < pts.length; i++) {
+    const [y1, d1] = pts[i], [y0, d0] = pts[i - 1]
     if (y <= y1) return d0 + ((d1 - d0) * (y - y0)) / (y1 - y0) // 층 사이를 오갈 때 부드럽게 이어서
   }
-  return DARK_DROPS[DARK_DROPS.length - 1][1]
+  return pts[pts.length - 1][1]
 }

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { AvatarInfo } from '../avatars'
 import { asset, BUBBLE, FX, spriteFor, SPRITES, U, type SpriteKey } from '../assets'
 import { HUB_OFFSET, route, type Activity } from '../schedule'
-import { darkDrop } from '../rooms'
+import { floorDrop } from '../rooms'
 
 const WALK_SPEED = 190 // 하우스 좌표/초 (일하러 가거나 접수대로 갈 때)
 const SLOW_SPEED = 85 // 산책·라운지 이동은 천천히
@@ -110,7 +110,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   return (
     <g
       className="avatar appear"
-      style={{ transform: `translate(${w.x}px, ${w.y + (dark && info.id !== 'user' ? darkDrop(w.y) : 0)}px)`, transition: `transform ${w.dur}s linear, opacity .7s ease`, opacity: gone ? 0 : 1, pointerEvents: gone ? 'none' : undefined }}
+      style={{ transform: `translate(${w.x}px, ${w.y + (info.id !== 'user' ? floorDrop(w.y, dark) : 0)}px)`, transition: `transform ${w.dur}s linear, opacity .7s ease`, opacity: gone ? 0 : 1, pointerEvents: gone ? 'none' : undefined }}
       onClick={() => onSelect(info.id)}
       role="button"
       aria-label={`${info.name} 선택`}
