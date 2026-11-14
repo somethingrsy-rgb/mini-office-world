@@ -16,7 +16,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
-    'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
+    'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
@@ -173,6 +173,17 @@ def main(src):
             sp = sp.resize((max(1, round(sp.width * s)), max(1, round(sp.height * s))), Image.LANCZOS)
             save(sp, f'{OUT}/avatars/{av}-{p}.webp', 88)
             meta['avatars'][av][p] = {'w': sp.width, 'h': sp.height}
+
+    # 설정 버튼(투명 PNG): 가장 큰 덩어리만 남겨 알파 얼룩을 지우고, 화면에서 쓰는 크기(2배)로 줄여요
+    im = Image.open(os.path.join(src, 'settings-button.png')).convert('RGBA')
+    al = np.asarray(im)[:, :, 3].astype(np.float32)
+    lab, n = ndi.label(al > 8)
+    sizes = ndi.sum(al > 8, lab, range(1, n + 1))
+    keep = ndi.binary_dilation(lab == (int(np.argmax(sizes)) + 1), iterations=2)
+    al = np.where(keep & (al >= 12), al, 0)
+    st = trim(Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], al.astype(np.uint8)]), 'RGBA'))
+    st = st.resize((192, round(st.height * 192 / st.width)), Image.LANCZOS)
+    save(st, f'{OUT}/ui/settings.webp', 92)
 
     # 접수대 카운터(우체통 포함): 투명 배경 PNG를 쓰고, 투명 영역의 옅은 얼룩 점은 지워요.
     alpha_path = os.path.join(src, 'reception-counter.png')

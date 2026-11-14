@@ -267,7 +267,7 @@ export default function App() {
       <div className="sky" style={{ backgroundImage: `url(${asset('bg.webp')})` }} />
       <header className="top">
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
-          ⚙️{needBackup && <span className="dotbadge" />}
+          <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}
         </button>
         <h1>🏠 MINI OFFICE WORLD</h1>
         <p>나만의 작은 세상, 아바타들이 일하는 미니 회사</p>

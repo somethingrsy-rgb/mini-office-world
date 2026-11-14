@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { AVATARS, defaultName, type AvatarId } from '../avatars'
 import { backupFileName, makeBackup, parseBackup } from '../backup'
 import { DEFAULT_SCHEDULE } from '../schedule'
 import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
 import type { Task } from '../types'
+import { CURRENT_BUILD, fetchLatestBuild, updateApp } from '../update'
 
 const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 const toMin = (v: string) => { const [h, m] = v.split(':').map(Number); return h * 60 + m }
@@ -25,6 +26,14 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [schedErr, setSchedErr] = useState('')
+  // 새 버전이 올라와 있는지 확인: 'checking' → 'latest'(최신) / 'new'(새 버전 있음) / 'offline'(확인 못 함)
+  const [ver, setVer] = useState<'checking' | 'latest' | 'new' | 'offline'>('checking')
+  const [updating, setUpdating] = useState(false)
+  useEffect(() => {
+    let on = true
+    fetchLatestBuild().then((b) => { if (on) setVer(b === null ? 'offline' : b === CURRENT_BUILD ? 'latest' : 'new') })
+    return () => { on = false }
+  }, [])
   const last = getLastBackup()
   const days = last ? Math.floor((Date.now() - last) / 86400000) : null
 
@@ -93,6 +102,21 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
 
   return (
     <div className="settings">
+      <section>
+        <h3 className="sh">🔄 앱 업데이트</h3>
+        <p className={`ver ${ver === 'new' ? 'newver' : ''}`}>
+          {ver === 'checking' && '새 버전을 확인하는 중이에요…'}
+          {ver === 'latest' && '✅ 최신 버전이에요.'}
+          {ver === 'new' && '🆕 새 버전이 있어요! 아래 버튼을 눌러 업데이트하세요.'}
+          {ver === 'offline' && '인터넷에 연결되어 있지 않아서 확인하지 못했어요.'}
+          <small> (현재 버전 {CURRENT_BUILD})</small>
+        </p>
+        <button className="primary wide" disabled={updating} onClick={() => { setUpdating(true); updateApp() }}>
+          {updating ? '업데이트하는 중…' : '🔄 새로고침 (업데이트)'}
+        </button>
+        <p className="muted">누르면 앱 파일을 새로 받아 와요. 등록한 업무와 설정은 그대로 남아 있어요.</p>
+      </section>
+
       <section>
         <h3 className="sh">💾 데이터 백업·복원</h3>
         <p className="muted">업무는 이 기기의 브라우저에만 저장돼요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니 가끔 백업해 두세요.</p>
