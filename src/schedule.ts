@@ -87,11 +87,9 @@ const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'kiki', 'user']
 /** 일하는 방은 세 곳: 자료실·문서작성실·중앙 사무실. 한 방에 한 명씩 일하도록 나눠서 배정해요 */
 export type WorkRoom = 'library' | 'writing' | 'office'
 export interface Station { room: WorkRoom; seat: 0 | 1; /** 방을 둘이 같이 쓰는 중인지 */ shared?: boolean }
-export const WORK_ROOMS: WorkRoom[] = ['library', 'writing', 'office']
+/** 진행을 누른 순서대로 이 순서로 방을 채워요: 문서작성실 → 자료실 → 중앙 사무실 */
+export const WORK_ROOMS: WorkRoom[] = ['writing', 'library', 'office']
 export const WORK_ROOM_NAME: Record<WorkRoom, string> = { library: '자료실', writing: '문서작성실', office: '중앙 사무실' }
-
-/** 각자 가장 잘 맞는 방 (이 방이 비어 있으면 여기서 일해요) */
-export const PREFERRED_ROOM: Record<string, WorkRoom> = { luna: 'library', coco: 'writing', momo: 'office', mimi: 'office', kiki: 'writing' }
 
 /** 방마다 가운데 x (방 사이 벽 사이의 한가운데) */
 const ROOM_CENTER: Record<WorkRoom, number> = { library: 300, writing: 750, office: 505 }
@@ -127,7 +125,7 @@ function seatSpot(st: Station): Pick<Activity, 'pose' | 'label' | 'spot'> {
 
 /** 업무 행동: 배정받은 방의 자리에서 일해요 */
 function work(id: AvatarId, station?: Station): Pick<Activity, 'spot' | 'pose' | 'label'> {
-  const st = station ?? { room: PREFERRED_ROOM[id] ?? 'office', seat: 0 as const }
+  const st = station ?? { room: WORK_ROOMS[0], seat: 0 as const } // 배정 정보가 아직 없는 첫 순간만: 첫 번째 방
   return seatSpot(st)
 }
 
