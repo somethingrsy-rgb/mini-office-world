@@ -147,8 +147,8 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
         const fs = 30
         const tw = textWidth(text, fs) + 40
         // 일하는 중이면 방마다 한 명이라 겹치지 않아요. 방을 같이 쓰는 두 번째 자리만 더 높이 띄워요
-        const lift = activity.task ? (activity.seat === 1 ? 92 : 0) : (LABEL_LIFT[info.id] ?? 0)
-        const top = H - 4 + lift
+        const lift = activity.task ? (activity.seat === 1 ? 92 : 0) : activity.enter ? (LABEL_LIFT[info.id] ?? 0) : 0
+        const top = H + 26 + lift
         return (
           <g className="tasktag" pointerEvents="none">
             <rect x={-tw / 2} y={-top - 46} width={tw} height="46" rx="23" fill="#fff" fillOpacity=".96" stroke="#ff86b6" strokeWidth="4" />
@@ -171,7 +171,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
         const fs = 28
         const bw2 = textWidth(text, fs) + 44
         const bh2 = 54
-        const top2 = H - 4 + (activity.task ? (activity.seat === 1 ? 92 : 0) : (LABEL_LIFT[info.id] ?? 0)) + (taskLabel ? 58 : 0) + (taskLabel?.worked ? 40 : 0) + 14
+        const top2 = H + 26 + (activity.task ? (activity.seat === 1 ? 92 : 0) : activity.enter ? (LABEL_LIFT[info.id] ?? 0) : 0) + (taskLabel ? 58 : 0) + (taskLabel?.worked ? 40 : 0) + 14
         // 집 가장자리 밖으로 나가지 않게 가로 위치를 안쪽으로 보정
         const dx = Math.max(-(w.x - bw2 / 2 - 20), Math.min(0, 980 - (w.x + bw2 / 2)))
         return (
