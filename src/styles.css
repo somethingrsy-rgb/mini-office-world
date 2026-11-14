@@ -693,3 +693,8 @@ html[data-theme="dark"] .sheet.glass .nt-row { border-top-color:rgba(255,235,190
 
 .resetall { width:100%; margin-top:14px; padding:12px 0; font-size:13px; }
 .dock button img { height:34px; }
+
+/* 상세 내용 속 링크 */
+a.link { color:#1a6fe0; text-decoration:underline; text-underline-offset:2px; word-break:break-all; -webkit-touch-callout:default; }
+a.link:active { opacity:.6; }
+html[data-theme="dark"] a.link { color:#8fc0ff; }

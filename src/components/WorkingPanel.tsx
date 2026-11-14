@@ -1,4 +1,5 @@
 import type { AvatarInfo } from '../avatars'
+import Linkify from './Linkify'
 import { dueInfo, fmtDate } from '../dates'
 import type { Activity } from '../schedule'
 import type { WorkItem } from '../work'
@@ -25,7 +26,7 @@ export default function WorkingPanel({ info, activity, doing, onWait, onComplete
               <span>🛠 {it.title}{it.sub && <small> · {it.task.title}</small>}<small className="wtime"> · ⏱ {fmtWorked(workedMs(it.task))} 일했어요</small></span>
               <span className={`badge lv-${di.level}`}>{it.due ? `${fmtDate(it.due)} ${di.label}` : di.label}</span>
             </div>
-            {it.task.desc && <p className="wdesc">{it.task.desc}</p>}
+            {it.task.desc && <p className="wdesc"><Linkify text={it.task.desc} /></p>}
             <div className="btnrow2">
               <button className="ghost" onClick={() => onWait(it)}>⏸ 대기</button>
               <button className="primary done" onClick={() => onComplete(it)}>✅ 완료</button>

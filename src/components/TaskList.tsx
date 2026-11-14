@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { AVATARS } from '../avatars'
 import { asset } from '../assets'
 import { isAutoSub, subAssignee, taskAssignee } from '../assign'
+import Linkify from './Linkify'
 import { taskProgress } from '../entries'
 import { fmtWorked, workedMs } from '../worktime'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
@@ -88,7 +89,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }
 
             {isOpen && (
               <div className="task-body">
-                {t.desc && <p className="desc">{t.desc}</p>}
+                {t.desc && <p className="desc"><Linkify text={t.desc} /></p>}
                 {t.subtasks.map((s) => (
                   <label key={s.id} className={`sub ${s.done ? 'done' : ''}`}>
                     <input type="checkbox" checked={s.done} onChange={() => toggleSub(t, s.id)} />
