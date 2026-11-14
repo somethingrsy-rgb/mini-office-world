@@ -7,7 +7,7 @@ function Item({ i, onStart, onWait, onComplete }: { i: WorkItem; onStart?: (i: W
   const di = dueInfo({ due: i.due, status: i.task.status })
   return (
     <li className={`item lv-${i.level}`}>
-      <span className="it-title">{i.title}{i.sub && <small> · {i.task.title}</small>}</span>
+      <span className="it-title">{i.title}{i.sub && <small> · {i.task.title}</small>}{!i.sub && i.task.desc && <small className="idesc">{i.task.desc}</small>}</span>
       <span className={`badge lv-${di.level}`}>{i.due ? `${fmtDate(i.due)} ${di.label}` : di.label}</span>
       {(onStart || onWait || onComplete) && (
         <span className="item-actions">

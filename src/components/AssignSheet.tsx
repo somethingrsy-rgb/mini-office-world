@@ -7,7 +7,7 @@ import type { WorkItem } from '../work'
 interface Props {
   who: Staff
   items: WorkItem[]
-  onCreate: (v: { title: string; due: string; importance: Importance; start: boolean }) => void
+  onCreate: (v: { title: string; desc: string; due: string; importance: Importance; start: boolean }) => void
   onAssign: (item: WorkItem, start: boolean) => void
 }
 
@@ -17,6 +17,7 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
   const [title, setTitle] = useState('')
   const [due, setDue] = useState('')
   const [importance, setImportance] = useState<Importance>('normal')
+  const [desc, setDesc] = useState('')
   const [err, setErr] = useState('')
   const [start, setStart] = useState(false)
   const others = items.filter((i) => i.assignee !== who)
@@ -33,12 +34,16 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
         onSubmit={(e) => {
           e.preventDefault()
           if (!title.trim()) return setErr('시킬 일을 입력해 주세요.')
-          onCreate({ title: title.trim(), due, importance, start })
+          onCreate({ title: title.trim(), desc: desc.trim(), due, importance, start })
         }}
       >
         <label>
           할 일
           <input value={title} onChange={(e) => { setTitle(e.target.value); setErr('') }} placeholder="예: 11월 회의자료 정리" maxLength={80} />
+        </label>
+        <label>
+          주요 내용
+          <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="무엇을 해야 하는지 적어 두세요 (선택)" rows={3} maxLength={500} />
         </label>
         <div className="row2">
           <label>

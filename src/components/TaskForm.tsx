@@ -59,8 +59,8 @@ export default function TaskForm({ initial, onSave, onCancel }: Props) {
         <input value={title} onChange={(e) => { setTitle(e.target.value); setError('') }} placeholder="예: 설명자료 작성" maxLength={80} autoFocus />
       </label>
       <label>
-        업무 설명
-        <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="참고사항을 적어 두세요" rows={2} />
+        주요 내용
+        <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="무엇을 해야 하는지 적어 두세요 (선택)" rows={3} maxLength={500} />
       </label>
       <div className="row2">
         <label>

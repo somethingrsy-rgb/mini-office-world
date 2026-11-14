@@ -231,16 +231,16 @@ export default function App() {
     startEvent('pickup', fresh, 18000)
     notify(`🚪 일을 받으러 와요: ${names(fresh)}`)
   }
-  const createAndAssign = (v: { title: string; due: string; importance: Importance; start: boolean }) => {
+  const createAndAssign = (v: { title: string; desc: string; due: string; importance: Importance; start: boolean }) => {
     if (!assignFor) return
-    const t: Task = { id: newId(), title: v.title, desc: '', due: v.due || null, importance: v.importance, status: v.start ? 'doing' : 'todo', assignee: assignFor, subtasks: [], createdAt: Date.now(), completedAt: null }
+    const t: Task = { id: newId(), title: v.title, desc: v.desc, due: v.due || null, importance: v.importance, status: v.start ? 'doing' : 'todo', assignee: assignFor, subtasks: [], createdAt: Date.now(), completedAt: null }
     save(t)
     distribute(t)
     setAssignFor(null)
   }
-  /** 아바타를 눌러 제목·마감일만 적어 나눠 주기: 대기 상태로 등록되고, 그 아바타가 접수대로 와서 일을 받아가요 */
-  const quickAssign = (who: Staff, v: { title: string; due: string }) => {
-    const t: Task = { id: newId(), title: v.title, desc: '', due: v.due || null, importance: 'normal', status: 'todo', assignee: who, subtasks: [], createdAt: Date.now(), completedAt: null }
+  /** 아바타를 눌러 제목·주요 내용·마감일을 적어 나눠 주기: 대기 상태로 등록되고, 그 아바타가 접수대로 와서 일을 받아가요 */
+  const quickAssign = (who: Staff, v: { title: string; desc: string; due: string }) => {
+    const t: Task = { id: newId(), title: v.title, desc: v.desc, due: v.due || null, importance: 'normal', status: 'todo', assignee: who, subtasks: [], createdAt: Date.now(), completedAt: null }
     save(t)
     distribute(t)
     setSelected(null)

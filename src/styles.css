@@ -660,3 +660,8 @@ html[data-theme="dark"] .pipinfo .urgent { color:#ff8fa3; } html[data-theme="dar
 .nt-name img { height:46px; width:auto; flex:none; filter:drop-shadow(0 2px 3px rgba(60,30,100,.2)); }
 html[data-theme="dark"] .nt-row { border-top-color:rgba(255,235,190,.16); }
 html[data-theme="dark"] .nt-name input, html[data-theme="dark"] .nt-name input:focus { background:transparent; box-shadow:none; }
+
+/* 주요 내용 */
+.form textarea { resize:none; line-height:1.45; }
+.wdesc { margin:0; font-size:13px; line-height:1.45; opacity:.85; white-space:pre-wrap; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.it-title .idesc { display:block; margin-top:2px; font-weight:500; opacity:.7; font-size:11px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; }
