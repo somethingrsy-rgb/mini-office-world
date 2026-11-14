@@ -31,12 +31,12 @@ export function roomOf(p: { x: number; y: number }): RoomId | null {
 export const COUNTER = { x: 70, w: 230, bottom: 992, bodyCenterX: 207 }
 
 /** 다크 하우스에서 카운터·나를 바닥 쪽으로 내리는 거리(하우스 좌표) */
-export const COUNTER_DARK_DROP = 26
+export const COUNTER_DARK_DROP = 0 // 다크 하우스 그림의 바닥을 라이트와 맞춰서 더 내릴 필요가 없어요
 
 /** 층 바닥의 앞쪽 가장자리가 아바타 서는 선보다 아래에 있어서, 발이 바닥에 닿도록 층마다 내려요 (y: 층 높이 → 내릴 거리) */
 const DROPS: Record<'light' | 'dark', [number, number][]> = {
   light: [[408, 8], [690, 14], [1002, 14], [1212, 8]],
-  dark: [[408, 10], [690, 24], [1002, 26], [1212, 14]], // 다크 하우스는 바닥이 더 아래에 있어요
+  dark: [[408, 8], [690, 14], [1002, 14], [1212, 8]], // 다크 그림의 바닥 높이를 라이트와 똑같이 맞춰 놓아서(tools/process_assets.py) 같은 값이에요
 }
 export function floorDrop(y: number, dark: boolean): number {
   const pts = DROPS[dark ? 'dark' : 'light']

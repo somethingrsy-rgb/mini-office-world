@@ -204,7 +204,7 @@ export const ASSET_META = {
  },
  "houseDark": {
   "w": 1000,
-  "h": 1286
+  "h": 1272
  },
  "boxDark": {
   "w": 720,

@@ -133,6 +133,25 @@ def crop_rgba(rgba, boxes, pad=4):
     return rgba.crop((x0, y0, x1, y1))
 
 
+# 다크 하우스는 층 바닥이 라이트보다 아래에 있어요. 바닥 높이(라이트 기준 y)마다 얼마나 올려야 라이트와 같아지는지
+DARK_FLOOR_SHIFT = [(0, 0), (408, 10), (690, 24), (1002, 26), (1212, 14)]
+
+
+def align_floors(img, shifts, out_h):
+    """그림을 세로로 부드럽게 늘이고 줄여서, 층 바닥이 shifts가 말하는 만큼 위로 올라가게 해요.
+    출력 y 줄은 입력 y + shift(y) 줄에서 가져와요 (사이는 직선으로 이어서 층 사이가 울퉁불퉁하지 않게)."""
+    a = np.asarray(img.convert('RGBA')).astype(np.float32)
+    ys = np.array([p[0] for p in shifts], dtype=np.float32)
+    sh = np.array([p[1] for p in shifts], dtype=np.float32)
+    out = np.zeros((out_h, a.shape[1], 4), dtype=np.float32)
+    for y in range(out_h):
+        src = y + float(np.interp(y, ys, sh))
+        src = min(max(src, 0), a.shape[0] - 1)
+        i0 = int(np.floor(src)); i1 = min(i0 + 1, a.shape[0] - 1); t = src - i0
+        out[y] = a[i0] * (1 - t) + a[i1] * t
+    return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
+
+
 def main(src):
     meta = {'avatars': {}}
     # 하우스와 방: 배경색 제거
@@ -188,6 +207,7 @@ def main(src):
     save(bgd, f'{OUT}/bg-dark.webp', 82)
     _, hd = load_alpha(src, 'housedark')
     hd = trim(hd); hd = hd.resize((1000, round(hd.height * 1000 / hd.width)), Image.LANCZOS)
+    hd = align_floors(hd, DARK_FLOOR_SHIFT, 1272)  # 층 바닥 높이를 라이트 하우스와 똑같이 맞춰요
     save(hd, f'{OUT}/house-dark.webp', 90)
     meta['houseDark'] = {'w': hd.width, 'h': hd.height}
     _, bd = load_alpha(src, 'boxdark')
