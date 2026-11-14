@@ -5,7 +5,7 @@ import { parseQuick, type QuickEntry } from '../quick'
 import RichText from './RichText'
 
 /** 소영이(관리자)에게 한 줄로 적어 담당 아바타에게 바로 분배하는 입력칸. 해야 할 일 시트와 항상 위 작은 창에서 같이 써요 */
-export default function QuickBox({ onQuick, compact }: { onQuick: (entries: QuickEntry[]) => void; compact?: boolean }) {
+export default function QuickBox({ onQuick }: { onQuick: (entries: QuickEntry[]) => void; compact?: boolean }) {
   const [text, setText] = useState('')
   const entries = parseQuick(text)
   const allOk = entries.length > 0 && entries.every((e) => e.ok)
@@ -29,9 +29,8 @@ export default function QuickBox({ onQuick, compact }: { onQuick: (entries: Quic
     </ul>
   )
 
-  // 항상 위 작은 창: 제목(업무분배) 줄 맨 오른쪽에 작은 박스 버튼, 입력칸에는 예시 없이 형식만
-  if (compact) {
-    return (
+  // 해야 할 일 시트와 항상 위 작은 창이 같은 모양: 제목(업무분배) 줄 맨 오른쪽에 작은 박스 버튼, 입력칸에는 형식만
+  return (
       <form className="quickbox compact" onSubmit={(e) => { e.preventDefault(); submit() }}>
         <div className="qhead">
           <span>업무분배</span>
@@ -50,28 +49,5 @@ export default function QuickBox({ onQuick, compact }: { onQuick: (entries: Quic
         />
         {preview}
       </form>
-    )
-  }
-
-  return (
-    <form className="quickbox" onSubmit={(e) => { e.preventDefault(); submit() }}>
-      <label>
-        ⚡ {mgr}에게 바로 분배
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder={'분류/제목/상세내용//마감일\n예) 국회/강승규/순익계산//11.25\n예) 기타/행사 준비//12.1'}
-          rows={3}
-          maxLength={1500}
-          autoCapitalize="off"
-          autoCorrect="off"
-        />
-      </label>
-      {preview}
-      <button type="submit" className="primary" disabled={!allOk}>
-        {entries.length > 1 ? `${entries.length}건 분배하기` : '분배하기'}
-      </button>
-      <p className="muted qhint">칸은 / 로 나누고, 마감일은 맨 끝에 // 를 붙여요 (주소를 적어도 안전해요). 분류는 국회·예산·법·민원·기타예요. 줄을 바꾸면 여러 건을 한꺼번에 분배해요.</p>
-    </form>
   )
 }

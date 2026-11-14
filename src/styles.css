@@ -730,7 +730,7 @@ html[data-theme="dark"] .qprev li.bad { background:rgba(255,77,109,.18); color:#
 
 /* 항상 위 작은 창 안의 빠른 분배 */
 .quickbox.compact { flex:none; width:100%; box-sizing:border-box; padding:8px 10px; gap:6px; }
-.quickbox.compact textarea { font-size:13px; }
+.pipapp .quickbox.compact textarea { font-size:13px; }
 .quickbox.compact .primary { padding:9px 0; font-size:14px; }
 
 /* 항상 위 작은 창의 업무분배: 제목 줄 오른쪽에 작은 박스 버튼 */
@@ -807,3 +807,6 @@ html[data-theme="dark"] .pinbtn { filter:drop-shadow(0 3px 10px rgba(0,0,0,.6));
 /* 아이패드/아이폰 사파리: 입력칸을 누를 때 화면이 확대된 채로 멈추지 않도록 글자를 16px 이상으로 */
 input, textarea, select { font-size:16px; }
 html { -webkit-text-size-adjust:100%; touch-action:manipulation; }
+
+.quickbox.compact { margin-bottom:14px; }
+.pipapp .quickbox.compact { margin-bottom:0; }
