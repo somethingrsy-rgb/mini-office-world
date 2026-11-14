@@ -747,3 +747,16 @@ html[data-theme="dark"] .quickbox.compact .qsend:not(:disabled) { background:#d9
 .pippanel .sheet-head h2 { font-size:15px; }
 .pippanel .sheet-body { padding:2px 10px 10px; overflow:auto; }
 .pippanel .grab { display:none; }
+
+/* 항상 위 작은 창: 흐림 조절 — 배경과 내용만 --pf(0.2~1) 만큼 연해지고, 맨 위 조절바는 그대로예요 */
+.pipapp { position:relative; padding:0 !important; gap:0 !important; align-items:stretch !important; background-color:#fff; }
+html[data-theme="dark"] .pipapp { background-color:#0b0f14; }
+.pipbg { position:absolute; inset:0; z-index:0; background-size:cover; background-position:center bottom; opacity:var(--pf,1); transition:opacity .25s ease; }
+.pipbar { position:relative; z-index:2; flex:none; display:flex; align-items:center; gap:6px; padding:5px 8px; font-size:11px; color:#4a3a72; background:rgba(255,255,255,.88); border-bottom:1px solid rgba(80,60,110,.15); }
+.pipbar input[type=range] { flex:1; min-width:0; width:auto; min-height:0; padding:0; border:0; background:transparent; accent-color:#ff86b6; }
+.pipbar b { width:34px; text-align:right; font-weight:800; }
+.pipbar .pclr { display:flex; align-items:center; gap:3px; white-space:nowrap; font-weight:700; }
+.pipbar .pclr input { width:auto; min-height:0; padding:0; accent-color:#ff86b6; }
+html[data-theme="dark"] .pipbar { color:#f1e6cc; background:rgba(20,25,33,.9); border-bottom-color:rgba(255,235,190,.18); }
+.pipcontent { position:relative; z-index:1; flex:1 1 0; min-height:0; display:flex; flex-direction:column; align-items:center; gap:6px; padding:6px 8px 8px; opacity:var(--pf,1); transition:opacity .25s ease; }
+.pipapp.pclear:hover .pipbg, .pipapp.pclear:hover .pipcontent, .pipapp.pclear:focus-within .pipbg, .pipapp.pclear:focus-within .pipcontent { opacity:1; }

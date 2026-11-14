@@ -42,6 +42,10 @@ export default function App() {
   const [selected, setSelected] = useState<AvatarId | null>(null)
   // 항상 위 작은 창에서 누른 아바타 (그 아바타의 진행·대기·완료 패널을 작은 창 안에 보여 줘요)
   const [pipAv, setPipAv] = useState<AvatarId | null>(null)
+  // 항상 위 작은 창을 흐리게 하는 정도(0.2~1)와, 마우스를 올리면 선명하게 할지. 앱을 닫아도 기억해요
+  const [pipFade, setPipFade] = useState<number>(() => { try { const v = Number(localStorage.getItem('mow-pipfade')); return v >= 0.2 && v <= 1 ? v : 1 } catch { return 1 } })
+  const [pipClear, setPipClear] = useState<boolean>(() => { try { return localStorage.getItem('mow-pipclear') !== '0' } catch { return true } })
+  useEffect(() => { try { localStorage.setItem('mow-pipfade', String(pipFade)); localStorage.setItem('mow-pipclear', pipClear ? '1' : '0') } catch { /* 저장 불가 환경 */ } }, [pipFade, pipClear])
   const [real, setReal] = useState(realMinutes)
   const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
   const [playing, setPlaying] = useState(false)
@@ -350,7 +354,16 @@ export default function App() {
     const working = !!pw && pw.doing.length > 0
     const done = () => setPipAv(null) // 진행·대기·완료를 누르면 패널을 닫아서 아바타가 움직이는 모습을 바로 볼 수 있어요
     return (
-      <div className="pipapp" style={{ backgroundImage: `url(${themed(dark).bg})` }}>
+      <div className={`pipapp ${pipClear ? 'pclear' : ''}`} style={{ ['--pf' as string]: pipFade }}>
+        <div className="pipbg" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
+        {/* 흐림 조절바: 이 줄은 흐려지지 않아요 */}
+        <div className="pipbar">
+          <span aria-hidden>💧</span>
+          <input type="range" min={20} max={100} step={5} value={Math.round(pipFade * 100)} onChange={(e) => setPipFade(Number(e.target.value) / 100)} aria-label="흐림 정도(왼쪽일수록 흐려요)" />
+          <b>{Math.round(pipFade * 100)}%</b>
+          <label className="pclr"><input type="checkbox" checked={pipClear} onChange={(e) => setPipClear(e.target.checked)} /> 올리면 선명</label>
+        </div>
+        <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
         <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
           remaining={items.length} reminders={reminders} hush={!!userSay} selected={pipAv}
@@ -373,6 +386,7 @@ export default function App() {
         ) : (
           <QuickBox compact onQuick={quickDistribute} />
         )}
+        </div>
       </div>
     )
   })
