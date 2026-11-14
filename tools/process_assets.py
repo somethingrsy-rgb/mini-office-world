@@ -16,7 +16,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
-    'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
+    'logo': 'logo', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
@@ -173,6 +173,14 @@ def main(src):
             sp = sp.resize((max(1, round(sp.width * s)), max(1, round(sp.height * s))), Image.LANCZOS)
             save(sp, f'{OUT}/avatars/{av}-{p}.webp', 88)
             meta['avatars'][av][p] = {'w': sp.width, 'h': sp.height}
+
+    # 로고와 인트로 상자(투명 PNG): 알파 얼룩을 지우고 화면에서 쓰는 크기로 줄여요
+    for key, width, out in (('logo', 760, 'logo'), ('box', 720, 'box')):
+        _, rg = load_alpha(src, key)
+        rg = trim(rg)
+        rg = rg.resize((width, round(rg.height * width / rg.width)), Image.LANCZOS)
+        save(rg, f'{OUT}/ui/{out}.webp', 92)
+        meta[out] = {'w': rg.width, 'h': rg.height}
 
     # 설정 버튼(투명 PNG): 가장 큰 덩어리만 남겨 알파 얼룩을 지우고, 화면에서 쓰는 크기(2배)로 줄여요
     im = Image.open(os.path.join(src, 'settings-button.png')).convert('RGBA')

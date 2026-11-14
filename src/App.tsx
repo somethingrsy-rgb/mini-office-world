@@ -22,6 +22,7 @@ import TodoSheet from './components/TodoSheet'
 import { orderTasks, rankMap } from './order'
 import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
+import Intro from './components/Intro'
 import WorkingPanel from './components/WorkingPanel'
 import { newId, type Importance, type Staff, type Task } from './types'
 
@@ -42,6 +43,9 @@ export default function App() {
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)
+  // 앱을 열 때 상자가 열리는 인트로: revealed가 true가 되면 뒤 화면이 서서히 나타나요
+  const [revealed, setRevealed] = useState(false)
+  const [introDone, setIntroDone] = useState(false)
   const [assignFor, setAssignFor] = useState<Staff | null>(null)
   // 특별 행동: 일을 받으러 접수대로(pickup), 일을 끝내고 완료 칸으로(finish). 끝나는 시각을 기억해 둬요
   const [pickups, setPickups] = useState<Record<string, number>>({})
@@ -74,14 +78,14 @@ export default function App() {
 
   // 하루 한 번 앱을 열면 미미가 오늘의 업무를 브리핑
   useEffect(() => {
-    if (!ready) return
+    if (!ready || !introDone) return // 인트로(상자 열림)가 끝난 뒤에 브리핑을 보여줘요
     try {
       const key = 'mow-briefing-day'
       if (localStorage.getItem(key) === todayStr()) return
       localStorage.setItem(key, todayStr())
     } catch { /* 저장 불가 환경이면 열 때마다 보여 줌 */ }
     setView('brief')
-  }, [ready])
+  }, [ready, introDone])
 
   const close = () => { setView(null); setEditing(undefined) }
 
@@ -272,14 +276,14 @@ export default function App() {
   const act = selected ? activities[selected] : null
 
   return (
-    <div className="app">
+    <div className={`app ${revealed ? '' : 'pre'}`}>
+      {!introDone && <Intro onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       <div className="sky" style={{ backgroundImage: `url(${asset('bg.webp')})` }} />
       <header className="top">
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}
         </button>
-        <h1>🏠 MINI OFFICE WORLD</h1>
-        <p>나만의 작은 세상, 아바타들이 일하는 미니 회사</p>
+        <h1><img src={asset('ui/logo.webp')} alt="MINI OFFICE WORLD" /></h1>
       </header>
 
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}

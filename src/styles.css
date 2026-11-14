@@ -300,3 +300,31 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .sheet.glass .todorow.lift { background:rgba(255,255,255,.85); }
 .sheet.glass .rank { background:rgba(255,255,255,.7); }
 .sheet.glass .todohint { opacity:.8; }
+
+/* ── 로고 ───────────────── */
+.top { padding:0 0 0; min-height:74px; display:flex; justify-content:center; align-items:center; }
+.top h1 { margin:0; line-height:0; }
+.top h1 img { height:74px; width:auto; display:block; filter:drop-shadow(0 3px 6px rgba(90,40,140,.35)); }
+
+/* ── 인트로: 상자가 열리면서 하우스가 나타나요 ───────────────── */
+.app.pre > :not(.sky):not(.intro) { opacity:0; transform:scale(.96); }
+.app > :not(.sky):not(.intro) { transition:opacity .9s ease .25s, transform .9s cubic-bezier(.2,.8,.25,1) .25s; }
+.intro { position:fixed; inset:0; z-index:200; display:grid; place-items:center; perspective:1400px; cursor:pointer; }
+.introbox { position:relative; width:min(74vw, 340px); aspect-ratio:720 / 936; filter:drop-shadow(0 18px 28px rgba(60,20,110,.45)); animation:boxin .7s cubic-bezier(.2,1.2,.3,1) both; }
+.intro.closed .introbox { animation:boxin .7s cubic-bezier(.2,1.2,.3,1) both, boxbob 2.2s ease-in-out .7s infinite; }
+.half { position:absolute; top:0; bottom:0; width:50%; background-size:200% 100%; background-repeat:no-repeat; backface-visibility:hidden; }
+.half.l { left:0; background-position:0 0; transform-origin:0 50%; border-radius:0; }
+.half.r { right:0; background-position:100% 0; transform-origin:100% 50%; }
+.intro.open .half.l { animation:doorl 1.3s cubic-bezier(.55,0,.35,1) forwards; }
+.intro.open .half.r { animation:doorr 1.3s cubic-bezier(.55,0,.35,1) forwards; }
+.intro.open .introbox { animation:boxgo 1.3s ease-in forwards; }
+.glint { position:absolute; inset:0; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 8%, rgba(255,240,190,.95), rgba(255,240,190,0) 45%); }
+.intro.open .glint { animation:glint 1.3s ease-out forwards; }
+@keyframes boxin { from { opacity:0; transform:translateY(24px) scale(.82); } to { opacity:1; transform:none; } }
+@keyframes boxbob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+@keyframes doorl { 0% { transform:rotateY(0); opacity:1; } 70% { opacity:1; } 100% { transform:rotateY(-112deg); opacity:0; } }
+@keyframes doorr { 0% { transform:rotateY(0); opacity:1; } 70% { opacity:1; } 100% { transform:rotateY(112deg); opacity:0; } }
+@keyframes boxgo { 0% { transform:scale(1); } 100% { transform:scale(1.18); } }
+@keyframes glint { 0% { opacity:0; } 25% { opacity:1; } 100% { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .intro { display:none; } .app.pre > :not(.sky) { opacity:1; transform:none; } }
+.top { margin-bottom:8px; }

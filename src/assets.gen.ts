@@ -190,6 +190,14 @@ export const ASSET_META = {
    "h": 285
   }
  },
+ "logo": {
+  "w": 760,
+  "h": 298
+ },
+ "box": {
+  "w": 720,
+  "h": 936
+ },
  "counter": {
   "w": 700,
   "h": 483
