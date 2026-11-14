@@ -7,6 +7,7 @@ import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Set
 import type { Task } from '../types'
 import { CURRENT_BUILD, fetchLatestBuild, updateApp } from '../update'
 import { listSnapshots, takeSnapshot } from '../autobackup'
+import { disablePush, enablePush, isIOS, isStandalone, pushEnabled, pushSupported } from '../push'
 import { setSoundPrefs, useSoundPrefs } from '../audio'
 import { clearSyncConfig, setSyncConfig, syncRequest, useSyncStatus } from '../sync'
 
@@ -32,6 +33,10 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
   const sound = useSoundPrefs()
   const sync = useSyncStatus()
   const [snaps, setSnaps] = useState(listSnapshots)
+  const [pushOn, setPushOn] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushMsg, setPushMsg] = useState('')
+  useEffect(() => { void pushEnabled().then(setPushOn) }, [])
   const [syncRepo, setSyncRepo] = useState(sync.repo)
   const [syncToken, setSyncToken] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -145,6 +150,18 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
           ))}
         </div>
         <p className="muted">자동은 휴대폰의 다크 모드 설정을 따라가요.</p>
+      </section>
+
+      <section>
+        <h3 className="sh">🔔 아침 푸시 알림</h3>
+        <p className="muted">평일 아침 9시쯤 휴대폰으로 알려 줘요: 오늘의 업무 브리핑, 마감 2일 전, 마감 당일. 앱을 열지 않아도 와요. (먼저 아래 "기기 동기화"가 연결되어 있어야 해요)</p>
+        {isIOS() && !isStandalone() && <p className="err">아이폰은 사파리의 공유 버튼 → "홈 화면에 추가"로 앱을 설치하고, 설치한 앱을 열어서 켜야 해요.</p>}
+        <div className="btnrow">
+          {pushOn
+            ? <button className="ghost" disabled={pushBusy} onClick={async () => { setPushBusy(true); try { await disablePush(); setPushOn(false); setPushMsg('알림을 껐어요.') } finally { setPushBusy(false) } }}>알림 끄기</button>
+            : <button className="primary" disabled={pushBusy || !pushSupported()} onClick={async () => { setPushBusy(true); setPushMsg(''); try { await enablePush(); setPushOn(true); setPushMsg('알림을 켰어요. 다음 평일 아침부터 와요.') } catch (e) { setPushMsg((e as Error).message) } finally { setPushBusy(false) } }}>{pushBusy ? '켜는 중…' : '🔔 알림 켜기'}</button>}
+        </div>
+        <p className={`muted ${pushMsg && !pushOn ? 'err' : ''}`}>{pushOn ? '✅ 이 기기에서 알림을 받고 있어요.' : !pushSupported() ? '이 브라우저는 푸시 알림을 지원하지 않아요.' : ''} {pushMsg}</p>
       </section>
 
       <section>

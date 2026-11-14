@@ -25,6 +25,8 @@ const setStatus = (p: Partial<Status>) => {
 }
 setStatus({})
 export const useSyncStatus = () => useSyncExternalStore((f) => { subs.add(f); return () => { subs.delete(f) } }, () => status)
+/** 푸시 알림 등록에서 같은 저장소·토큰을 쓰도록 */
+export const getSyncCreds = () => ({ repo: cfg.repo, token: cfg.token })
 export const syncConfigured = () => !!(cfg.repo && cfg.token)
 
 export function setSyncConfig(repo: string, token: string) {

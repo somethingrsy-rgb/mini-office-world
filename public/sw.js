@@ -1,5 +1,5 @@
 // 오프라인에서도 앱이 열리도록 정적 파일을 기기에 보관하는 서비스 워커
-const CACHE = 'mow-v6'
+const CACHE = 'mow-v7'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png']
 
 // 설치는 꼭 필요한 파일만 기다리고, 그림은 설치 뒤 백그라운드에서 받아요 (처음 여는 속도를 위해)
@@ -69,3 +69,19 @@ async function audio(req) {
   const end = m && m[2] ? Math.min(Number(m[2]), buf.byteLength - 1) : buf.byteLength - 1
   return new Response(buf.slice(start, end + 1), { status: 206, headers: { 'Content-Type': hit.headers.get('Content-Type') || 'audio/mpeg', 'Content-Range': `bytes ${start}-${end}/${buf.byteLength}`, 'Content-Length': String(end - start + 1), 'Accept-Ranges': 'bytes' } })
 }
+
+// ── 푸시 알림 ──
+self.addEventListener('push', (e) => {
+  let d = {}
+  try { d = e.data ? e.data.json() : {} } catch (err) { /* 무시 */ }
+  e.waitUntil(self.registration.showNotification(d.title || 'MINI OFFICE WORLD', {
+    body: d.body || '', tag: d.tag || 'mow', icon: './icon-192.png', badge: './favicon.png', data: { url: './' },
+  }))
+})
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) if ('focus' in c) return c.focus()
+    return self.clients.openWindow('./')
+  }))
+})

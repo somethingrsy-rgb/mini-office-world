@@ -1,0 +1,26 @@
+name: Morning push
+
+# 평일 아침 9시(한국) = 평일 00:00 UTC. GitHub 사정으로 몇 분 늦을 수 있어요.
+on:
+  schedule:
+    - cron: '0 0 * * 1-5'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --prefix push-sender --no-audit --no-fund
+      - run: node push-sender/send.mjs
+        env:
+          DATA_REPO: ${{ secrets.DATA_REPO }}
+          DATA_TOKEN: ${{ secrets.DATA_TOKEN }}
+          VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
+          VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
