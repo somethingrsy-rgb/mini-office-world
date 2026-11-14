@@ -51,7 +51,8 @@ const SEATS_COFFEE = SEATS_LUNCH
 const CHAT_SPOTS: Record<AvatarId, Spot> = {
   momo: spot(720, AT, 'l'), luna: spot(780, AT, 'l'), coco: spot(840, AT, 'l'), mimi: spot(880, AT, 'l'), kiki: spot(820, AT, 'l'), user: spot(650, AT, 'r'),
 }
-const STROLL: Spot[] = [spot(200, 1205), spot(320, 1225), spot(700, 1225), spot(810, 1205, 'l')]
+/** 카페 안에서 돌아다니는 자리 (정원으로는 나가지 않아요) */
+const CAFE_WANDER: Spot[] = [spot(260, AT + 6), spot(380, AT + 6, 'l'), spot(520, AT + 6), spot(620, AT + 6, 'l'), spot(740, AT + 6), spot(830, AT + 6, 'l')]
 const SOFA: Record<AvatarId, Spot> = {
   // 소파 두 자리 + 카운터 의자 + 테이블 쪽으로 흩어져 앉아 이름표가 겹치지 않게
   momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), kiki: spot(235, AT), user: spot(500, AT - 14),
@@ -154,14 +155,14 @@ function lounge(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'l
   if (r < 26) return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '라운지에서 커피를 마시며 대기하고 있어요', slow: true }
   if (r < 50) return { spot: SOFA[id], pose: 'sit', label: '라운지 소파에서 대기하고 있어요', slow: true }
   if (r < 62) return { spot: CHAT_SPOTS[id], pose: 'chat', label: '라운지에서 동료와 이야기하고 있어요', slow: true }
-  return { spot: STROLL[(r + idx) % STROLL.length], pose: 'stand', label: '정원을 천천히 산책하고 있어요', slow: true }
+  return { spot: CAFE_WANDER[(r + idx) % CAFE_WANDER.length], pose: 'stand', label: '카페 안을 천천히 거닐고 있어요', slow: true }
 }
 
 function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
   const r = hash(id, slot + 7919)
   if (r < 30) return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '커피를 마시며 쉬고 있어요' }
   if (r < 55) return { spot: CHAT_SPOTS[id], pose: 'chat', label: '동료와 수다를 떨고 있어요' }
-  if (r < 80) return { spot: STROLL[(r + idx) % STROLL.length], pose: 'stand', label: '정원을 산책하고 있어요' }
+  if (r < 80) return { spot: CAFE_WANDER[(r + idx) % CAFE_WANDER.length], pose: 'stand', label: '카페 안을 거닐고 있어요' }
   return { spot: SOFA[id], pose: 'sit', label: '소파에서 잠깐 쉬고 있어요' }
 }
 
@@ -258,7 +259,7 @@ export function routeLength(from: { x: number; y: number }, to: { x: number; y: 
 /** 라운지·정원에서 쉬는 아바타끼리 같은 자리에 서지 않도록 가로 위치를 벌려 줘요 (일하는 방·접수대는 자리가 따로 정해져 있어서 건드리지 않아요) */
 export function spreadSpots<T extends { spot: Spot; task?: string; leaving?: boolean; enter?: Spot }>(acts: Record<AvatarId, T>): Record<AvatarId, T> {
   const out = { ...acts }
-  const free = (id: AvatarId) => !acts[id].task && !acts[id].leaving && !acts[id].enter && id !== 'user' && (Math.abs(acts[id].spot.y - AT) < 30 || acts[id].spot.y >= 1190)
+  const free = (id: AvatarId) => !acts[id].task && !acts[id].leaving && !acts[id].enter && id !== 'user' && (Math.abs(acts[id].spot.y - AT) < 30)
   const placed: Spot[] = []
   for (const id of ORDER.filter(free)) {
     const base = acts[id].spot
