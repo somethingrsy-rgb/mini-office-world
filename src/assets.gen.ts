@@ -189,7 +189,7 @@ export const ASSET_META = {
  "rooms": {
   "reception": {
    "w": 900,
-   "h": 745
+   "h": 742
   },
   "office": {
    "w": 900,
@@ -214,6 +214,32 @@ export const ASSET_META = {
   "garden": {
    "w": 900,
    "h": 285
+  }
+ },
+ "roomsDark": {
+  "reception": {
+   "w": 900,
+   "h": 674
+  },
+  "office": {
+   "w": 900,
+   "h": 675
+  },
+  "result": {
+   "w": 900,
+   "h": 675
+  },
+  "library": {
+   "w": 900,
+   "h": 675
+  },
+  "writing": {
+   "w": 900,
+   "h": 673
+  },
+  "cafe": {
+   "w": 900,
+   "h": 550
   }
  },
  "logo": {
@@ -242,31 +268,31 @@ export const ASSET_META = {
  },
  "props": {
   "desk": {
-   "w": 251,
+   "w": 252,
    "h": 200
   },
   "monitor": {
-   "w": 229,
+   "w": 227,
    "h": 200
   },
   "bookshelf": {
-   "w": 213,
+   "w": 214,
    "h": 200
   },
   "sofa": {
-   "w": 312,
+   "w": 314,
    "h": 200
   },
   "coffee-table": {
-   "w": 246,
+   "w": 248,
    "h": 200
   },
   "mailbox": {
-   "w": 126,
+   "w": 128,
    "h": 200
   },
   "calendar": {
-   "w": 240,
+   "w": 247,
    "h": 200
   },
   "plant": {
@@ -274,15 +300,15 @@ export const ASSET_META = {
    "h": 200
   },
   "lamp": {
-   "w": 175,
+   "w": 172,
    "h": 200
   },
   "trophy": {
-   "w": 131,
+   "w": 129,
    "h": 200
   },
   "cake": {
-   "w": 232,
+   "w": 243,
    "h": 200
   },
   "tree": {
@@ -292,96 +318,96 @@ export const ASSET_META = {
  },
  "fx": {
   "star-l": {
-   "w": 78,
-   "h": 80
-  },
-  "star-m": {
-   "w": 75,
-   "h": 80
-  },
-  "star-s": {
-   "w": 71,
-   "h": 80
-  },
-  "flower-l": {
-   "w": 79,
-   "h": 80
-  },
-  "flower-m": {
-   "w": 77,
-   "h": 80
-  },
-  "flower-s": {
-   "w": 78,
-   "h": 80
-  },
-  "heart-l": {
-   "w": 80,
-   "h": 77
-  },
-  "heart-m": {
-   "w": 80,
-   "h": 75
-  },
-  "heart-s": {
    "w": 80,
    "h": 76
   },
+  "star-m": {
+   "w": 80,
+   "h": 77
+  },
+  "star-s": {
+   "w": 80,
+   "h": 78
+  },
+  "flower-l": {
+   "w": 80,
+   "h": 76
+  },
+  "flower-m": {
+   "w": 80,
+   "h": 77
+  },
+  "flower-s": {
+   "w": 80,
+   "h": 77
+  },
+  "heart-l": {
+   "w": 80,
+   "h": 69
+  },
+  "heart-m": {
+   "w": 80,
+   "h": 68
+  },
+  "heart-s": {
+   "w": 80,
+   "h": 68
+  },
   "spark-l": {
-   "w": 67,
+   "w": 73,
    "h": 80
   },
   "spark-m": {
-   "w": 65,
+   "w": 72,
    "h": 80
   },
   "spark-s": {
-   "w": 65,
+   "w": 70,
    "h": 80
   },
   "bubble-book": {
    "w": 120,
-   "h": 109
+   "h": 106
   },
   "bubble-search": {
    "w": 120,
-   "h": 109
+   "h": 106
   },
   "bubble-calendar": {
    "w": 120,
-   "h": 109
+   "h": 106
   },
   "bubble-check": {
    "w": 120,
-   "h": 112
+   "h": 108
   },
   "bubble-coffee": {
    "w": 120,
-   "h": 112
+   "h": 108
   },
   "bubble-food": {
    "w": 120,
-   "h": 113
+   "h": 109
   },
   "bubble-chat": {
    "w": 120,
-   "h": 113
+   "h": 108
   },
   "bubble-music": {
    "w": 120,
-   "h": 112
+   "h": 109
   },
   "bubble-inbox": {
    "w": 120,
-   "h": 111
+   "h": 107
   },
   "badge-yellow": {
-   "w": 76,
-   "h": 80
+   "w": 80,
+   "h": 79
   },
   "badge-red": {
-   "w": 76,
-   "h": 80
+   "w": 80,
+   "h": 79
   }
  }
 } as const

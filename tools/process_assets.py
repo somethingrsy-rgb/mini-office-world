@@ -19,6 +19,7 @@ SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
     'pinbtn': 'pin-button', 'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
+    'officedark': 'room-office-dark', 'receptiondark': 'room-reception-dark', 'resultdark': 'room-result-dark', 'writingdark': 'room-writing-dark', 'librarydark': 'room-library-dark', 'cafedark': 'room-cafe-dark',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
 
@@ -162,7 +163,7 @@ def main(src):
     save(house, f'{OUT}/house.webp', 90)
     meta['house'] = {'w': house.width, 'h': house.height}
     for r in ['reception', 'office', 'result', 'library', 'writing', 'cafe', 'garden']:
-        if r in ('office', 'result', 'library', 'writing', 'cafe'):  # 투명 PNG로 받은 방: 알파 얼룩 정리
+        if r in ('office', 'result', 'library', 'writing', 'cafe', 'reception'):  # 투명 PNG로 받은 방: 알파 얼룩 정리
             _, rg = load_alpha(src, r); rg = trim(rg)
         else:
             im = load(src, r)
@@ -171,6 +172,13 @@ def main(src):
         rg = rg.resize((wmax, round(rg.height * wmax / rg.width)), Image.LANCZOS)
         save(rg, f'{OUT}/rooms/{r}.webp', 86)
         meta.setdefault('rooms', {})[r] = {'w': rg.width, 'h': rg.height}
+    # 다크 모드 방 6개 (투명 PNG): rooms/<방>-dark.webp, 크기는 meta['roomsDark']
+    meta['roomsDark'] = {}
+    for r in ['reception', 'office', 'result', 'library', 'writing', 'cafe']:
+        _, rg = load_alpha(src, r + 'dark'); rg = trim(rg)
+        rg = rg.resize((900, round(rg.height * 900 / rg.width)), Image.LANCZOS)
+        save(rg, f'{OUT}/rooms/{r}-dark.webp', 86)
+        meta['roomsDark'][r] = {'w': rg.width, 'h': rg.height}
     # 배경: 그대로 (불투명)
     bg = load(src, 'bg'); bg = bg.resize((900, round(bg.height * 900 / bg.width)), Image.LANCZOS)
     save(bg, f'{OUT}/bg.webp', 82)
@@ -328,7 +336,7 @@ def main(src):
         meta['avatars']['user'][f'desk-{n}'] = {'w': sp.width, 'h': sp.height}
 
     # 소품 4x3
-    im = load(src, 'props'); rgba = to_rgba(im, white_fg(im)); fg = np.asarray(rgba)[:, :, 3] > 8
+    im, rgba = load_alpha(src, 'props'); fg = np.asarray(rgba)[:, :, 3] > 8
     _, comps = components(fg, min_area=300)
     W, H = im.size; cells = {}
     for c in comps:
@@ -342,10 +350,7 @@ def main(src):
         save(sp, f'{OUT}/props/{name}.webp', 88); meta['props'][name] = {'w': sp.width, 'h': sp.height}
 
     # 효과 23개 (행 순서대로, 각 행은 왼쪽부터)
-    im = load(src, 'effects'); a = np.asarray(im).astype(np.int16)
-    fg = (a.min(axis=2) < 246)
-    fg = ndi.binary_fill_holes(ndi.binary_closing(fg, iterations=3))
-    rgba = to_rgba(im, fg); fgm = np.asarray(rgba)[:, :, 3] > 8
+    im, rgba = load_alpha(src, 'effects'); fgm = np.asarray(rgba)[:, :, 3] > 8
     lab, comps = components(fgm, min_area=200, close=2)
     comps = [c for c in comps]
     H = im.height

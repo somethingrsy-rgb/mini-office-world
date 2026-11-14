@@ -1,15 +1,18 @@
 import { AVATARS, type AvatarId } from '../avatars'
 import RichText from './RichText'
-import { asset, COUNTER_IMG, ROOM_IMG, spriteFor, SPRITES, themed } from '../assets'
+import { asset, COUNTER_IMG, ROOM_DARK_IMG, ROOM_IMG, spriteFor, SPRITES, themed } from '../assets'
 import { roomOf, type RoomId } from '../rooms'
 import type { Activity } from '../schedule'
 
 // 접수실 확대 그림 안에서 카운터를 놓는 자리(가로·세로 %)와 단위 환산
-const RC = { left: 20, width: 46, bottom: 12 }
+// (밝은 방은 문이 오른쪽이라 카운터가 왼쪽, 어두운 방은 문이 왼쪽이라 카운터가 오른쪽)
+const RC_LIGHT = { left: 8, width: 46, bottom: 12 }
+const RC_DARK = { left: 40, width: 46, bottom: 12 }
 
 /** 방을 확대해서 지금 그 안에 있는 아바타를 보여 줌 */
 export default function RoomView({ room, activities, shown, dark = false }: { room: RoomId; activities: Record<AvatarId, Activity>; shown: AvatarId[]; dark?: boolean }) {
-  const dim = ROOM_IMG[room]
+  const dim = (dark && ROOM_DARK_IMG[room]) || ROOM_IMG[room]
+  const RC = dark ? RC_DARK : RC_LIGHT
   const here = AVATARS.filter((a) => (a.id === 'user' || shown.includes(a.id)) && roomOf(activities[a.id].spot) === room)
   const isReception = room === 'reception'
   // 접수실: 나는 카운터 뒤, 일을 받으러 온 아바타는 카운터 앞
@@ -25,7 +28,7 @@ export default function RoomView({ room, activities, shown, dark = false }: { ro
   return (
     <div>
       <div className="roomstage" style={{ aspectRatio: `${dim.w} / ${dim.h}` }}>
-        <img className="roomimg" src={asset(`rooms/${room}.webp`)} alt="" />
+        <img className="roomimg" src={asset(dark && ROOM_DARK_IMG[room] ? `rooms/${room}-dark.webp` : `rooms/${room}.webp`)} alt="" />
         {user && (() => {
           const act = activities[user.id]
           const key = spriteFor(user.id, act.pose)

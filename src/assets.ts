@@ -13,6 +13,7 @@ export const SPRITES = ASSET_META.avatars as unknown as Record<AvatarId, Partial
 export const COUNTER_IMG = ASSET_META.counter as { w: number; h: number }
 export const FX = ASSET_META.fx as unknown as Record<string, Dim>
 export const ROOM_IMG = ASSET_META.rooms as unknown as Record<string, Dim>
+export const ROOM_DARK_IMG = (ASSET_META as unknown as { roomsDark: Record<string, Dim> }).roomsDark
 export const HOUSE = ASSET_META.house as { w: number; h: number }
 export const HOUSE_DARK = ASSET_META.houseDark as { w: number; h: number }
 export const BOX = ASSET_META.box as { w: number; h: number }
