@@ -13,7 +13,9 @@ export function useTasks() {
     dbGetAll()
       .then((t) => {
         // 이 기능이 생기기 전부터 '진행 중'이던 업무는 지금부터 시간을 세요
-        const fixed = t.map((x) => (x.status === 'doing' && !x.startedAt ? { ...x, startedAt: Date.now(), workedMs: x.workedMs ?? 0 } : x))
+        // 저장된 업무에 빠진 칸이 있어도 화면이 멈추지 않게 기본값을 채워요
+        const safe = t.map((x) => ({ ...x, subtasks: Array.isArray(x.subtasks) ? x.subtasks : [], desc: x.desc ?? '', importance: x.importance ?? 'normal', createdAt: x.createdAt ?? Date.now() }))
+        const fixed = safe.map((x) => (x.status === 'doing' && !x.startedAt ? { ...x, startedAt: Date.now(), workedMs: x.workedMs ?? 0 } : x))
         fixed.forEach((x, i) => { if (x !== t[i]) dbPut(x).catch(() => {}) })
         ref.current = fixed
         setTasks(fixed)

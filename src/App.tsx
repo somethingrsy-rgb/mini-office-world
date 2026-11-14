@@ -28,6 +28,11 @@ import RichText from './components/RichText'
 import QuickBox from './components/QuickBox'
 import { initAudio, sfx } from './audio'
 import { useSync } from './sync'
+import { useTheme } from './useTheme'
+import { useClock } from './useClock'
+import BottomBar from './components/BottomBar'
+import { usePipPrefs } from './usePipPrefs'
+import { useAvatarEvents } from './useAvatarEvents'
 import ReminderBar from './components/ReminderBar'
 import { takeSnapshot } from './autobackup'
 import { useLoungeChat } from './chat'
@@ -37,40 +42,17 @@ import { roomOf } from './rooms'
 import WorkingPanel from './components/WorkingPanel'
 import { newId, type Importance, type Staff, type Task } from './types'
 
-const realMinutes = () => {
-  const d = new Date()
-  return d.getHours() * 60 + d.getMinutes()
-}
-
 export default function App() {
   const [selected, setSelected] = useState<AvatarId | null>(null)
   // 항상 위 작은 창에서 누른 아바타 (그 아바타의 진행·대기·완료 패널을 작은 창 안에 보여 줘요)
   const [pipAv, setPipAv] = useState<AvatarId | null>(null)
-  // 항상 위 작은 창을 흐리게 하는 정도(0.2~1)와, 마우스를 올리면 선명하게 할지. 앱을 닫아도 기억해요
-  const [pipFade, setPipFade] = useState<number>(() => { try { const v = Number(localStorage.getItem('mow-pipfade')); return v >= 0.2 && v <= 1 ? v : 1 } catch { return 1 } })
-  const [pipClear, setPipClear] = useState<boolean>(() => { try { return localStorage.getItem('mow-pipclear') !== '0' } catch { return true } })
+  const { pipFade, setPipFade, pipClear, setPipClear } = usePipPrefs()
   useEffect(() => { initAudio() }, [])
-  useEffect(() => { try { localStorage.setItem('mow-pipfade', String(pipFade)); localStorage.setItem('mow-pipclear', pipClear ? '1' : '0') } catch { /* 저장 불가 환경 */ } }, [pipFade, pipClear])
-  const [real, setReal] = useState(realMinutes)
-  const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
-  const [playing, setPlaying] = useState(false)
+  const { real, sim, setSim, playing, setPlaying, wander, now } = useClock()
   const { tasks, ready, storageError, save, remove, replaceAll } = useTasks()
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
   const [backupTick, setBackupTick] = useState(0)
-  // 화면 모드: 자동이면 휴대폰의 다크 모드 설정을 따라가요
-  const [sysDark, setSysDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false)
-  useEffect(() => {
-    const mq = window.matchMedia?.('(prefers-color-scheme: dark)')
-    if (!mq) return
-    const on = (e: MediaQueryListEvent) => setSysDark(e.matches)
-    mq.addEventListener?.('change', on)
-    return () => mq.removeEventListener?.('change', on)
-  }, [])
-  const dark = settings.theme === 'dark' || (settings.theme === 'auto' && sysDark)
-  useEffect(() => {
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b0f14' : '#c8a8ee')
-  }, [dark])
+  const dark = useTheme(settings.theme)
   const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
   // 자동 백업: 업무가 바뀌면 (30분에 한 번까지) 이 기기에 보관해요
   useEffect(() => { if (ready) takeSnapshot(tasks, settings, '자동') }, [tasks, settings, ready])
@@ -82,31 +64,9 @@ export default function App() {
   // 앱을 열 때 상자가 열리는 인트로: revealed가 true가 되면 뒤 화면이 서서히 나타나요
   const [revealed, setRevealed] = useState(false)
   const [introDone, setIntroDone] = useState(false)
-  // 특별 행동: 일을 받으러 정문→접수대로(pickup), 일을 끝내고 결과 확인 칸으로(finish), 정문으로 나가기(leave). 끝나는 시각을 기억해 둬요
-  const [pickups, setPickups] = useState<Record<string, number>>({})
-  const [finishes, setFinishes] = useState<Record<string, number>>({})
-  const [leaves, setLeaves] = useState<Record<string, number>>({})
-  const [tick, setTick] = useState(0)
+  const { pickups, setPickups, finishes, setFinishes, leaves, setLeaves, tick, startEvent, onReceived, clearLeaving } = useAvatarEvents()
   // 나(관리자)가 하는 말 ("수고했어!")
   const [userSay, setUserSay] = useState<string | null>(null)
-  const startEvent = (kind: 'pickup' | 'finish' | 'leave', ids: string[], ms: number) => {
-    const until = Date.now() + ms
-    const set = kind === 'pickup' ? setPickups : kind === 'finish' ? setFinishes : setLeaves
-    set((m) => { const n = { ...m }; ids.forEach((id) => (n[id] = until)); return n })
-    window.setTimeout(() => setTick((t) => t + 1), ms + 300) // 끝났을 때 원래 행동으로 돌아가게 다시 계산
-  }
-  /** 접수대 앞에 도착해서 일을 받기 시작하면, 3초만 머문 뒤 다음 행동(라운지·산책)으로 넘어가요 */
-  const RECEIVE_MS = 3000
-  const onReceived = (id: string) => {
-    const until = Date.now() + RECEIVE_MS
-    setPickups((m) => (m[id] && m[id] > until + 200 ? { ...m, [id]: until } : m))
-    window.setTimeout(() => setTick((t) => t + 1), RECEIVE_MS + 300)
-  }
-  /** 새 일을 받으면 나가던 중이던 아바타도 다시 접수대로 불러요 */
-  const clearLeaving = (ids: string[]) => {
-    const drop = (m: Record<string, number>) => { const n = { ...m }; ids.forEach((id) => delete n[id]); return n }
-    setLeaves(drop); setFinishes(drop)
-  }
   useEffect(() => { preloadAssets() }, [])
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
@@ -126,25 +86,6 @@ export default function App() {
 
   const close = () => { setView(null); setEditing(undefined) }
 
-  useEffect(() => {
-    const t = window.setInterval(() => setReal(realMinutes()), 10000)
-    return () => window.clearInterval(t)
-  }, [])
-
-  useEffect(() => {
-    if (!playing) return
-    const t = window.setInterval(() => setSim((s) => ((s ?? realMinutes()) + 1) % 1440), 700)
-    return () => window.clearInterval(t)
-  }, [playing])
-
-  // 라운지·산책 행동이 바뀌는 순서: 약 40초마다 바뀌어서 아바타들이 천천히 돌아다녀요
-  const [wander, setWander] = useState(() => Math.floor(Date.now() / 40000))
-  useEffect(() => {
-    const t = window.setInterval(() => setWander(Math.floor(Date.now() / 40000)), 4000)
-    return () => window.clearInterval(t)
-  }, [])
-
-  const now = sim ?? real
   // 업무 → 담당 아바타별 업무 목록 (now가 바뀌면 날짜 기준도 다시 계산)
   const rank = useMemo(() => rankMap(settings.order), [settings.order])
   const ordered = useMemo(() => orderTasks(tasks, settings.order), [tasks, settings.order, real])
@@ -446,32 +387,8 @@ export default function App() {
           onSelect={pickAvatar} />
       </main>
 
-      <div className="avbar" role="tablist" aria-label="아바타 선택">
-        {AVATARS.map((a) => (
-          <button key={a.id} className={`avchip ${selected === a.id ? 'on' : ''} ${a.id !== 'user' && !shown.includes(a.id) ? 'off' : ''}`}
-            onClick={() => pickAvatar(a.id)} aria-label={`${a.name} 선택`}>
-            <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
-            <span>{a.name}</span>
-            {a.id !== 'user' && shown.includes(a.id) && works[a.id as Staff].doing.length === 0 && (
-              <small className="wait">대기{works[a.id as Staff].planned.length > 0 ? ` ${works[a.id as Staff].planned.length}` : ''}</small>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {storageError && <p className="warn">⚠️ 이 환경에서는 업무를 저장할 수 없어요. (사생활 보호 모드인지 확인해 주세요)</p>}
-
-      <nav className="dock">
-        <button onClick={() => { setEditing(undefined); setView('form') }}>
-          <img src={asset('props/mailbox.webp')} alt="" /><span>업무 등록</span>
-        </button>
-        <button onClick={() => setView('schedule')}>
-          <img src={asset('props/calendar.webp')} alt="" /><span>일정표</span>
-        </button>
-        <button onClick={() => setView('list')}>
-          <img src={asset('ui/list.webp')} alt="" /><span>업무 목록</span>{urgent > 0 && <span className="notif">{urgent}</span>}
-        </button>
-      </nav>
+      <BottomBar selected={selected} shown={shown} works={works} urgent={urgent} storageError={storageError}
+        onPick={pickAvatar} onNew={() => { setEditing(undefined); setView('form') }} onSchedule={() => setView('schedule')} onList={() => setView('list')} />
       <ReminderBar reminders={reminders} hush={!!userSay} />
 
       {view === 'brief' && (

@@ -1,23 +1,24 @@
 // 오프라인에서도 앱이 열리도록 정적 파일을 기기에 보관하는 서비스 워커
-const CACHE = 'mow-v5'
+const CACHE = 'mow-v6'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png']
 
+// 설치는 꼭 필요한 파일만 기다리고, 그림은 설치 뒤 백그라운드에서 받아요 (처음 여는 속도를 위해)
 self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then(async (c) => {
-      await c.addAll(SHELL)
-      // 그림 파일도 미리 받아 두어 오프라인에서도 모두 보이게 함 (실패해도 설치는 계속)
-      try {
-        const files = await (await fetch('./assets/manifest.json')).json()
-        await Promise.all(files.map((f) => c.add('./assets/' + f).catch(() => {})))
-      } catch (e) { /* 무시 */ }
-    }).then(() => self.skipWaiting()),
-  )
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()))
 })
+
+async function precacheAssets() {
+  try {
+    const c = await caches.open(CACHE)
+    const files = await (await fetch('./assets/manifest.json')).json()
+    // 한꺼번에 몰리지 않게 8개씩 (실패해도 계속)
+    for (let i = 0; i < files.length; i += 8) await Promise.all(files.slice(i, i + 8).map((f) => c.match('./assets/' + f).then((h) => h || c.add('./assets/' + f)).catch(() => {})))
+  } catch (e) { /* 무시 */ }
+}
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()),
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()).then(() => precacheAssets()),
   )
 })
 
@@ -27,7 +28,7 @@ self.addEventListener('fetch', (e) => {
   // 새 버전 확인용 파일은 캐시를 쓰지 않고 항상 인터넷에서 받아요
   if (new URL(req.url).pathname.endsWith('/version.json')) return
   // 소리 파일은 서비스 워커를 거치지 않고 브라우저가 바로 받아요 (사파리의 부분 재생 요청 문제 방지)
-  if (new URL(req.url).pathname.includes('/audio/')) return
+  if (new URL(req.url).pathname.includes('/audio/')) { e.respondWith(audio(req)); return }
   // 페이지 이동은 네트워크 우선(새 버전 반영), 실패하면 보관본
   if (req.mode === 'navigate') {
     e.respondWith(
@@ -47,3 +48,24 @@ self.addEventListener('fetch', (e) => {
     })),
   )
 })
+
+// 소리: 한 번 받으면 보관해 두었다가 오프라인에서도 재생해요. 사파리가 보내는 '일부만 달라'는(Range) 요청도 직접 잘라서 답해요
+async function audio(req) {
+  const c = await caches.open(CACHE)
+  const key = req.url.split('#')[0]
+  let hit = await c.match(key)
+  if (!hit) {
+    try {
+      const full = await fetch(key) // Range 없이 통째로
+      if (full.ok && full.status === 200) { await c.put(key, full.clone()); hit = full }
+      else return full
+    } catch (err) { return Response.error() }
+  }
+  const range = req.headers.get('range')
+  if (!range) return hit
+  const buf = await hit.arrayBuffer()
+  const m = /bytes=(\d*)-(\d*)/.exec(range)
+  const start = m && m[1] ? Number(m[1]) : 0
+  const end = m && m[2] ? Math.min(Number(m[2]), buf.byteLength - 1) : buf.byteLength - 1
+  return new Response(buf.slice(start, end + 1), { status: 206, headers: { 'Content-Type': hit.headers.get('Content-Type') || 'audio/mpeg', 'Content-Range': `bytes ${start}-${end}/${buf.byteLength}`, 'Content-Length': String(end - start + 1), 'Accept-Ranges': 'bytes' } })
+}

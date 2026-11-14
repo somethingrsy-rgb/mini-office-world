@@ -56,6 +56,8 @@ export function initAudio() {
   const unlock = () => {
     unlocked = true
     syncBgm()
+    // 효과음과 음악을 미리 받아 둬서 오프라인에서도 재생되게 해요 (서비스 워커가 보관)
+    window.setTimeout(() => { for (const f of ['assign', 'done', 'wait', 'start', 'bgm-day', 'bgm-night']) void fetch(`${BASE}${f}.mp3`).catch(() => {}) }, 4000)
     window.removeEventListener('pointerdown', unlock)
     window.removeEventListener('keydown', unlock)
   }
