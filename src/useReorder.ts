@@ -21,6 +21,8 @@ export function useReorder(ids: string[], onOrder: (next: string[]) => void) {
 
   const down = (e: React.PointerEvent, id: string) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return
+    // 항상 위 작은 창처럼 다른 창에 있는 줄이면 그 창에 이벤트를 걸어요
+    const win: Window = (e.currentTarget as HTMLElement).ownerDocument.defaultView ?? window
     const list = idsRef.current
     const from = list.indexOf(id)
     // 눌렀을 때의 각 줄 위치 (끌어도 줄은 DOM에서 옮기지 않고 transform만 바꿔요 → 손가락 추적이 끊기지 않아요)
@@ -53,10 +55,10 @@ export function useReorder(ids: string[], onOrder: (next: string[]) => void) {
     const cancel = () => end(false)
     function end(commit: boolean) {
       window.clearTimeout(hold)
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', up)
-      window.removeEventListener('pointercancel', cancel)
-      window.removeEventListener('touchmove', block)
+      win.removeEventListener('pointermove', move)
+      win.removeEventListener('pointerup', up)
+      win.removeEventListener('pointercancel', cancel)
+      win.removeEventListener('touchmove', block)
       finish.current = () => {}
       if (active && commit && to !== from) {
         const next = list.filter((x) => x !== id)
@@ -67,10 +69,10 @@ export function useReorder(ids: string[], onOrder: (next: string[]) => void) {
       setDrag(null)
     }
     finish.current = end
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', up)
-    window.addEventListener('pointercancel', cancel)
-    window.addEventListener('touchmove', block, { passive: false })
+    win.addEventListener('pointermove', move)
+    win.addEventListener('pointerup', up)
+    win.addEventListener('pointercancel', cancel)
+    win.addEventListener('touchmove', block, { passive: false })
   }
 
   /** 끄는 중 i번째 줄이 얼마나 밀리는지(px) */

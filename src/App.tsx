@@ -40,6 +40,8 @@ const realMinutes = () => {
 
 export default function App() {
   const [selected, setSelected] = useState<AvatarId | null>(null)
+  // 항상 위 작은 창에서 누른 아바타 (그 아바타의 진행·대기·완료 패널을 작은 창 안에 보여 줘요)
+  const [pipAv, setPipAv] = useState<AvatarId | null>(null)
   const [real, setReal] = useState(realMinutes)
   const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
   const [playing, setPlaying] = useState(false)
@@ -341,14 +343,39 @@ export default function App() {
   const act = selected ? activities[selected] : null
 
   // 항상 맨 위에 떠 있는 작은 창 (PC 크롬·엣지): 하우스 축소판 + 남은 일 + 마감 알림
-  const pip = useAlwaysOnTop(dark, () => (
-    <div className="pipapp" style={{ backgroundImage: `url(${themed(dark).bg})` }}>
-      <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
-      <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
-        remaining={items.length} reminders={reminders} hush={!!userSay} selected={null} onRoom={() => {}} onSelect={() => {}} />
-      <QuickBox compact onQuick={quickDistribute} />
-    </div>
-  ))
+  const pip = useAlwaysOnTop(dark, () => {
+    const pi = pipAv ? AVATARS.find((x) => x.id === pipAv) ?? null : null
+    const pw = pi && pi.id !== 'user' ? works[pi.id as Staff] : null
+    const pa = pi ? activities[pi.id] : null
+    const working = !!pw && pw.doing.length > 0
+    const done = () => setPipAv(null) // 진행·대기·완료를 누르면 패널을 닫아서 아바타가 움직이는 모습을 바로 볼 수 있어요
+    return (
+      <div className="pipapp" style={{ backgroundImage: `url(${themed(dark).bg})` }}>
+        <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
+        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
+          remaining={items.length} reminders={reminders} hush={!!userSay} selected={pipAv}
+          onRoom={() => {}} onSelect={(id) => setPipAv((cur) => (id === 'user' || cur === id ? null : id))} />
+        {pi && pw && pa ? (
+          <div className="sheet glass pippanel">
+            <div className="sheet-head">
+              <h2><RichText text={`${pi.emoji} ${pi.name} · ${working ? '일하는 중' : pi.role}`} /></h2>
+              <button className="x" onClick={done} aria-label="닫기">✕</button>
+            </div>
+            <div className="sheet-body">
+              {working && <WorkingPanel info={pi} activity={pa} doing={pw.doing} onWait={(it) => { waitItem(it); done() }} onComplete={(it) => { completeItem(it); done() }} />}
+              {working && pw.planned.length > 0 && <div className="glassdiv" />}
+              {(!working || pw.planned.length > 0) && (
+                <AvatarTasks info={pi} items={pw.planned} managerName={AVATARS.find((x) => x.id === 'user')!.name}
+                  onStart={(it) => { startItem(it); done() }} onOrder={reorderMine} onGoManager={done} />
+              )}
+            </div>
+          </div>
+        ) : (
+          <QuickBox compact onQuick={quickDistribute} />
+        )}
+      </div>
+    )
+  })
 
   return (
     <div className={`app ${revealed ? '' : 'pre'}`}>

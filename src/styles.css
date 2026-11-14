@@ -740,3 +740,10 @@ html[data-theme="dark"] .qprev li.bad { background:rgba(255,77,109,.18); color:#
 .quickbox.compact .qsend:disabled { opacity:.4; cursor:default; }
 html[data-theme="dark"] .quickbox.compact .qsend { background:rgba(255,255,255,.08); color:var(--ink); border-color:rgba(232,198,124,.6); }
 html[data-theme="dark"] .quickbox.compact .qsend:not(:disabled) { background:#d9ae5c; color:#241b08; }
+
+/* 항상 위 작은 창 안의 아바타 패널 */
+.pippanel.sheet.glass { flex:none; width:100%; box-sizing:border-box; max-width:none; max-height:48vh; border-radius:16px; border-bottom:1px solid rgba(255,255,255,.7); animation:none; margin:0; overflow:hidden; }
+.pippanel .sheet-head { padding:8px 10px 4px; }
+.pippanel .sheet-head h2 { font-size:15px; }
+.pippanel .sheet-body { padding:2px 10px 10px; overflow:auto; }
+.pippanel .grab { display:none; }
