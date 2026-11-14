@@ -46,7 +46,8 @@ const CHAT_SPOTS: Record<AvatarId, Spot> = {
 }
 const STROLL: Spot[] = [spot(200, 1205), spot(320, 1225), spot(700, 1225), spot(810, 1205, 'l')]
 const SOFA: Record<AvatarId, Spot> = {
-  momo: spot(430, AT - 14), luna: spot(500, AT - 14), coco: spot(570, AT - 14), mimi: spot(465, AT - 14), user: spot(535, AT - 14),
+  // 소파 두 자리 + 카운터 의자 + 테이블 쪽으로 흩어져 앉아 이름표가 겹치지 않게
+  momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), user: spot(500, AT - 14),
 }
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
 const RECEPTION: Spot = spot(215, F1)

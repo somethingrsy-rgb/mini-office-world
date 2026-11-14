@@ -102,6 +102,15 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [now, works, settings, pickups, finishes, tick, real],
   )
+  // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
+  const labels = useMemo(
+    () => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => {
+      const w = works[k]
+      const top = w.doing[0] ?? w.items[0]
+      return [k, top ? { text: top.title, more: w.items.length - 1 } : null]
+    })),
+    [works],
+  )
   const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
   const totals = {
     doing: items.filter((i) => i.started).length,
@@ -230,7 +239,7 @@ export default function App() {
       )}
 
       <main className="stage">
-        <House activities={activities} alerts={alerts} cheers={cheers} selected={selected} onRoom={setRoom}
+        <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} selected={selected} onRoom={setRoom}
           onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
       </main>
 

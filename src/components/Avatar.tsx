@@ -11,6 +11,8 @@ interface Props {
   selected?: boolean
   alert?: 'soon' | 'urgent' | null
   cheer?: number
+  /** 머리 위에 띄울 맡은 일 이름 (more는 그 밖에 맡은 일 수) */
+  taskLabel?: { text: string; more: number } | null
   delay?: number
   onSelect: (id: AvatarInfo['id']) => void
 }
@@ -44,7 +46,13 @@ function useWalker(id: AvatarInfo['id'], target: Activity['spot']) {
 }
 
 /** 발 위치(x, y)를 기준으로 그리는 3D 캐릭터. 위치 이동은 CSS transition으로 처리 */
-export default function Avatar({ info, activity, selected, alert, cheer = 0, delay = 0, onSelect }: Props) {
+/** 글자 수에 맞춰 이름표 폭을 계산 (한글은 넓게, 영문·숫자는 좁게) */
+const textWidth = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
+/** 여럿이 모여 있어도 일 이름표가 겹치지 않게 아바타마다 높이를 엇갈리게 */
+const LABEL_LIFT: Record<string, number> = { momo: 0, luna: 58, coco: 0, mimi: 58, user: 0 }
+const clip = (t: string, max: number) => ([...t].length > max ? [...t].slice(0, max).join('') + '…' : t)
+
+export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, delay = 0, onSelect }: Props) {
   const w = useWalker(info.id, activity.spot)
   // 환호는 이동을 시작한 뒤 목적지에 도착하면 시작하고, 3초쯤 뒤 끝나요
   const [wantCheer, setWantCheer] = useState(false)
@@ -110,6 +118,18 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, del
       {bm && bubbleName && (
         <image href={asset(`fx/${bubbleName}.webp`)} className="bubble" x={-bw / 2} y={-H - bh - 6} width={bw} height={bh} pointerEvents="none" />
       )}
+      {taskLabel && (() => {
+        const text = clip(taskLabel.text, 9) + (taskLabel.more > 0 ? ` +${taskLabel.more}` : '')
+        const fs = 30
+        const tw = textWidth(text, fs) + 40
+        const top = H + (bm ? bh + 6 : 0) + 12 + (LABEL_LIFT[info.id] ?? 0)
+        return (
+          <g className="tasktag" pointerEvents="none">
+            <rect x={-tw / 2} y={-top - 46} width={tw} height="46" rx="23" fill="#fff" fillOpacity=".96" stroke="#ff86b6" strokeWidth="4" />
+            <text x="0" y={-top - 14} textAnchor="middle" fontSize={fs} fontWeight="800" fill="#5b4a78">{text}</text>
+          </g>
+        )
+      })()}
       <text x="0" y="38" textAnchor="middle" fontSize="26" fontWeight="800" fill="#5b4a78" className="nametag">
         {info.name}
       </text>

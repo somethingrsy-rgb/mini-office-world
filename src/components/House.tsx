@@ -9,12 +9,13 @@ interface Props {
   activities: Record<AvatarId, Activity>
   alerts: Partial<Record<Staff, 'soon' | 'urgent' | null>>
   cheers: Record<string, number>
+  labels: Partial<Record<Staff, { text: string; more: number } | null>>
   selected: AvatarId | null
   onSelect: (id: AvatarId) => void
   onRoom: (id: RoomId) => void
 }
 
-export default function House({ activities, alerts, cheers, selected, onSelect, onRoom }: Props) {
+export default function House({ activities, alerts, cheers, labels, selected, onSelect, onRoom }: Props) {
   return (
     <svg viewBox={`0 0 ${HOUSE.w} ${HOUSE.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image href={asset('house.webp')} width={HOUSE.w} height={HOUSE.h} />
@@ -24,7 +25,7 @@ export default function House({ activities, alerts, cheers, selected, onSelect, 
           onClick={() => onRoom(r.id)} role="button" aria-label={`${r.name} 확대`} />
       ))}
       {AVATARS.map((info, i) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]}
+        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
     </svg>
