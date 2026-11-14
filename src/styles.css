@@ -371,3 +371,12 @@ html, body { height:100%; overflow:hidden; overscroll-behavior:none; }
 .stage { display:block; flex:none; }
 .house { width:100%; height:auto; max-height:calc(100dvh - var(--pt) - var(--pb) - 171px); }
 .avbar { margin-top:12px; }
+
+/* ── 하우스 크게 + 스크롤 없음 ─────────────────────────────────────
+   홈 화면 앱에서는 상태 표시줄(시계·배터리) 아래부터 화면이 시작돼서 위 여백을 크게 둘 필요가 없어요.
+   위 여백을 줄인 만큼 하우스를 화면 너비 가득 키우고, 남는 공간은 위아래로 고르게 나눠요 */
+:root { --pt: calc(env(safe-area-inset-top) + 8px); }
+.app { display:flex; flex-direction:column; justify-content:center; }
+.top, .stage, .avbar, .warn { flex:none; }
+.top { margin-bottom:4px; }
+.house { width:100%; height:auto; max-height:calc(100dvh - var(--pt) - var(--pb) - 176px); }
