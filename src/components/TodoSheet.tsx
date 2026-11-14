@@ -116,7 +116,7 @@ export default function TodoSheet({ tasks, manual, onOrder, onReset, onBrief, on
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={'분류/제목/상세내용/마감일\n예) 국회/강승규/순익계산/11.25\n예) 민원/강지원/필름/11.30'}
+            placeholder={'분류/제목/상세내용//마감일\n예) 국회/강승규/순익계산//11.25\n예) 민원/강지원/필름//11.30'}
             rows={3}
             maxLength={1500}
             autoCapitalize="off"
@@ -142,7 +142,7 @@ export default function TodoSheet({ tasks, manual, onOrder, onReset, onBrief, on
         <button type="submit" className="primary" disabled={!allOk}>
           {entries.length > 1 ? `${entries.length}건 분배하기` : '분배하기'}
         </button>
-        <p className="muted qhint">칸은 / 로 나눠요. 분류는 국회·예산·법·민원이에요. 줄을 바꾸면 여러 건을 한꺼번에 분배해요.</p>
+        <p className="muted qhint">칸은 / 로 나누고, 마감일은 맨 끝에 // 를 붙여요 (주소를 적어도 안전해요). 분류는 국회·예산·법·민원이에요. 줄을 바꾸면 여러 건을 한꺼번에 분배해요.</p>
       </form>
       {tasks.length === 0 ? (
         <div className="empty"><p>해야 할 일이 없어요. 다 끝냈어요! 🎉</p></div>
