@@ -314,7 +314,7 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .intro.closed .introbox { animation:boxin .7s cubic-bezier(.2,1.2,.3,1) both, boxbob 2.2s ease-in-out .7s infinite; }
 .intro.open .intro.open .glint { position:absolute; inset:0; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 8%, rgba(255,240,190,.95), rgba(255,240,190,0) 45%); }
 .intro.open .glint { animation:glint 1.3s ease-out forwards; }
-@keyframes boxin { from { opacity:0; transform:translateY(24px) scale(.82); } to { opacity:1; transform:none; } }
+@keyframes boxin { from { opacity:0; transform:translateY(24px) scale(.9); } to { opacity:1; transform:none; } }
 @keyframes boxbob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
 @keyframes glint { 0% { opacity:0; } 25% { opacity:1; } 100% { opacity:0; } }
 @media (prefers-reduced-motion: reduce) { .intro { display:none; } .app.pre > :not(.sky) { opacity:1; transform:none; } }

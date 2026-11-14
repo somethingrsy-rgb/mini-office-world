@@ -6,6 +6,22 @@ type Phase = 'loading' | 'closed' | 'open' | 'gone'
 const HOLD_MS = 1100 // 상자가 닫힌 채 보이는 시간
 const OPEN_MS = 1300 // 상자가 열리는 시간
 
+/** 메인 화면 하우스의 위치·크기에 맞춘 상자 자리. 화면 변형(transform)과 상관없이 레이아웃 값으로 계산해요 */
+function measureHouse() {
+  const stage = document.querySelector('.stage') as HTMLElement | null
+  const app = stage?.offsetParent as HTMLElement | null
+  if (!stage || !app || stage.offsetWidth < 50) return null
+  const r = app.getBoundingClientRect()
+  const width = stage.offsetWidth
+  const height = (width * 936) / 720 // 상자 그림 비율
+  return {
+    left: r.left + stage.offsetLeft,
+    top: r.top + stage.offsetTop + (stage.offsetHeight - height) / 2,
+    width,
+    height,
+  }
+}
+
 /**
  * 앱을 열면 로고가 붙은 상자가 나타났다가, 걸쇠가 풀리면서 뚜껑이 위에서 앞쪽으로
  * 쏟아지듯 열리고, 뒤에서 하우스 화면이 나타나요. 상자를 누르면 바로 열려요.
@@ -13,6 +29,8 @@ const OPEN_MS = 1300 // 상자가 열리는 시간
  */
 export default function Intro({ onReveal, onDone }: { onReveal: () => void; onDone: () => void }) {
   const [phase, setPhase] = useState<Phase>('loading')
+  // 상자를 메인 화면의 하우스와 같은 크기·같은 자리에 맞춰요 (뚜껑이 열리면 그 자리에 하우스가 보여요)
+  const [box, setBox] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
 
   // 상자 그림을 미리 받아 둔 뒤 보여줘요 (너무 오래 걸리면 그냥 넘어가요)
@@ -20,7 +38,7 @@ export default function Intro({ onReveal, onDone }: { onReveal: () => void; onDo
     if (reduce) { onReveal(); onDone(); return }
     let on = true
     const img = new Image()
-    const go = () => { if (on) setPhase((p) => (p === 'loading' ? 'closed' : p)) }
+    const go = () => { if (on) { setBox(measureHouse()); setPhase((p) => (p === 'loading' ? 'closed' : p)) } }
     img.onload = go
     img.onerror = () => { if (on) { onReveal(); onDone() } }
     img.src = asset('ui/box.webp')
@@ -45,7 +63,7 @@ export default function Intro({ onReveal, onDone }: { onReveal: () => void; onDo
   const url = `url(${asset('ui/box.webp')})`
   return (
     <div className={`intro ${phase}`} onClick={() => phase === 'closed' && setPhase('open')} aria-hidden>
-      <div className="introbox">
+      <div className="introbox" style={box ? { position: 'absolute', left: box.left, top: box.top, width: box.width, height: box.height, aspectRatio: 'auto' } : undefined}>
         <div className="base" style={{ backgroundImage: url }} />
         <div className="lid" style={{ backgroundImage: url }} />
         <div className="glint" />
