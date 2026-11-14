@@ -25,6 +25,7 @@ import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
 import Intro from './components/Intro'
 import { useLoungeChat } from './chat'
+import { useStations } from './stations'
 import { roomOf } from './rooms'
 import WorkingPanel from './components/WorkingPanel'
 import { newId, type Importance, type Staff, type Task } from './types'
@@ -125,6 +126,11 @@ export default function App() {
   const ordered = useMemo(() => orderTasks(tasks, settings.order), [tasks, settings.order, real])
   const items = useMemo(() => buildItems(tasks, undefined, rank), [tasks, rank, real])
   const works = useMemo(() => workByAvatar(items), [items])
+  // 일하는 아바타를 서로 다른 방에 나눠 배정
+  const workers = (Object.keys(works) as Staff[])
+    .filter((id) => works[id].doing.length > 0)
+    .map((id) => ({ id, since: Math.min(...works[id].doing.map((i) => i.task.startedAt ?? 0)) }))
+  const stations = useStations(workers)
   const activities = useMemo(
     () => {
       const t = Date.now()
@@ -137,12 +143,12 @@ export default function App() {
           const event = a.id === 'user'
             ? (anyOf(finishes) ? 'finish' : anyOf(pickups) ? 'pickup' : null)
             : (finishes[a.id] ?? 0) > t ? 'finish' : (leaves[a.id] ?? 0) > t ? 'leave' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
-          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander)]
+          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander, stations[a.id])]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, leaves, wander, tick, real],
+    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(

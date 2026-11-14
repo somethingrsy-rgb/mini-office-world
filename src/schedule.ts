@@ -20,6 +20,8 @@ export interface Activity {
   slow?: boolean
   /** 일을 마치고 정문으로 나가는 중(도착하면 사라져요) */
   leaving?: boolean
+  /** 방을 같이 쓰는 경우 두 번째 자리인지 (이름표를 더 높이 띄워서 겹치지 않게) */
+  seat?: 0 | 1
 }
 
 /** 기본 생활 시간표 (분 단위). 나중에 사용자가 바꿀 수 있게 한곳에 모아 둠 */
@@ -80,24 +82,35 @@ export const HUB_OFFSET: Record<AvatarId, number> = { momo: -40, luna: -20, coco
 
 const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'user']
 
-/** 업무 행동: 담당 역할에 따른 일하는 자리와 자세 */
-function work(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
-  switch (id) {
-    case 'momo':
-      return { spot: spot(410, F1), pose: 'sort', label: '새 업무를 접수하고 분류하고 있어요' }
-    case 'luna':
-      return slot % 2
-        ? { spot: spot(300, F2), pose: 'read', label: '책을 펴고 자료를 검토하고 있어요' }
-        : { spot: spot(190, F2), pose: 'search', label: '책장에서 자료를 찾고 있어요' }
-    case 'coco':
-      return { spot: spot(770, F2), pose: slot % 2 ? 'sort' : 'type', label: slot % 2 ? '문서 내용을 적고 있어요' : '컴퓨터로 문서를 작성하고 있어요' }
-    case 'mimi':
-      return slot % 2
-        ? { spot: spot(580, F1), pose: 'cal', label: '달력을 확인하고 있어요' }
-        : { spot: spot(580, F1), pose: 'type', label: '진행 상황을 정리하고 있어요' }
-    default:
-      return { spot: RECEPTION, pose: 'stand', label: '접수대에서 업무를 받고 있어요' }
-  }
+/** 일하는 방은 세 곳: 자료실·문서작성실·중앙 사무실. 한 방에 한 명씩 일하도록 나눠서 배정해요 */
+export type WorkRoom = 'library' | 'writing' | 'office'
+export interface Station { room: WorkRoom; seat: 0 | 1 }
+export const WORK_ROOMS: WorkRoom[] = ['library', 'writing', 'office']
+export const WORK_ROOM_NAME: Record<WorkRoom, string> = { library: '자료실', writing: '문서작성실', office: '중앙 사무실' }
+
+/** 각자 가장 잘 맞는 방 (이 방이 비어 있으면 여기서 일해요) */
+export const PREFERRED_ROOM: Record<string, WorkRoom> = { luna: 'library', coco: 'writing', momo: 'office', mimi: 'office' }
+
+/** 방마다 자리 두 개(첫 번째 자리를 먼저 써요). 일하는 사람이 네 명이 되어 방이 모자랄 때만 두 번째 자리를 써요 */
+const SEATS: Record<WorkRoom, Pick<Activity, 'spot' | 'pose' | 'label'>[]> = {
+  library: [
+    { spot: spot(300, F2), pose: 'read', label: '자료실에서 책을 펴고 자료를 검토하고 있어요' },
+    { spot: spot(190, F2), pose: 'search', label: '자료실 책장에서 자료를 찾고 있어요' },
+  ],
+  writing: [
+    { spot: spot(770, F2, 'l'), pose: 'type', label: '문서작성실에서 컴퓨터로 문서를 작성하고 있어요' },
+    { spot: spot(650, F2, 'l'), pose: 'sort', label: '문서작성실에서 문서 내용을 적고 있어요' },
+  ],
+  office: [
+    { spot: spot(420, F1), pose: 'sort', label: '중앙 사무실에서 업무를 정리하고 있어요' },
+    { spot: spot(580, F1), pose: 'cal', label: '중앙 사무실에서 달력을 확인하고 있어요' },
+  ],
+}
+
+/** 업무 행동: 배정받은 방의 자리에서 일해요 */
+function work(id: AvatarId, station?: Station): Pick<Activity, 'spot' | 'pose' | 'label'> {
+  const st = station ?? { room: PREFERRED_ROOM[id] ?? 'office', seat: 0 as const }
+  return SEATS[st.room][st.seat]
 }
 
 export function periodName(m: number, s: ScheduleCfg = DEFAULT_SCHEDULE) {
@@ -145,6 +158,8 @@ export function getActivity(
   waiting = false,
   /** 라운지·산책 행동이 바뀌는 순서(약 40초마다 올라가요) */
   wander = Math.floor(minutes / 4),
+  /** 일하는 방 배정 (한 방에 한 명씩) */
+  station?: Station,
 ): Activity {
   const m = Math.floor(minutes)
   const idx = ORDER.indexOf(id)
@@ -166,8 +181,8 @@ export function getActivity(
 
   // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
   if (job) {
-    const w = work(id, Math.floor(m / 4))
-    return { ...w, period, task: job.title, label: `「${job.title}」 ${w.label}` }
+    const w = work(id, station)
+    return { ...w, period, task: job.title, seat: station?.seat, label: `「${job.title}」 ${w.label}` }
   }
 
   // 일을 받았거나 마친 아바타는 라운지에서 대기해요 (퇴근하지 않아요)
