@@ -26,6 +26,7 @@ import AvatarTasks from './components/AvatarTasks'
 import Intro from './components/Intro'
 import RichText from './components/RichText'
 import QuickBox from './components/QuickBox'
+import { initAudio, sfx } from './audio'
 import { useLoungeChat } from './chat'
 import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
@@ -45,6 +46,7 @@ export default function App() {
   // 항상 위 작은 창을 흐리게 하는 정도(0.2~1)와, 마우스를 올리면 선명하게 할지. 앱을 닫아도 기억해요
   const [pipFade, setPipFade] = useState<number>(() => { try { const v = Number(localStorage.getItem('mow-pipfade')); return v >= 0.2 && v <= 1 ? v : 1 } catch { return 1 } })
   const [pipClear, setPipClear] = useState<boolean>(() => { try { return localStorage.getItem('mow-pipclear') !== '0' } catch { return true } })
+  useEffect(() => { initAudio() }, [])
   useEffect(() => { try { localStorage.setItem('mow-pipfade', String(pipFade)); localStorage.setItem('mow-pipclear', pipClear ? '1' : '0') } catch { /* 저장 불가 환경 */ } }, [pipFade, pipClear])
   const [real, setReal] = useState(realMinutes)
   const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
@@ -235,6 +237,7 @@ export default function App() {
     const fresh = [...staffOf(t)].filter((id) => !prev.has(id))
     if (fresh.length === 0) return
     clearLeaving(fresh)
+    sfx('assign')
     startEvent('pickup', fresh, 18000)
     notify(`🚪 일을 받으러 와요: ${names(fresh)}`)
   }
@@ -265,6 +268,7 @@ export default function App() {
     })
     const list = [...fresh]
     clearLeaving(list)
+    sfx('assign')
     startEvent('pickup', list, 18000)
     const label = list.map((id) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.emoji} ${a.name}${(count[id] ?? 0) > 1 ? ` ${count[id]}건` : ''}` }).join(', ')
     notify(`⚡ ${ok.length}건을 분배했어요: ${label}`)
@@ -309,6 +313,7 @@ export default function App() {
     if (old.status !== 'done' && t.status === 'done') {
       const ids = new Set<string>([taskAssignee(t), ...t.subtasks.map((s) => subAssignee(t, s))])
       const allDone = tasks.every((x) => x.id === t.id || x.status === 'done')
+      sfx('done')
       cheerUp([...ids, 'user'])
       notify(allDone ? '🎊 등록된 모든 업무를 끝냈어요! 정말 수고했어요' : `🎉 「${t.title}」 업무 완료! 결과 확인 칸으로 가요`)
       wrapUp([...ids], next)
@@ -317,6 +322,7 @@ export default function App() {
     const newly = t.subtasks.filter((s) => s.done && !old.subtasks.find((o) => o.id === s.id)?.done)
     if (newly.length) {
       const ids = newly.map((s) => subAssignee(t, s))
+      sfx('done')
       cheerUp(ids)
       notify(`✅ 「${newly[0].title}」 완료! 결과 확인 칸으로 가요`)
       wrapUp(ids, next)
@@ -326,6 +332,7 @@ export default function App() {
   const startItem = (it: WorkItem) => { saveTask({ ...it.task, status: 'doing' }); setSelected(null) }
   /** 진행 중인 일을 다시 대기로: 담당 아바타가 라운지·정원으로 돌아가요 (업무 단위) */
   const waitItem = (it: WorkItem) => {
+    sfx('wait')
     saveTask({ ...it.task, status: 'todo' })
     notify(`⏸ 「${it.task.title}」 업무를 대기로 돌렸어요`)
     setSelected(null)

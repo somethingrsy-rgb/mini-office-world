@@ -1,5 +1,5 @@
 // 오프라인에서도 앱이 열리도록 정적 파일을 기기에 보관하는 서비스 워커
-const CACHE = 'mow-v4'
+const CACHE = 'mow-v5'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png']
 
 self.addEventListener('install', (e) => {
@@ -26,6 +26,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return
   // 새 버전 확인용 파일은 캐시를 쓰지 않고 항상 인터넷에서 받아요
   if (new URL(req.url).pathname.endsWith('/version.json')) return
+  // 소리 파일은 서비스 워커를 거치지 않고 브라우저가 바로 받아요 (사파리의 부분 재생 요청 문제 방지)
+  if (new URL(req.url).pathname.includes('/audio/')) return
   // 페이지 이동은 네트워크 우선(새 버전 반영), 실패하면 보관본
   if (req.mode === 'navigate') {
     e.respondWith(

@@ -6,6 +6,7 @@ import { DEFAULT_SCHEDULE } from '../schedule'
 import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
 import type { Task } from '../types'
 import { CURRENT_BUILD, fetchLatestBuild, updateApp } from '../update'
+import { setSoundPrefs, useSoundPrefs } from '../audio'
 
 const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 const toMin = (v: string) => { const [h, m] = v.split(':').map(Number); return h * 60 + m }
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp, time }: Props) {
+  const sound = useSoundPrefs()
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [schedErr, setSchedErr] = useState('')
@@ -118,6 +120,15 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
           {updating ? '업데이트하는 중…' : '🔄 새로고침 (업데이트)'}
         </button>
         <p className="muted">누르면 앱 파일을 새로 받아 와요. 등록한 업무와 설정은 그대로 남아 있어요.</p>
+      </section>
+
+      <section>
+        <h3 className="sh">🔊 소리</h3>
+        <div className="chips">
+          <button className={`chip sm ${sound.bgm ? 'on imp-normal' : ''}`} onClick={() => setSoundPrefs({ ...sound, bgm: !sound.bgm })}>🎵 배경음악 {sound.bgm ? '켜짐' : '꺼짐'}</button>
+          <button className={`chip sm ${sound.sfx ? 'on imp-normal' : ''}`} onClick={() => setSoundPrefs({ ...sound, sfx: !sound.sfx })}>🔔 효과음 {sound.sfx ? '켜짐' : '꺼짐'}</button>
+        </div>
+        <p className="muted">아침 6시~저녁 6시에는 낮 음악, 저녁 6시~아침에는 밤 음악이 나와요. 업무를 분배하거나 완료·대기할 때 효과음이 울려요. 이 설정은 이 기기에만 저장돼요.</p>
       </section>
 
       <section>
