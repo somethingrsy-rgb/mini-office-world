@@ -35,9 +35,3 @@ npm run build   # 빌드
 AI로 만든 원본 이미지를 앱용 투명 WebP로 자르는 스크립트가 `tools/process_assets.py`예요.
 원본이 바뀌면 `pip install numpy scipy pillow` 후 `python3 tools/process_assets.py <원본 폴더>`(아바타 5명 `avatar-*.png`, `reception-counter.png`, 다크용 `house-dark.png`·`intro-box-dark.png`는 **투명 배경 PNG**여야 해요. 다크용 배경은 `bg-dark.png`)를 실행하면
 `public/assets/`, `public/*.png`(앱 아이콘), `src/assets.gen.ts`가 다시 만들어져요.
-
-## 웜 베이지 그림 넣는 법
-
-설정 → 라이트 색 구성 → **웜 베이지**를 고르면 베이지 화면이 돼요. 베이지 전용 그림이 없으면 파스텔 그림에 색 보정(CSS)을 입혀 대신 보여 줘요.
-전용 그림이 있으면 원본 폴더에 아래 이름으로 넣고 `python3 tools/process_assets.py <원본 폴더>`를 실행하면 그 그림을 자동으로 써요
-(있는 것만 바뀌고, 없는 건 계속 보정으로 보여요): `bg-beige.png`, `house-beige.png`(투명), `intro-box-beige.png`(투명), `logo-beige.png`(투명), `reception-counter-beige.png`(투명).

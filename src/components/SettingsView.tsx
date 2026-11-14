@@ -128,14 +128,6 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
           ))}
         </div>
         <p className="muted">자동은 휴대폰의 다크 모드 설정을 따라가요.</p>
-
-        <h3 className="sh">🎨 라이트 색 구성</h3>
-        <div className="chips">
-          {([['pastel', '🌸 파스텔'], ['beige', '🤎 웜 베이지']] as [Settings['palette'], string][]).map(([k, l]) => (
-            <button key={k} className={`chip sm ${settings.palette === k ? 'on imp-normal' : ''}`} onClick={() => onSettings({ ...settings, palette: k })}>{l}</button>
-          ))}
-        </div>
-        <p className="muted">라이트 모드일 때 적용돼요. 다크 모드는 그대로예요.</p>
       </section>
 
       <section>

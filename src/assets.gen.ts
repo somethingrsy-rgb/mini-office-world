@@ -210,7 +210,6 @@ export const ASSET_META = {
   "w": 720,
   "h": 926
  },
- "beigeFiles": [],
  "counter": {
   "w": 700,
   "h": 483

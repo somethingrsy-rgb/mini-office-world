@@ -1,5 +1,5 @@
 import { AVATARS, type AvatarId } from '../avatars'
-import { asset, COUNTER_IMG, ROOM_IMG, spriteFor, SPRITES, themed, type Skin } from '../assets'
+import { asset, COUNTER_IMG, ROOM_IMG, spriteFor, SPRITES, themed } from '../assets'
 import { roomOf, type RoomId } from '../rooms'
 import type { Activity } from '../schedule'
 
@@ -7,7 +7,7 @@ import type { Activity } from '../schedule'
 const RC = { left: 20, width: 46, bottom: 12 }
 
 /** 방을 확대해서 지금 그 안에 있는 아바타를 보여 줌 */
-export default function RoomView({ room, activities, shown, dark = false, skin }: { room: RoomId; activities: Record<AvatarId, Activity>; shown: AvatarId[]; dark?: boolean; skin?: Skin }) {
+export default function RoomView({ room, activities, shown, dark = false }: { room: RoomId; activities: Record<AvatarId, Activity>; shown: AvatarId[]; dark?: boolean }) {
   const dim = ROOM_IMG[room]
   const here = AVATARS.filter((a) => (a.id === 'user' || shown.includes(a.id)) && roomOf(activities[a.id].spot) === room)
   const isReception = room === 'reception'
@@ -24,7 +24,7 @@ export default function RoomView({ room, activities, shown, dark = false, skin }
   return (
     <div>
       <div className="roomstage" style={{ aspectRatio: `${dim.w} / ${dim.h}` }}>
-        <img className={`roomimg ${skin === 'beige' ? 'tint-house' : ''}`} src={asset(`rooms/${room}.webp`)} alt="" />
+        <img className="roomimg" src={asset(`rooms/${room}.webp`)} alt="" />
         {user && (() => {
           const act = activities[user.id]
           const key = spriteFor(user.id, act.pose)
@@ -38,7 +38,7 @@ export default function RoomView({ room, activities, shown, dark = false, skin }
           )
         })()}
         {isReception && (
-          <img className="roomcounter" src={themed(skin ?? dark).counter} alt="" style={{ left: `${RC.left}%`, width: `${RC.width}%`, bottom: `${RC.bottom}%` }} />
+          <img className="roomcounter" src={themed(dark).counter} alt="" style={{ left: `${RC.left}%`, width: `${RC.width}%`, bottom: `${RC.bottom}%` }} />
         )}
         {others.map((a, i) => {
           const act = activities[a.id]

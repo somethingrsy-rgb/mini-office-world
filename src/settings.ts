@@ -8,15 +8,11 @@ export interface Settings {
   order: string[]
   /** 화면 모드: auto=휴대폰 설정을 따라가요 */
   theme: ThemeMode
-  /** 라이트 모드일 때의 색 구성 */
-  palette: Palette
 }
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
-/** 라이트 모드의 색 구성: 파스텔(기본) / 웜 베이지 */
-export type Palette = 'pastel' | 'beige'
 
-export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [], theme: 'auto', palette: 'pastel' }
+export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [], theme: 'auto' }
 
 const KEY = 'mow-settings'
 const BACKUP_KEY = 'mow-last-backup'
@@ -44,8 +40,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   }
   const order = Array.isArray(r.order) ? r.order.filter((v): v is string => typeof v === 'string').slice(0, 1000) : []
   const theme: ThemeMode = r.theme === 'light' || r.theme === 'dark' ? r.theme : 'auto'
-  const palette: Palette = r.palette === 'beige' ? 'beige' : 'pastel'
-  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme, palette } : { schedule, names, order, theme, palette }
+  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme } : { schedule, names, order, theme }
 }
 
 /** 시간표가 순서대로인지 검사. 문제가 있으면 안내 문구를 돌려줌 */

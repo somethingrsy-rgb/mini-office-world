@@ -14,12 +14,9 @@
       // 앱이 뜨기 전에 화면 모드를 정해서 첫 화면이 깜빡이지 않게 해요
       (function () {
         try {
-          var cfg = JSON.parse(localStorage.getItem('mow-settings') || '{}') || {}
-          var t = cfg.theme
+          var t = (JSON.parse(localStorage.getItem('mow-settings') || '{}') || {}).theme
           var dark = t === 'dark' || (t !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches)
           document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
-          document.documentElement.setAttribute('data-palette', !dark && cfg.palette === 'beige' ? 'beige' : 'pastel')
-          if (!dark && cfg.palette === 'beige') document.querySelector('meta[name="theme-color"]').setAttribute('content', '#e9dcc6')
           if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0b0f14')
         } catch (e) {}
       })()
