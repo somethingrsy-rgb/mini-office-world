@@ -21,6 +21,7 @@ import { buildItems, workByAvatar, type WorkItem } from './work'
 import TodoSheet from './components/TodoSheet'
 import { fmtWorked, workedMs } from './worktime'
 import { orderTasks, rankMap } from './order'
+import type { QuickEntry } from './quick'
 import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
 import Intro from './components/Intro'
@@ -245,6 +246,30 @@ export default function App() {
     distribute(t)
     setSelected(null)
   }
+  /** 빠른 분배: 나(관리자)에게 "분류/제목/상세내용/마감일"을 적으면 담당 아바타에게 바로 나눠 줘요.
+   *  새로 맡은 아바타는 정문으로 들어와 접수대에서 일을 받고(3초) 라운지에서 대기해요 */
+  const quickDistribute = (entries: QuickEntry[]) => {
+    const ok = entries.filter((e) => e.ok && e.assignee && e.title)
+    if (ok.length === 0) return
+    const fresh = new Set<Staff>()
+    const count: Partial<Record<Staff, number>> = {}
+    const now = Date.now()
+    ok.forEach((e, i) => {
+      const who = e.assignee!
+      const t: Task = { id: newId(), title: e.title!, desc: e.desc ?? '', due: e.due ?? null, importance: 'normal', status: 'todo', assignee: who, subtasks: [], createdAt: now + i, completedAt: null }
+      save(t)
+      fresh.add(who)
+      count[who] = (count[who] ?? 0) + 1
+    })
+    const list = [...fresh]
+    clearLeaving(list)
+    startEvent('pickup', list, 18000)
+    const label = list.map((id) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.emoji} ${a.name}${(count[id] ?? 0) > 1 ? ` ${count[id]}건` : ''}` }).join(', ')
+    notify(`⚡ ${ok.length}건을 분배했어요: ${label}`)
+    setUserSay(`${list.map((id) => AVATARS.find((x) => x.id === id)!.name).join('·')}, 부탁해! 😊`)
+    window.setTimeout(() => setUserSay(null), 4200)
+    close()
+  }
   const assignExisting = (it: WorkItem, start: boolean) => {
     if (!assignFor) return
     let t = it.sub
@@ -409,6 +434,7 @@ export default function App() {
             onReset={() => updateSettings({ ...settings, order: [] })}
             onBrief={() => setView('brief')}
             onList={() => setView('list')}
+            onQuick={quickDistribute}
           />
         </Sheet>
       )}
