@@ -219,3 +219,12 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .waiting { margin:2px 0 4px; font-size:13px; font-weight:800; color:#d68b00; }
 .assignbtn.go { background:linear-gradient(90deg,#ff86b6,#b9a3e8); }
 .card .ghost.assignbtn { margin-top:2px; }
+
+.workbtns { margin:4px 0 6px; }
+.working { margin:2px 0 6px; font-size:13px; font-weight:800; color:#7a4fd0; }
+.btnrow2 { display:flex; gap:8px; }
+.btnrow2 .ghost, .btnrow2 .primary { flex:1; padding:11px 0; font-size:14px; }
+.primary.done { background:linear-gradient(90deg,#7fd6c2,#4ec9a0); }
+.item { flex-wrap:wrap; }
+.item-actions { display:flex; gap:6px; margin-left:auto; }
+.item-actions .sm { padding:6px 10px; font-size:12px; margin:0; }

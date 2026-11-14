@@ -196,6 +196,18 @@ export default function App() {
   }
   /** 대기 중인 아바타의 일을 '진행 중'으로: 담당 아바타가 일하는 자리로 가요 (업무 단위) */
   const startItem = (it: WorkItem) => saveTask({ ...it.task, status: 'doing' })
+  /** 진행 중인 일을 다시 대기로: 담당 아바타가 라운지·정원으로 돌아가요 (업무 단위) */
+  const waitItem = (it: WorkItem) => {
+    saveTask({ ...it.task, status: 'todo' })
+    notify(`⏸ 「${it.task.title}」 업무를 대기로 돌렸어요`)
+  }
+  /** 일을 완료: 세부 할 일이면 그 할 일만, 마지막 할 일이면 업무 전체가 완료돼요. 담당 아바타가 완료 칸으로 가요 */
+  const completeItem = (it: WorkItem) => {
+    if (!it.sub) return saveTask({ ...it.task, status: 'done', completedAt: Date.now() })
+    const subtasks = it.task.subtasks.map((s) => (s.id === it.sub!.id ? { ...s, done: true, doneAt: Date.now() } : s))
+    const allDone = subtasks.every((s) => s.done)
+    saveTask(allDone ? { ...it.task, subtasks, status: 'done', completedAt: Date.now() } : { ...it.task, subtasks })
+  }
   const info = AVATARS.find((a) => a.id === selected)
   const act = selected ? activities[selected] : null
 
@@ -261,7 +273,9 @@ export default function App() {
         {info && act ? (
           <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals}
             onAssign={info.id === 'user' ? undefined : () => setAssignFor(info.id as Staff)}
-            onStart={info.id === 'user' ? undefined : startItem} />
+            onStart={info.id === 'user' ? undefined : startItem}
+            onWait={info.id === 'user' ? undefined : waitItem}
+            onComplete={info.id === 'user' ? undefined : completeItem} />
         ) : (
           <p className="muted">아바타를 터치하면 정보를, 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
         )}
