@@ -838,7 +838,7 @@ html:not([data-theme="dark"]) .houseimg { filter:saturate(.84); }
 .remindbar.inline { animation:none; }
 html[data-theme="dark"] .remindbar { background:rgba(30,26,20,.9); color:#f6e6bd; }
 /* 알림이 있는 동안 버튼 줄을 위로 올리고 그만큼 하우스 영역을 줄여요 */
-.app.hasrem { --pb: calc(112px + env(safe-area-inset-bottom)); }
+.app.hasrem { --pb: calc(134px + env(safe-area-inset-bottom)); }
 .app.hasrem .dock { bottom:calc(36px + env(safe-area-inset-bottom)); padding-bottom:6px; }
 
 /* ── 업무 검색·분류 / 완료 기록·통계 ── */
