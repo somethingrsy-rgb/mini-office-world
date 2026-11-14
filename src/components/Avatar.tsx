@@ -94,7 +94,9 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   // 정문 밖에 도착한 아바타는 서서히 사라져요
   const gone = !!activity.leaving && !w.moving
   // 대화 말풍선은 멈춰 있을 때만 보여요 (걷는 중에는 숨김)
-  const talk = !w.moving && !happy ? speech : null
+  // 말풍선에는 이모지를 넣지 않아요 (혹시 들어 있어도 지워서 보여줘요)
+  const clean = speech ? speech.replace(/[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim() : null
+  const talk = !w.moving && !happy && clean ? clean : null
   let key: SpriteKey = happy ? (isUser ? 'desk-cheer' : 'cheer') : spriteFor(info.id, pose)
   if (isUser && key === 'desk-idle' && (selected || talk)) key = 'desk-wave' // 누르거나 말할 때 손을 흔들어요
   const m = SPRITES[info.id][key]!

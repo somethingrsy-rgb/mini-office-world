@@ -272,7 +272,7 @@ export default function App() {
     startEvent('pickup', list, 18000)
     const label = list.map((id) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.emoji} ${a.name}${(count[id] ?? 0) > 1 ? ` ${count[id]}건` : ''}` }).join(', ')
     notify(`⚡ ${ok.length}건을 분배했어요: ${label}`)
-    setUserSay(`${list.map((id) => AVATARS.find((x) => x.id === id)!.name).join('·')}, 부탁해! 😊`)
+    setUserSay(`${list.map((id) => AVATARS.find((x) => x.id === id)!.name).join('·')}, 부탁해!`)
     window.setTimeout(() => setUserSay(null), 4200)
     close()
   }
@@ -289,7 +289,7 @@ export default function App() {
     startEvent('leave', leaving, FINISH_MS + LEAVE_MS)
     const plain = leaving.map((id) => AVATARS.find((a) => a.id === id)!.name).join('·')
     window.setTimeout(() => {
-      setUserSay(`수고했어, ${plain}! 😊`)
+      setUserSay(`수고했어, ${plain}!`)
       window.setTimeout(() => setUserSay(null), 4200)
     }, FINISH_MS)
   }

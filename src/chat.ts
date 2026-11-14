@@ -22,19 +22,19 @@ function makeExchange(kind: number, a: Talker, b: Talker): Exchange {
     case 0:
       return [[a.id, '나는 무슨 일을 해야 해?'], [b.id, ta ? `「${clip(ta.title)}」 하면 돼!` : '오늘은 쉬어도 돼~']]
     case 1:
-      return [[a.id, '언제까지 해야 해?'], [b.id, ta?.due ? `${dueText(ta.due)}까지야! 힘내자 💪` : '마감은 없어. 천천히 하자~']]
+      return [[a.id, '언제까지 해야 해?'], [b.id, ta?.due ? `${dueText(ta.due)}까지야! 힘내자` : '마감은 없어. 천천히 하자~']]
     case 2:
-      return [[a.id, '커피 한잔 할까? ☕'], [b.id, '좋아! 같이 마시자~']]
+      return [[a.id, '커피 한잔 할까?'], [b.id, '좋아! 같이 마시자~']]
     case 3:
-      return [[a.id, '힘내자! 💪'], [b.id, '응! 조금만 더 힘내자!']]
+      return [[a.id, '힘내자!'], [b.id, '응! 조금만 더 힘내자!']]
     case 4:
-      return [[a.id, '오늘도 화이팅!'], [b.id, '화이팅이야~ ✨']]
+      return [[a.id, '오늘도 화이팅!'], [b.id, '화이팅이야~']]
     case 5:
       return b.task
         ? [[a.id, `「${clip(b.task.title)}」 잘 돼가?`], [b.id, '응, 차근차근 하고 있어!']]
-        : [[a.id, '잠깐 쉬었다 하자~'], [b.id, '좋아~ 휴식도 일이야 😊']]
+        : [[a.id, '잠깐 쉬었다 하자~'], [b.id, '좋아~ 휴식도 일이야']]
     default:
-      return [[a.id, '잠깐 쉬었다 하자~'], [b.id, '좋아~ 휴식도 일이야 😊']]
+      return [[a.id, '잠깐 쉬었다 하자~'], [b.id, '좋아~ 휴식도 일이야']]
   }
 }
 
