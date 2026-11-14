@@ -6,6 +6,7 @@ import { DEFAULT_SCHEDULE } from '../schedule'
 import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
 import type { Task } from '../types'
 import { CURRENT_BUILD, fetchLatestBuild, updateApp } from '../update'
+import { listSnapshots, takeSnapshot } from '../autobackup'
 import { setSoundPrefs, useSoundPrefs } from '../audio'
 import { clearSyncConfig, setSyncConfig, syncRequest, useSyncStatus } from '../sync'
 
@@ -30,6 +31,7 @@ interface Props {
 export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp, time }: Props) {
   const sound = useSoundPrefs()
   const sync = useSyncStatus()
+  const [snaps, setSnaps] = useState(listSnapshots)
   const [syncRepo, setSyncRepo] = useState(sync.repo)
   const [syncToken, setSyncToken] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
@@ -164,6 +166,26 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
           {sync.state === 'ok' && `✅ 동기화됐어요 (${new Date(sync.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})`}
           {sync.state === 'error' && `⚠️ ${sync.text}`}
         </p>
+      </section>
+
+      <section>
+        <h3 className="sh">🛟 자동 백업 (이 기기)</h3>
+        <p className="muted">업무가 바뀌면 30분에 한 번, 지우거나 리셋·복원하기 직전에는 꼭 한 번씩 이 기기에 저장해 둬요. 최근 12개까지 보관해요. 브라우저 데이터를 지우면 함께 사라지니 파일 백업도 가끔 하세요.</p>
+        <button className="ghost" onClick={() => { takeSnapshot(tasks, settings, '직접 저장', true); setSnaps(listSnapshots()) }}>지금 한 번 저장</button>
+        {snaps.length === 0 ? <p className="muted">아직 자동 백업이 없어요.</p> : (
+          <ul className="snaplist">
+            {snaps.map((sn) => (
+              <li key={sn.at}>
+                <span><b>{new Date(sn.at).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</b> · 업무 {sn.tasks.length}건<small> · {sn.reason}</small></span>
+                <button className="ghost sm" onClick={async () => {
+                  if (!window.confirm(`${new Date(sn.at).toLocaleString('ko-KR')} 상태로 되돌릴까요?\n지금 상태는 자동 백업에 한 번 더 남겨 둬요.`)) return
+                  takeSnapshot(tasks, settings, '되돌리기 전', true)
+                  if (await onReplace(sn.tasks, { ...sn.settings, theme: settings.theme })) { say(true, `업무 ${sn.tasks.length}건으로 되돌렸어요.`); setSnaps(listSnapshots()) }
+                }}>되돌리기</button>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section>

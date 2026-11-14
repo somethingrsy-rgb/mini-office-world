@@ -29,6 +29,7 @@ import QuickBox from './components/QuickBox'
 import { initAudio, sfx } from './audio'
 import { useSync } from './sync'
 import ReminderBar from './components/ReminderBar'
+import { takeSnapshot } from './autobackup'
 import { useLoungeChat } from './chat'
 import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
@@ -71,8 +72,10 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b0f14' : '#c8a8ee')
   }, [dark])
   const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
+  // 자동 백업: 업무가 바뀌면 (30분에 한 번까지) 이 기기에 보관해요
+  useEffect(() => { if (ready) takeSnapshot(tasks, settings, '자동') }, [tasks, settings, ready])
   // 기기끼리 동기화 (설정 > 기기 동기화에서 켜요)
-  useSync({ tasks, settings, apply: async (t, s) => { const ok = await replaceAll(t); if (ok) updateSettings(s); return ok } }, ready)
+  useSync({ tasks, settings, apply: async (t, s) => { takeSnapshot(tasks, settings, '동기화 받기 전', true); const ok = await replaceAll(t); if (ok) updateSettings(s); return ok } }, ready)
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)
@@ -220,6 +223,9 @@ export default function App() {
   const cheerUp = (ids: string[]) =>
     setCheers((c) => { const n = { ...c }; ids.forEach((id) => (n[id] = (n[id] ?? 0) + 1)); return n })
   const notify = (text: string) => setToast({ text, key: Date.now() })
+  // 되돌리기: 지우기·리셋·완료 직후 8초 동안 '되돌리기'를 보여 줘요
+  const [undo, setUndo] = useState<{ label: string; tasks: Task[]; order: string[]; key: number } | null>(null)
+  useEffect(() => { if (!undo) return; const id = window.setTimeout(() => setUndo(null), 8000); return () => window.clearTimeout(id) }, [undo])
   useEffect(() => {
     if (!toast) return
     const t = window.setTimeout(() => setToast(null), 3200)
@@ -300,14 +306,28 @@ export default function App() {
 
   /** 업무 목록 전체 리셋: 등록한 업무를 모두 지우고 아바타를 처음 상태(나만 있는 건물)로 되돌려요. 이름·시간표 같은 설정은 그대로예요 */
   const resetTasks = async () => {
+    takeSnapshot(tasks, settings, '전체 리셋 전', true)
+    armUndo('전체 리셋')
     if (!(await replaceAll([]))) { notify('⚠️ 리셋하지 못했어요. 저장 공간을 확인해 주세요'); return }
     updateSettings({ ...settings, order: [] })
     setPickups({}); setFinishes({}); setLeaves({}); setUserSay(null); setSelected(null);
     notify('🔄 모든 업무를 리셋했어요')
   }
 
+  const armUndo = (label: string) => setUndo({ label, tasks, order: settings.order, key: Date.now() })
+  const doUndo = async () => {
+    if (!undo) return
+    if (await replaceAll(undo.tasks)) { updateSettings({ ...settings, order: undo.order }); notify(`↩️ ${undo.label}을(를) 되돌렸어요`) }
+    setUndo(null)
+  }
+  const removeTask = (id: string) => {
+    const t = tasks.find((x) => x.id === id)
+    if (t) takeSnapshot(tasks, settings, `삭제 전: ${t.title}`, true)
+    armUndo('삭제'); remove(id)
+  }
   const saveTask = (t: Task) => {
     const old = tasks.find((x) => x.id === t.id)
+    if (old && old.status !== 'done' && t.status === 'done') armUndo('완료')
     const next = tasks.map((x) => (x.id === t.id ? t : x))
     save(t)
     if (!old) return
@@ -418,6 +438,7 @@ export default function App() {
         <h1><img src={themed(dark).logo} alt="MINI OFFICE WORLD" /></h1>
       </header>
 
+      {undo && <div className="undobar" key={undo.key}><span>{undo.label}했어요</span><button onClick={doUndo}>↩️ 되돌리기</button></div>}
       {toast && <div className="toast" key={toast.key}><RichText text={toast.text} /></div>}
 
       <main className="stage">
@@ -504,7 +525,7 @@ export default function App() {
             onSettings={updateSettings}
             onBackedUp={() => setBackupTick((n) => n + 1)}
             time={{ now, simulated: sim !== null, playing, setSim, setPlaying }}
-            onReplace={async (next, st) => { const ok = await replaceAll(next); if (ok) updateSettings(st); return ok }}
+            onReplace={async (next, st) => { takeSnapshot(tasks, settings, '복원·초기화 전', true); const ok = await replaceAll(next); if (ok) updateSettings(st); return ok }}
           />
         </Sheet>
       )}
@@ -519,7 +540,7 @@ export default function App() {
       )}
       {view === 'list' && (
         <Sheet glass tall title="업무 목록" onClose={close}>
-          <TaskList tasks={tasks} onSave={saveTask} onDelete={remove} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
+          <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
         </Sheet>
       )}
     </div>
