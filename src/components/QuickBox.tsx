@@ -39,7 +39,7 @@ export default function QuickBox({ onQuick }: { onQuick: (entries: QuickEntry[])
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); submit() } }} // Ctrl/⌘+Enter로도 분배
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit() } }} // 엔터로 분배 (줄바꿈은 Shift+Enter, 한글 입력 중 엔터는 무시)
           placeholder="분류/제목/상세내용//마감일"
           rows={2}
           maxLength={1500}
