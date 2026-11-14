@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import House from './components/House'
 import { AVATARS, applyNames, type AvatarId } from './avatars'
+import { asset, preloadAssets } from './assets'
+import { ROOMS, type RoomId } from './rooms'
+import RoomView from './components/RoomView'
 import { getActivity, periodName } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
@@ -35,6 +38,8 @@ export default function App() {
   const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
+  const [room, setRoom] = useState<RoomId | null>(null)
+  useEffect(() => { preloadAssets() }, [])
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
@@ -127,6 +132,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <div className="sky" style={{ backgroundImage: `url(${asset('bg.webp')})` }} />
       <header className="top">
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           ⚙️{needBackup && <span className="dotbadge" />}
@@ -166,24 +172,29 @@ export default function App() {
       )}
 
       <main className="stage">
-        <House activities={activities} alerts={alerts} cheers={cheers} selected={selected} onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
+        <House activities={activities} alerts={alerts} cheers={cheers} selected={selected} onRoom={setRoom}
+          onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
       </main>
 
       <section className="card">
         {info && act ? (
           <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals} />
         ) : (
-          <p className="muted">아바타를 터치하면 정보를 볼 수 있어요 ✨ 시계를 누르면 시간을 바꿔볼 수 있어요.</p>
+          <p className="muted">아바타를 터치하면 정보를, 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
         )}
       </section>
 
       {storageError && <p className="warn">⚠️ 이 환경에서는 업무를 저장할 수 없어요. (사생활 보호 모드인지 확인해 주세요)</p>}
 
       <nav className="dock">
-        <button onClick={() => { setEditing(undefined); setView('form') }}>＋ 업무 등록</button>
-        <button onClick={() => setView('schedule')}>📅 일정표</button>
+        <button onClick={() => { setEditing(undefined); setView('form') }}>
+          <img src={asset('props/mailbox.webp')} alt="" /><span>업무 등록</span>
+        </button>
+        <button onClick={() => setView('schedule')}>
+          <img src={asset('props/calendar.webp')} alt="" /><span>일정표</span>
+        </button>
         <button onClick={() => setView('list')}>
-          📋 업무 목록{urgent > 0 && <span className="notif">{urgent}</span>}
+          <img src={asset('props/bookshelf.webp')} alt="" /><span>업무 목록</span>{urgent > 0 && <span className="notif">{urgent}</span>}
         </button>
       </nav>
 
@@ -196,6 +207,11 @@ export default function App() {
       {view === 'schedule' && (
         <Sheet title="일정표" onClose={close}>
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
+        </Sheet>
+      )}
+      {room && (
+        <Sheet title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
+          <RoomView room={room} activities={activities} />
         </Sheet>
       )}
       {view === 'settings' && (

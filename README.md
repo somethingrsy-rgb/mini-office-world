@@ -18,7 +18,7 @@ npm run build   # 빌드
 - [x] 4단계: 아바타 업무 연동
 - [x] 5단계: 일정관리 시스템
 - [x] 6단계(기능): 데이터 백업·복원, 설정(시간표·아바타 이름), 오프라인 지원
-- [ ] 6단계(디자인): 아바타·가구·애니메이션·화면 전환 효과 다듬기 (보류)
+- [x] 6단계(디자인): 3D 파스텔 디자인 적용 (하우스·배경·아바타 5명 6자세·방 7곳 확대·소품·효과·앱 아이콘)
 
 ## 배포 (GitHub Pages)
 
@@ -29,3 +29,9 @@ npm run build   # 빌드
 ## 데이터
 
 업무는 사용자의 기기(IndexedDB)에만 저장돼요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라지므로 설정 ⚙️ 에서 가끔 백업하세요.
+
+## 디자인 이미지 작업
+
+AI로 만든 원본 이미지를 앱용 투명 WebP로 자르는 스크립트가 `tools/process_assets.py`예요.
+원본이 바뀌면 `pip install numpy scipy pillow` 후 `python3 tools/process_assets.py <원본 폴더>`를 실행하면
+`public/assets/`, `public/*.png`(앱 아이콘), `src/assets.gen.ts`가 다시 만들어져요.

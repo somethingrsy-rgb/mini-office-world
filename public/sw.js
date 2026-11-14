@@ -1,9 +1,18 @@
 // 오프라인에서도 앱이 열리도록 정적 파일을 기기에 보관하는 서비스 워커
-const CACHE = 'mow-v1'
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg']
+const CACHE = 'mow-v2'
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png']
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()))
+  e.waitUntil(
+    caches.open(CACHE).then(async (c) => {
+      await c.addAll(SHELL)
+      // 그림 파일도 미리 받아 두어 오프라인에서도 모두 보이게 함 (실패해도 설치는 계속)
+      try {
+        const files = await (await fetch('./assets/manifest.json')).json()
+        await Promise.all(files.map((f) => c.add('./assets/' + f).catch(() => {})))
+      } catch (e) { /* 무시 */ }
+    }).then(() => self.skipWaiting()),
+  )
 })
 
 self.addEventListener('activate', (e) => {

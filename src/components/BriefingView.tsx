@@ -1,4 +1,5 @@
 import { AVATARS } from '../avatars'
+import { asset } from '../assets'
 import { fmtDate } from '../dates'
 import type { Briefing } from '../entries'
 
@@ -10,7 +11,7 @@ export default function BriefingView({ b, hasTasks, onGo, onClose }: { b: Briefi
 
   return (
     <div className="brief">
-      <div className="brief-head"><span className="face">{mimi.emoji}</span><b>{mimi.name}</b><small>일정 담당</small></div>
+      <div className="brief-head"><img className="face" src={asset('avatars/mimi-stand.webp')} alt="" /><b>{mimi.name}</b><small>일정 담당</small></div>
       <div className="bubble-msg">
         <p><b>{greet}</b></p>
         {!hasTasks ? (

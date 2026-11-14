@@ -6,16 +6,15 @@ html, body { margin:0; background:linear-gradient(#f3e8ff,#ffe6f2); color:var(--
 .top { text-align:center; padding:12px 0 6px; }
 .top h1 { margin:0; font-size:20px; letter-spacing:.5px; }
 .top p { margin:4px 0 0; font-size:12px; opacity:.7; }
-.stage { border-radius:28px; overflow:hidden; box-shadow:0 10px 30px rgba(140,100,200,.3); border:3px solid #fff; }
-.house { display:block; width:100%; height:auto; }
+.stage { margin:0 -4px; }
+.house { display:block; width:100%; height:auto; filter:drop-shadow(0 12px 16px rgba(70,30,110,.35)); overflow:visible; }
+.hot { cursor:pointer; }
 .avatar { cursor:pointer; }
 .bob { animation:bob 2.4s ease-in-out infinite; }
-.blink { animation:blink 4s infinite; transform-box:fill-box; transform-origin:center; }
 .ring { animation:spin 6s linear infinite; transform-origin:0 -24px; }
 .twinkle { animation:tw 2.2s ease-in-out infinite; }
-.nametag { paint-order:stroke; stroke:#fff; stroke-width:2.5px; }
-@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2.5px)} }
-@keyframes blink { 0%,94%,100%{transform:scaleY(1)} 97%{transform:scaleY(.1)} }
+.nametag { paint-order:stroke; stroke:#fff; stroke-width:7px; stroke-linejoin:round; }
+@keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
 @keyframes spin { to { transform:rotate(360deg) } }
 @keyframes tw { 0%,100%{opacity:.35} 50%{opacity:1} }
 .card { margin-top:12px; padding:12px 14px; background:#fff; border-radius:18px; box-shadow:0 4px 14px rgba(140,100,200,.15); font-size:14px; }
@@ -28,30 +27,16 @@ html, body { margin:0; background:linear-gradient(#f3e8ff,#ffe6f2); color:var(--
 .dock button { flex:1; max-width:160px; border:0; border-radius:16px; padding:11px 0; font-size:13px; font-weight:700;
   background:var(--pink); color:#fff; }
 .dock button:disabled { background:var(--lav); }
-@media (prefers-reduced-motion: reduce) { .bob,.blink,.ring,.twinkle { animation:none } }
+@media (prefers-reduced-motion: reduce) { .bob,.walking,.ring,.twinkle,.glow,.pulse,.hop { animation:none !important } }
 .clock { margin:0 auto 8px; width:fit-content; padding:5px 14px; background:#fff; border-radius:999px; font-size:13px; font-weight:700; box-shadow:0 2px 8px rgba(140,100,200,.15); cursor:pointer; }
 .clock em { font-style:normal; font-weight:500; opacity:.6; font-size:11px; }
 .timebox { background:#fff; border-radius:16px; padding:10px 12px; margin-bottom:8px; }
 .timebox input { width:100%; }
 .timebtns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .timebtns button { border:0; border-radius:12px; padding:6px 10px; font-size:12px; font-weight:700; background:var(--lav); color:#fff; }
-.leg { transform-box:fill-box; transform-origin:50% 0; }
-.walking { animation-duration:.45s; }
-.walking .leg.l { animation:legl .45s ease-in-out infinite; }
-.walking .leg.r { animation:legr .45s ease-in-out infinite; }
-.tap { animation:tap .35s ease-in-out infinite; }
-.tap.b { animation-delay:.17s; }
-.steam { animation:tw 1.6s ease-in-out infinite; }
-.munch { animation:munch .6s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
 .bubble { animation:pop .3s ease-out; pointer-events:none; }
-@keyframes legl { 0%,100%{transform:rotate(25deg)} 50%{transform:rotate(-25deg)} }
-@keyframes legr { 0%,100%{transform:rotate(-25deg)} 50%{transform:rotate(25deg)} }
-@keyframes tap { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
-@keyframes munch { 0%,100%{transform:scale(1)} 50%{transform:scale(.5)} }
 @keyframes pop { from{opacity:0} to{opacity:1} }
-.bob.walking { animation-name:bob; }
-@media (prefers-reduced-motion: reduce) { .tap,.steam,.munch,.walking .leg { animation:none } }
-.dock button { position:relative; }
+.bob.dock button { position:relative; }
 .dock button:not(:disabled):active { transform:scale(.97); }
 .notif { position:absolute; top:-6px; right:8px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#ff4d6d; color:#fff; font-size:11px; line-height:18px; }
 .warn { margin:10px 0 0; padding:8px 12px; background:#fff3cd; border-radius:12px; font-size:12px; }
@@ -116,10 +101,10 @@ input:focus, textarea:focus, select:focus { outline:2px solid var(--pink); borde
 .statusbtns button.on { background:#9b7be0; color:#fff; border-color:#9b7be0; }
 .glow { animation:glow 1.4s ease-in-out infinite; }
 @keyframes glow { 0%,100%{opacity:.12} 50%{opacity:.32} }
-.alert.pulse { animation:alertpulse .9s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+.pulse { animation:alertpulse .9s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
 @keyframes alertpulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.25)} }
 .hop { animation:hop .45s ease-in-out 5 !important; }
-@keyframes hop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+@keyframes hop { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-26px)} }
 .spark { animation:spark 2.4s ease-out forwards; opacity:0; }
 @keyframes spark { 0%{opacity:0;transform:translate(0,-30px) scale(.3)} 20%{opacity:1} 100%{opacity:0;transform:translate(var(--dx),calc(var(--dy) - 14px)) scale(1.2)} }
 .toast { position:fixed; top:calc(10px + env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:30; max-width:90%; padding:10px 16px;
@@ -182,3 +167,28 @@ input:focus, textarea:focus, select:focus { outline:2px solid var(--pink); borde
 .timegrid label, .namerow { display:flex; flex-direction:column; gap:3px; font-size:12px; font-weight:700; }
 .namerow { flex-direction:row; align-items:center; justify-content:space-between; gap:10px; margin-bottom:6px; }
 .namerow input { width:50%; }
+
+/* ── 3D 디자인 적용 ───────────────── */
+html { background:#c8a8ee; }
+body { background:transparent; }
+.sky { position:fixed; inset:0; z-index:-1; background-size:cover; background-position:center bottom; background-repeat:no-repeat; }
+.app { position:relative; }
+.top h1 { color:#fff; text-shadow:0 2px 8px rgba(90,40,140,.55); }
+.top p { color:#fff; opacity:.92; text-shadow:0 1px 5px rgba(90,40,140,.5); }
+.walking { animation:sway .5s ease-in-out infinite; }
+@keyframes sway { 0%,100%{transform:rotate(-2.5deg) translateY(0)} 50%{transform:rotate(2.5deg) translateY(-9px)} }
+.dock button { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1px; padding:6px 0 7px; }
+.dock button img { height:30px; width:auto; display:block; }
+.dock button span:first-of-type { font-size:12px; }
+.dock button:disabled { background:var(--lav); }
+.notif { top:-4px; right:14px; }
+.empty img { height:90px; width:auto; display:block; margin:0 auto 4px; }
+.empty p { margin:4px 0 0; }
+.roomstage { position:relative; width:100%; overflow:hidden; }
+.roomimg { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+.occupant { position:absolute; bottom:12%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; }
+.occupant img { height:100%; width:auto; max-width:none; animation:bob 2.4s ease-in-out infinite; }
+.occupant span { position:absolute; bottom:-16px; font-size:11px; font-weight:800; color:#5b4a78; background:rgba(255,255,255,.85); padding:0 6px; border-radius:8px; white-space:nowrap; }
+.who { margin-top:10px; }
+.face { height:44px; width:auto; }
+.spark { animation:spark 2.4s ease-out forwards; opacity:0; }

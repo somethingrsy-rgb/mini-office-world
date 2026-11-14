@@ -29,28 +29,26 @@ export const DEFAULT_SCHEDULE = {
 }
 export type ScheduleCfg = typeof DEFAULT_SCHEDULE
 
-// ── 장소(발 위치 기준 좌표) ─────────────────────────
-export const FLOOR_Y = { attic: 164, f2: 296, f1: 426, out: 470 }
-export const HUB_X = 200 // 계단·현관이 있는 중앙 통로
-const OFF: Spot = { x: -40, y: 470, face: 'r' }
+// ── 장소(하우스 이미지 좌표 기준 · 폭 1000, 발 위치) ──────────────
+export const FLOOR_Y = { attic: 408, f2: 690, f1: 1002, out: 1212 }
+export const HUB_X = 500 // 계단·현관이 있는 중앙 통로
+const OFF: Spot = { x: -140, y: FLOOR_Y.out, face: 'r' }
+const { attic: AT, f2: F2, f1: F1, out: OUT } = FLOOR_Y
 
 const spot = (x: number, y: number, face: 'l' | 'r' = 'r'): Spot => ({ x, y, face })
 
 const SEATS_LUNCH: Record<AvatarId, Spot> = {
-  momo: spot(138, 164), luna: spot(182, 164, 'l'), coco: spot(72, 164),
-  mimi: spot(100, 164), user: spot(226, 164, 'l'),
+  momo: spot(190, AT), coco: spot(300, AT), mimi: spot(430, AT), luna: spot(570, AT, 'l'), user: spot(750, AT, 'l'),
 }
 const SEATS_COFFEE = SEATS_LUNCH
 const CHAT_SPOTS: Record<AvatarId, Spot> = {
-  momo: spot(250, 164, 'l'), luna: spot(280, 164, 'l'), coco: spot(310, 164, 'l'),
-  mimi: spot(340, 164, 'l'), user: spot(230, 164, 'r'),
+  momo: spot(720, AT, 'l'), luna: spot(780, AT, 'l'), coco: spot(840, AT, 'l'), mimi: spot(880, AT, 'l'), user: spot(650, AT, 'r'),
 }
-const STROLL: Spot[] = [spot(70, 478), spot(120, 484), spot(280, 484, 'l'), spot(330, 478, 'l')]
+const STROLL: Spot[] = [spot(200, 1205), spot(320, 1225), spot(700, 1225), spot(810, 1205, 'l')]
 const SOFA: Record<AvatarId, Spot> = {
-  momo: spot(64, 156), luna: spot(84, 156), coco: spot(104, 156),
-  mimi: spot(74, 156), user: spot(94, 156),
+  momo: spot(430, AT - 14), luna: spot(500, AT - 14), coco: spot(570, AT - 14), mimi: spot(465, AT - 14), user: spot(535, AT - 14),
 }
-const PATROL: Spot[] = [spot(118, 426), spot(318, 426), spot(160, 296), spot(300, 296), spot(232, 426)]
+const PATROL: Spot[] = [spot(295, F1), spot(795, F1), spot(400, F2), spot(750, F2), spot(580, F1)]
 
 function hash(s: string, n: number) {
   let h = 2166136261 ^ n
@@ -59,25 +57,25 @@ function hash(s: string, n: number) {
 }
 
 /** 계단·현관에서 아바타끼리 겹치지 않도록 통로 위치를 조금씩 달리함 */
-export const HUB_OFFSET: Record<AvatarId, number> = { momo: -16, luna: -8, coco: 0, mimi: 8, user: 16 }
+export const HUB_OFFSET: Record<AvatarId, number> = { momo: -40, luna: -20, coco: 0, mimi: 20, user: 40 }
 
 const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'user']
 
-/** 업무 행동: 담당 역할에 따른 기본 업무 자세 (3~4단계에서 실제 업무와 연결) */
+/** 업무 행동: 담당 역할에 따른 기본 업무 자세 */
 function work(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
   switch (id) {
     case 'momo':
-      return { spot: spot(78, 426), pose: 'sort', label: '새 업무를 접수하고 정리하고 있어요' }
+      return { spot: spot(215, F1), pose: 'sort', label: '새 업무를 접수하고 정리하고 있어요' }
     case 'luna':
       return slot % 2
-        ? { spot: spot(168, 296), pose: 'read', label: '책상에서 자료를 검토하고 있어요' }
-        : { spot: spot(62, 296), pose: 'search', label: '책장에서 자료를 찾고 있어요' }
+        ? { spot: spot(300, F2), pose: 'read', label: '책을 펴고 자료를 검토하고 있어요' }
+        : { spot: spot(190, F2), pose: 'search', label: '책장에서 자료를 찾고 있어요' }
     case 'coco':
-      return { spot: spot(262, 296, 'l'), pose: 'type', label: '컴퓨터로 문서를 작성하고 있어요' }
+      return { spot: spot(770, F2), pose: slot % 2 ? 'sort' : 'type', label: slot % 2 ? '문서 내용을 적고 있어요' : '컴퓨터로 문서를 작성하고 있어요' }
     case 'mimi':
       return slot % 2
-        ? { spot: spot(241, 426), pose: 'cal', label: '달력을 확인하고 있어요' }
-        : { spot: spot(180, 426), pose: 'type', label: '진행 상황을 정리하고 있어요' }
+        ? { spot: spot(545, F1), pose: 'cal', label: '달력을 확인하고 있어요' }
+        : { spot: spot(450, F1), pose: 'type', label: '진행 상황을 정리하고 있어요' }
     default: {
       const p = PATROL[slot % PATROL.length]
       return { spot: p, pose: 'check', label: '사무실을 둘러보며 업무를 점검하고 있어요' }
@@ -130,7 +128,7 @@ export function getActivity(id: AvatarId, minutes: number, job: Job | null = nul
   }
   if (m >= s.leave - 20) {
     // 퇴근 직전엔 정리 중
-    if (m >= leaveAt - 4) return { spot: spot(HUB_X, 426), pose: 'stand', label: '퇴근 준비를 하고 있어요', period }
+    if (m >= leaveAt - 4) return { spot: spot(HUB_X, F1), pose: 'stand', label: '퇴근 준비를 하고 있어요', period }
   }
 
   // 일반 업무 시간: 4분 단위로 행동이 바뀜
@@ -149,7 +147,7 @@ export function getActivity(id: AvatarId, minutes: number, job: Job | null = nul
 }
 
 // ── 이동 경로 ─────────────────────────────────────
-const floorIndex = (y: number) => (y < 230 ? 0 : y < 360 ? 1 : y < 455 ? 2 : 3)
+const floorIndex = (y: number) => (y < 550 ? 0 : y < 850 ? 1 : y < 1100 ? 2 : 3)
 const FLOOR_LIST = [FLOOR_Y.attic, FLOOR_Y.f2, FLOOR_Y.f1, FLOOR_Y.out]
 
 /** 층이 다르면 중앙 통로(계단·현관)를 거쳐 이동 */

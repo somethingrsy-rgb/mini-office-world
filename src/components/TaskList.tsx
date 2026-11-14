@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { AVATARS } from '../avatars'
+import { asset } from '../assets'
 import { isAutoSub, subAssignee, taskAssignee } from '../assign'
 import { taskProgress } from '../entries'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
@@ -54,7 +55,12 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
         ))}
       </div>
 
-      {shown.length === 0 && <p className="empty">{tasks.length === 0 ? '아직 등록된 업무가 없어요. 첫 업무를 등록해 보세요 ✨' : '해당하는 업무가 없어요.'}</p>}
+      {shown.length === 0 && (
+        <div className="empty">
+          <img src={asset(tasks.length === 0 ? 'props/plant.webp' : 'props/trophy.webp')} alt="" />
+          <p>{tasks.length === 0 ? '아직 등록된 업무가 없어요. 첫 업무를 등록해 보세요 ✨' : '해당하는 업무가 없어요.'}</p>
+        </div>
+      )}
 
       {shown.map((t) => {
         const di = dueInfo(t, today)
