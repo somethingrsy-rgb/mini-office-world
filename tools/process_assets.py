@@ -38,6 +38,26 @@ def load(src, name):
     raise SystemExit(f'원본이 없어요: {SOURCES[name]}')
 
 
+def load_alpha(src, name):
+    """투명 배경 PNG를 읽어서 알파 얼룩을 정리해 (RGB 이미지, RGBA 이미지)로 돌려줘요."""
+    p = os.path.join(src, f'{SOURCES[name]}.png')
+    if not os.path.exists(p):
+        raise SystemExit(f'투명 배경 PNG가 없어요: {SOURCES[name]}.png')
+    im = Image.open(p).convert('RGBA')
+    a = np.asarray(im)[:, :, 3]
+    if (a < 255).mean() < 0.05:
+        raise SystemExit(f'{SOURCES[name]}.png 는 배경이 투명하지 않아요 (투명 PNG로 다시 저장해 주세요)')
+    hard = a > 60                                    # 옅은 번짐(알파 60 이하)은 배경으로 봐요
+    lab, n = ndi.label(hard)
+    sizes = ndi.sum(hard, lab, range(1, n + 1))
+    keep = np.isin(lab, [i + 1 for i, z in enumerate(sizes) if z >= 300])  # 작은 점 얼룩 제거
+    core = ndi.binary_erosion(keep, iterations=1)    # 가장자리 색 번짐 제거
+    al = ndi.gaussian_filter(core.astype(np.float32), 0.8)
+    al = np.clip((al - 0.1) / 0.8, 0, 1)
+    rgba = Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], (al * 255).astype(np.uint8)]), 'RGBA')
+    return im.convert('RGB'), rgba
+
+
 def border_connected(cand, erode=1):
     """cand(참/거짓 배열) 중 가장자리와 이어진 덩어리만 돌려줌"""
     c = ndi.binary_erosion(cand, iterations=erode, border_value=1) if erode else cand
@@ -131,12 +151,11 @@ def main(src):
     bg = load(src, 'bg'); bg = bg.resize((900, round(bg.height * 900 / bg.width)), Image.LANCZOS)
     save(bg, f'{OUT}/bg.webp', 82)
 
-    # 아바타 6자세
+    # 아바타 6자세 (투명 배경 PNG만 받아요. 알파의 옅은 얼룩·테두리 번짐은 지워요)
     for av in ['momo', 'luna', 'coco', 'mimi', 'user']:
-        im = load(src, av)
-        rgba = to_rgba(im, white_fg(im))
+        im, rgba = load_alpha(src, av)
         fg = np.asarray(rgba)[:, :, 3] > 8
-        _, comps = components(fg, min_area=120)
+        _, comps = components(fg, min_area=300)
         W, H = im.size
         cells = {}
         for c in comps:
@@ -155,24 +174,17 @@ def main(src):
             save(sp, f'{OUT}/avatars/{av}-{p}.webp', 88)
             meta['avatars'][av][p] = {'w': sp.width, 'h': sp.height}
 
-    # 접수대 카운터(우체통 포함): 투명 배경 PNG(reception-counter-alpha)가 있으면 그 알파를 쓰고,
-    # 투명 영역의 옅은 얼룩 점은 지워요. 없으면 흰 배경을 지워서 만들어요.
-    alpha_path = next((os.path.join(src, f) for f in ('reception-counter-alpha.png',) if os.path.exists(os.path.join(src, f))), None)
-    if alpha_path:
-        im = Image.open(alpha_path).convert('RGBA')
-        al = np.asarray(im)[:, :, 3].astype(np.float32)
-        lab, n = ndi.label(al > 8)
-        sizes = ndi.sum(al > 8, lab, range(1, n + 1))
-        keep = lab == (int(np.argmax(sizes)) + 1)
-        keep = ndi.binary_dilation(keep, iterations=2)  # 가장자리 부드러운 부분은 살림
-        al = np.where(keep, al, 0)
-        al = np.where(al < 12, 0, al)
-        ct = Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], al.astype(np.uint8)]), 'RGBA')
-        ct = trim(ct)
-    else:
-        im = load(src, 'counter')
-        fgc = white_fg(im, 236)
-        ct = trim(to_rgba(im, fgc))
+    # 접수대 카운터(우체통 포함): 투명 배경 PNG를 쓰고, 투명 영역의 옅은 얼룩 점은 지워요.
+    alpha_path = os.path.join(src, 'reception-counter.png')
+    im = Image.open(alpha_path).convert('RGBA')
+    al = np.asarray(im)[:, :, 3].astype(np.float32)
+    lab, n = ndi.label(al > 8)
+    sizes = ndi.sum(al > 8, lab, range(1, n + 1))
+    keep = lab == (int(np.argmax(sizes)) + 1)
+    keep = ndi.binary_dilation(keep, iterations=2)  # 가장자리 부드러운 부분은 살림
+    al = np.where(keep, al, 0)
+    al = np.where(al < 12, 0, al)
+    ct = trim(Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], al.astype(np.uint8)]), 'RGBA'))
     ct = ct.resize((700, round(ct.height * 700 / ct.width)), Image.LANCZOS)
     save(ct, f'{OUT}/counter.webp', 92)
     meta['counter'] = {'w': ct.width, 'h': ct.height}

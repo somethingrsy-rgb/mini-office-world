@@ -11,7 +11,7 @@ import TaskList from './components/TaskList'
 import SettingsView from './components/SettingsView'
 import { loadSettings, saveSettings, getLastBackup, type Settings } from './settings'
 import { useTasks } from './useTasks'
-import { addDays, dueInfo, todayStr } from './dates'
+import { addDays, daysBetween, dueInfo, todayStr } from './dates'
 import ScheduleView from './components/ScheduleView'
 import BriefingView from './components/BriefingView'
 import { makeBriefing, overallProgress } from './entries'
@@ -127,6 +127,18 @@ export default function App() {
     })),
     [works],
   )
+  // 마감이 2일 이내(오늘·기한 초과 포함)인 일: 접수대의 내가 번갈아 알려줘요
+  const reminders = useMemo(() => {
+    const t = todayStr()
+    return items
+      .filter((i) => i.due && daysBetween(t, i.due) <= 2)
+      .map((i) => {
+        const left = daysBetween(t, i.due!)
+        const who = AVATARS.find((a) => a.id === i.assignee)!.name
+        const d = left < 0 ? `기한 ${-left}일 지남` : left === 0 ? '오늘 마감' : `마감 ${left}일 전`
+        return { text: `${who}: 「${i.title.length > 8 ? i.title.slice(0, 8) + '…' : i.title}」 ${d}`, level: (left <= 0 ? 'urgent' : 'soon') as 'soon' | 'urgent' }
+      })
+  }, [items, real])
   const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
   const totals = {
     doing: items.filter((i) => i.started).length,
@@ -283,7 +295,7 @@ export default function App() {
       )}
 
       <main className="stage">
-        <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} selected={selected} onRoom={setRoom}
+        <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
           onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
       </main>
 
