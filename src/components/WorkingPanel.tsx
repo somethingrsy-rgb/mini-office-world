@@ -2,6 +2,7 @@ import type { AvatarInfo } from '../avatars'
 import { dueInfo, fmtDate } from '../dates'
 import type { Activity } from '../schedule'
 import type { WorkItem } from '../work'
+import { fmtWorked, workedMs } from '../worktime'
 
 interface Props {
   info: AvatarInfo
@@ -21,7 +22,7 @@ export default function WorkingPanel({ info, activity, doing, onWait, onComplete
         return (
           <div className="wjob" key={it.key}>
             <div className="wtitle">
-              <span>🛠 {it.title}{it.sub && <small> · {it.task.title}</small>}</span>
+              <span>🛠 {it.title}{it.sub && <small> · {it.task.title}</small>}<small className="wtime"> · ⏱ {fmtWorked(workedMs(it.task))} 일했어요</small></span>
               <span className={`badge lv-${di.level}`}>{it.due ? `${fmtDate(it.due)} ${di.label}` : di.label}</span>
             </div>
             <div className="btnrow2">

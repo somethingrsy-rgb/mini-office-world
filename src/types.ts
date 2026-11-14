@@ -26,6 +26,10 @@ export interface Task {
   subtasks: SubTask[]
   createdAt: number
   completedAt: number | null
+  /** '진행 중'이 된 시각(지금 진행 중일 때만) */
+  startedAt?: number | null
+  /** 지금까지 일한 시간(ms) — 진행 중이던 시간의 합 */
+  workedMs?: number
 }
 
 export const IMPORTANCE_LABEL: Record<Importance, string> = { high: '높음', normal: '보통', low: '낮음' }

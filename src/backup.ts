@@ -43,6 +43,8 @@ function cleanTask(raw: unknown): Task | null {
     subtasks: Array.isArray(t.subtasks) ? t.subtasks.map(cleanSub).filter((s): s is SubTask => !!s) : [],
     createdAt: asTime(t.createdAt) ?? Date.now(),
     completedAt: status === 'done' ? asTime(t.completedAt) ?? Date.now() : null,
+    startedAt: status === 'doing' ? asTime(t.startedAt) ?? Date.now() : null,
+    workedMs: Math.max(0, asTime(t.workedMs) ?? 0),
   }
 }
 

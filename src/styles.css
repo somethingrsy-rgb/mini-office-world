@@ -328,3 +328,6 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 @keyframes glint { 0% { opacity:0; } 25% { opacity:1; } 100% { opacity:0; } }
 @media (prefers-reduced-motion: reduce) { .intro { display:none; } .app.pre > :not(.sky) { opacity:1; transform:none; } }
 .top { margin-bottom:8px; }
+
+.worktime { animation:pop .3s ease-out; }
+.wtime { color:#8a5a00; font-weight:700 !important; opacity:1 !important; }

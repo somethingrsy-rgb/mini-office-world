@@ -19,6 +19,7 @@ import { subAssignee, taskAssignee } from './assign'
 import AvatarCard from './components/AvatarCard'
 import { buildItems, workByAvatar, type WorkItem } from './work'
 import TodoSheet from './components/TodoSheet'
+import { fmtWorked, workedMs } from './worktime'
 import { orderTasks, rankMap } from './order'
 import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
@@ -130,9 +131,11 @@ export default function App() {
     () => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => {
       const w = works[k]
       const top = w.doing[0] ?? w.items[0]
-      return [k, top ? { text: top.title, more: w.items.length - 1 } : null]
+      // 진행 중인 일은 지금까지 일한 시간도 함께 보여줘요 (1분마다 갱신)
+      const worked = w.doing[0] ? fmtWorked(workedMs(w.doing[0].task)) : null
+      return [k, top ? { text: top.title, more: w.items.length - 1, worked } : null]
     })),
-    [works],
+    [works, real],
   )
   // 마감이 2일 이내(오늘·기한 초과 포함)인 일: 접수대의 내가 번갈아 알려줘요
   const reminders = useMemo(() => {

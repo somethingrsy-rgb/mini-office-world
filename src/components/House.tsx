@@ -10,7 +10,7 @@ interface Props {
   activities: Record<AvatarId, Activity>
   alerts: Partial<Record<Staff, 'soon' | 'urgent' | null>>
   cheers: Record<string, number>
-  labels: Partial<Record<Staff, { text: string; more: number } | null>>
+  labels: Partial<Record<Staff, { text: string; more: number; worked?: string | null } | null>>
   /** 지금 남아 있는(끝나지 않은) 일 개수 */
   remaining: number
   /** 마감이 2일 이내(오늘·기한 초과 포함)인 일 — 접수대의 내가 번갈아 알려줘요 */

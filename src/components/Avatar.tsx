@@ -12,7 +12,7 @@ interface Props {
   alert?: 'soon' | 'urgent' | null
   cheer?: number
   /** 머리 위에 띄울 맡은 일 이름 (more는 그 밖에 맡은 일 수) */
-  taskLabel?: { text: string; more: number } | null
+  taskLabel?: { text: string; more: number; worked?: string | null } | null
   delay?: number
   hideName?: boolean
   onSelect: (id: AvatarInfo['id']) => void
@@ -130,6 +130,16 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
           <g className="tasktag" pointerEvents="none">
             <rect x={-tw / 2} y={-top - 46} width={tw} height="46" rx="23" fill="#fff" fillOpacity=".96" stroke="#ff86b6" strokeWidth="4" />
             <text x="0" y={-top - 14} textAnchor="middle" fontSize={fs} fontWeight="800" fill="#5b4a78">{text}</text>
+            {taskLabel.worked && (() => {
+              const wt = `⏱ ${taskLabel.worked}`
+              const ww = textWidth(wt, 24) + 30
+              return (
+                <g className="worktime">
+                  <rect x={-ww / 2} y={-top - 46 - 40} width={ww} height="34" rx="17" fill="#fff6d6" fillOpacity=".97" stroke="#f5b301" strokeWidth="3" />
+                  <text x="0" y={-top - 46 - 15} textAnchor="middle" fontSize="24" fontWeight="800" fill="#8a5a00">{wt}</text>
+                </g>
+              )
+            })()}
           </g>
         )
       })()}

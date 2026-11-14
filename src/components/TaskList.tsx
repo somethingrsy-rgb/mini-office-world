@@ -3,6 +3,7 @@ import { AVATARS } from '../avatars'
 import { asset } from '../assets'
 import { isAutoSub, subAssignee, taskAssignee } from '../assign'
 import { taskProgress } from '../entries'
+import { fmtWorked, workedMs } from '../worktime'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
 import { IMPORTANCE_LABEL, STATUS_LABEL, type Status, type Task } from '../types'
 
@@ -81,6 +82,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
               {STATUS_LABEL[t.status]} · {whoTask(t)}
               {t.due && <> · 마감 {fmtDate(t.due)}</>}
               {t.subtasks.length > 0 && <> · 할 일 {doneCnt}/{t.subtasks.length}</>}
+              {workedMs(t) >= 60000 && <> · ⏱ {fmtWorked(workedMs(t))}</>}
             </div>
 
             {isOpen && (
