@@ -16,6 +16,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
+    'bgbeige': 'bg-beige', 'housebeige': 'house-beige', 'boxbeige': 'intro-box-beige', 'logobeige': 'logo-beige', 'counterbeige': 'reception-counter-beige',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
     'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
@@ -135,6 +136,7 @@ def crop_rgba(rgba, boxes, pad=4):
 
 # 다크 하우스는 층 바닥이 라이트보다 아래에 있어요. 바닥 높이(라이트 기준 y)마다 얼마나 올려야 라이트와 같아지는지
 DARK_FLOOR_SHIFT = [(0, 0), (408, 10), (690, 24), (1002, 26), (1212, 14)]
+BEIGE_FLOOR_SHIFT = [(0, 0), (1272, 0)]  # 웜 베이지 하우스는 층 바닥 높이를 라이트와 같게 만들어 달라고 요청해요(맞지 않으면 여기서 보정)
 
 
 def align_floors(img, shifts, out_h):
@@ -219,6 +221,32 @@ def main(src):
     _, li = load_alpha(src, 'listicon')
     li = trim(li); li = li.resize((round(li.width * 192 / li.height), 192), Image.LANCZOS)
     save(li, f'{OUT}/ui/list.webp', 92)
+
+    # 웜 베이지 그림(선택): 원본이 있는 것만 처리해요. 없으면 앱이 파스텔 그림에 색 보정을 입혀 대신 보여 줘요
+    beige = []
+    def has_src(k): return os.path.exists(os.path.join(src, f'{SOURCES[k]}.png'))
+    if has_src('bgbeige'):
+        b_ = load(src, 'bgbeige'); b_ = b_.resize((900, round(b_.height * 900 / b_.width)), Image.LANCZOS)
+        save(b_, f'{OUT}/bg-beige.webp', 82); beige.append('bg-beige.webp')
+    if has_src('housebeige'):
+        _, h_ = load_alpha(src, 'housebeige'); h_ = trim(h_); h_ = h_.resize((1000, round(h_.height * 1000 / h_.width)), Image.LANCZOS)
+        h_ = align_floors(h_, BEIGE_FLOOR_SHIFT, 1272)
+        save(h_, f'{OUT}/house-beige.webp', 90); beige.append('house-beige.webp'); meta['houseBeige'] = {'w': h_.width, 'h': h_.height}
+    if has_src('boxbeige'):
+        _, x_ = load_alpha(src, 'boxbeige'); x_ = trim(x_); x_ = x_.resize((720, round(x_.height * 720 / x_.width)), Image.LANCZOS)
+        save(x_, f'{OUT}/ui/box-beige.webp', 92); beige.append('ui/box-beige.webp'); meta['boxBeige'] = {'w': x_.width, 'h': x_.height}
+    if has_src('logobeige'):
+        _, l_ = load_alpha(src, 'logobeige'); l_ = trim(l_); l_ = l_.resize((760, round(l_.height * 760 / l_.width)), Image.LANCZOS)
+        save(l_, f'{OUT}/ui/logo-beige.webp', 92); beige.append('ui/logo-beige.webp'); meta['logoBeige'] = {'w': l_.width, 'h': l_.height}
+    if has_src('counterbeige'):
+        im_ = Image.open(os.path.join(src, 'reception-counter-beige.png')).convert('RGBA')
+        a_ = np.asarray(im_)[:, :, 3].astype(np.float32); lab_, n_ = ndi.label(a_ > 8)
+        z_ = ndi.sum(a_ > 8, lab_, range(1, n_ + 1)); k_ = ndi.binary_dilation(lab_ == (int(np.argmax(z_)) + 1), iterations=2)
+        a_ = np.where(k_ & (a_ >= 12), a_, 0)
+        c_ = trim(Image.fromarray(np.dstack([np.asarray(im_)[:, :, :3], a_.astype(np.uint8)]), 'RGBA'))
+        c_ = c_.resize((700, round(c_.height * 700 / c_.width)), Image.LANCZOS)
+        save(c_, f'{OUT}/counter-beige.webp', 92); beige.append('counter-beige.webp')
+    meta['beigeFiles'] = beige
 
     # 설정 버튼(투명 PNG): 가장 큰 덩어리만 남겨 알파 얼룩을 지우고, 화면에서 쓰는 크기(2배)로 줄여요
     im = Image.open(os.path.join(src, 'settings-button.png')).convert('RGBA')

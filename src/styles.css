@@ -693,3 +693,80 @@ html[data-theme="dark"] .sheet.glass .nt-row { border-top-color:rgba(255,235,190
 
 .resetall { width:100%; margin-top:14px; padding:12px 0; font-size:13px; }
 .dock button img { height:34px; }
+
+/* ═══════════════ 웜 베이지 (라이트 모드의 다른 색 구성) ═══════════════
+   크림색 바탕 · 진한 갈색 글자 · 테라코타/골드 포인트. html[data-palette="beige"] 일 때만 적용돼요 */
+html[data-palette="beige"] {
+  --ink:#4a3526; --pink:#c2825a; --lav:#e3d3bd;
+  background:#e9dcc6;
+}
+html[data-palette="beige"] body { color:var(--ink); }
+html[data-palette="beige"] .top h1 img, html[data-palette="beige"] .gear, html[data-palette="beige"] .house { filter:drop-shadow(0 10px 16px rgba(90,60,30,.32)); }
+
+/* 그림이 아직 없는 요소는 파스텔 그림에 색 보정을 입혀서 베이지처럼 보이게 해요 (진짜 베이지 그림을 넣으면 자동으로 빠져요) */
+html[data-palette="beige"] .sky { filter:sepia(1) saturate(.85) hue-rotate(-24deg) brightness(1.02) contrast(1.02); }
+html[data-palette="beige"] .tint-house { filter:sepia(.85) saturate(.95) hue-rotate(-26deg) brightness(.98) contrast(1.06); }
+html[data-palette="beige"] .top h1 img[src*="logo.webp"] { filter:sepia(1) saturate(1) hue-rotate(-28deg) brightness(.97) contrast(1.05) drop-shadow(0 3px 6px rgba(90,60,30,.35)); }
+
+/* 글라스 시트·칸·버튼: 흰 유리 → 크림 유리 */
+html[data-palette="beige"] .sheet { background:#fbf5ea; color:var(--ink); }
+html[data-palette="beige"] .sheet.glass {
+  background:linear-gradient(160deg, rgba(255,250,240,.76), rgba(246,236,218,.6));
+  border:1px solid rgba(255,248,235,.85);
+  box-shadow:0 -12px 40px rgba(110,75,40,.26), inset 0 1px 0 rgba(255,252,245,.95), inset 0 0 30px rgba(255,248,235,.2); }
+html[data-palette="beige"] .backdrop.glass { background:rgba(80,55,30,.16); }
+html[data-palette="beige"] .grab { background:rgba(255,248,235,.95); }
+html[data-palette="beige"] .x, html[data-palette="beige"] .sheet.glass .x { background:rgba(110,75,40,.1); color:var(--ink); }
+html[data-palette="beige"] input, html[data-palette="beige"] textarea, html[data-palette="beige"] select,
+html[data-palette="beige"] .sheet.glass input, html[data-palette="beige"] .sheet.glass select, html[data-palette="beige"] .sheet.glass textarea {
+  background:rgba(255,252,246,.7); border-color:rgba(160,120,80,.28); color:var(--ink); }
+html[data-palette="beige"] input:focus, html[data-palette="beige"] textarea:focus, html[data-palette="beige"] select:focus { outline-color:#c2825a; }
+html[data-palette="beige"] select { background-image:linear-gradient(45deg,transparent 50%,#a8673f 50%),linear-gradient(135deg,#a8673f 50%,transparent 50%); }
+
+html[data-palette="beige"] .primary { background:linear-gradient(180deg,#d4966d,#b8714a); color:#fff; }
+html[data-palette="beige"] .primary.done { background:linear-gradient(180deg,#9bbf9b,#6f9d78); }
+html[data-palette="beige"] .assignbtn.go { background:linear-gradient(90deg,#d4966d,#c9a06a); color:#fff; }
+html[data-palette="beige"] .ghost, html[data-palette="beige"] .sheet.glass .ghost { background:rgba(120,85,50,.1); color:var(--ink); }
+html[data-palette="beige"] .ghost.danger { color:#b4432f; }
+html[data-palette="beige"] .chip, html[data-palette="beige"] .sheet.glass .chip { background:rgba(255,252,246,.6); border-color:rgba(160,120,80,.25); color:var(--ink); }
+html[data-palette="beige"] .chip.on.imp-normal, html[data-palette="beige"] .sheet.glass .chip.on.imp-normal { background:#b8714a; border-color:#b8714a; color:#fff; }
+html[data-palette="beige"] .tabs button, html[data-palette="beige"] .statusbtns button, html[data-palette="beige"] .sheet.glass .tabs button, html[data-palette="beige"] .sheet.glass .statusbtns button, html[data-palette="beige"] .nav button { background:rgba(255,252,246,.6); border-color:rgba(160,120,80,.25); color:var(--ink); }
+html[data-palette="beige"] .tabs button.on, html[data-palette="beige"] .sheet.glass .tabs button.on { background:#b8714a; color:#fff; }
+html[data-palette="beige"] .statusbtns button.on, html[data-palette="beige"] .sheet.glass .statusbtns button.on { background:#a8673f; border-color:#a8673f; color:#fff; }
+html[data-palette="beige"] .nav em { background:#b8714a; }
+
+/* 목록·카드 */
+html[data-palette="beige"] .task, html[data-palette="beige"] .todorow, html[data-palette="beige"] .cell, html[data-palette="beige"] .goal, html[data-palette="beige"] .subrow, html[data-palette="beige"] .sheet.glass .task, html[data-palette="beige"] .sheet.glass .todorow, html[data-palette="beige"] .sheet.glass .cell, html[data-palette="beige"] .sheet.glass .goal, html[data-palette="beige"] .sheet.glass .subrow {
+  background:rgba(255,251,243,.62); border-color:rgba(160,120,80,.2); color:var(--ink); }
+html[data-palette="beige"] .task.lv-ok, html[data-palette="beige"] .task.lv-none, html[data-palette="beige"] .todorow.lv-ok, html[data-palette="beige"] .todorow.lv-none { border-left-color:#8fb08f; }
+html[data-palette="beige"] .item, html[data-palette="beige"] .erow, html[data-palette="beige"] .sheet.glass .item, html[data-palette="beige"] .sheet.glass .erow, html[data-palette="beige"] .wjob { background:rgba(255,251,243,.6); }
+html[data-palette="beige"] .hint, html[data-palette="beige"] .bubble-msg, html[data-palette="beige"] .sheet.glass .hint, html[data-palette="beige"] .sheet.glass .bubble-msg { background:rgba(214,170,120,.18); color:var(--ink); }
+html[data-palette="beige"] .wday.today { background:rgba(214,170,120,.16); }
+html[data-palette="beige"] .cell.sel, html[data-palette="beige"] .sheet.glass .cell.sel { background:rgba(214,170,120,.32); }
+html[data-palette="beige"] .cell.today { border-color:#b8714a; }
+html[data-palette="beige"] .rank, html[data-palette="beige"] .sheet.glass .rank { background:rgba(160,120,80,.16); color:#8a5530; }
+html[data-palette="beige"] .bar, html[data-palette="beige"] .sheet.glass .bar { background:rgba(120,85,50,.14); }
+html[data-palette="beige"] .bar i { background:linear-gradient(90deg,#d4966d,#b8714a); }
+html[data-palette="beige"] .badge { background:rgba(143,176,143,.24); color:#4d7a55; }
+html[data-palette="beige"] .badge.lv-soon { background:rgba(214,160,60,.28); color:#8a5a00; }
+html[data-palette="beige"] .badge.lv-done { background:rgba(120,85,50,.14); color:#7a5a3c; }
+html[data-palette="beige"] .wtime { color:#8a5a00; }
+html[data-palette="beige"] .nt-row, html[data-palette="beige"] .sheet.glass .nt-row { border-top-color:rgba(120,85,50,.2); }
+html[data-palette="beige"] .settings section, html[data-palette="beige"] .sheet.glass .settings section { border-color:rgba(120,85,50,.18); }
+html[data-palette="beige"] .glassdiv { background:linear-gradient(90deg,transparent,rgba(255,248,235,.95),transparent); }
+html[data-palette="beige"] .muted, html[data-palette="beige"] .empty p { color:var(--ink); }
+
+/* 아래 버튼·아바타 선택 칸 */
+html[data-palette="beige"] .avchip, html[data-palette="beige"] .dock button, html[data-palette="beige"] .pinbtn {
+  background:rgba(255,250,240,.38); border-color:rgba(255,248,235,.7); color:var(--ink);
+  box-shadow:0 8px 24px rgba(100,70,35,.2), inset 0 1px 0 rgba(255,252,245,.7); }
+html[data-palette="beige"] .dock button { background:rgba(255,250,240,.44); }
+html[data-palette="beige"] .avchip.on { background:rgba(255,250,240,.7); border-color:rgba(255,252,245,.95); box-shadow:0 8px 24px rgba(100,70,35,.22), inset 0 1px 0 rgba(255,252,245,.9), 0 0 0 2px rgba(194,130,90,.55); }
+html[data-palette="beige"] .avchip.off { background:rgba(255,250,240,.14); border-color:rgba(255,248,235,.4); box-shadow:0 4px 14px rgba(100,70,35,.08); }
+html[data-palette="beige"] .avchip small.wait { background:#d4966d; color:#fff; }
+html[data-palette="beige"] .toast { background:#fbf5ea; color:var(--ink); }
+html[data-palette="beige"] .warn { background:#f6e6bf; }
+html[data-palette="beige"] .notif, html[data-palette="beige"] .dotbadge { background:#c2442f; }
+html[data-palette="beige"] .timebox, html[data-palette="beige"] .clock, html[data-palette="beige"] .summary, html[data-palette="beige"] .card { background:rgba(255,250,240,.8); }
+html[data-palette="beige"] .nametag { stroke:#fbf5ea; }
+html[data-palette="beige"] .pinbtn.on { background:rgba(255,250,240,.75); }

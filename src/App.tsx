@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import House from './components/House'
 import { AVATARS, applyNames, type AvatarId } from './avatars'
-import { asset, preloadAssets, themed } from './assets'
+import { asset, preloadAssets, themed, type Skin } from './assets'
 import { ROOMS, type RoomId } from './rooms'
 import RoomView from './components/RoomView'
 import { getActivity } from './schedule'
@@ -54,10 +54,13 @@ export default function App() {
     return () => mq.removeEventListener?.('change', on)
   }, [])
   const dark = settings.theme === 'dark' || (settings.theme === 'auto' && sysDark)
+  // 화면 스킨: 다크 / 웜 베이지 / 파스텔
+  const skin: Skin = dark ? 'dark' : settings.palette === 'beige' ? 'beige' : 'pastel'
   useEffect(() => {
     document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b0f14' : '#c8a8ee')
-  }, [dark])
+    document.documentElement.dataset.palette = !dark && settings.palette === 'beige' ? 'beige' : 'pastel'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b0f14' : settings.palette === 'beige' ? '#e9dcc6' : '#c8a8ee')
+  }, [dark, settings.palette])
   const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
@@ -333,9 +336,9 @@ export default function App() {
 
   // 항상 맨 위에 떠 있는 작은 창 (PC 크롬·엣지): 하우스 축소판 + 남은 일 + 마감 알림
   const pip = useAlwaysOnTop(dark, () => (
-    <div className="pipapp" style={{ backgroundImage: `url(${themed(dark).bg})` }}>
-      <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
-      <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
+    <div className="pipapp" style={{ backgroundImage: `url(${themed(skin).bg})` }}>
+      <img className="piplogo" src={themed(skin).logo} alt="MINI OFFICE WORLD" />
+      <House skin={skin} dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
         remaining={items.length} reminders={reminders} hush={!!userSay} selected={null} onRoom={() => {}} onSelect={() => {}} />
       <div className="pipinfo">
         <b>{items.length > 0 ? `남은 일 ${items.length}` : '다 끝! 🎉'}</b>
@@ -347,9 +350,9 @@ export default function App() {
 
   return (
     <div className={`app ${revealed ? '' : 'pre'}`}>
-      {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
+      {!introDone && <Intro skin={skin} dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
-      <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
+      <div className="sky" style={{ backgroundImage: `url(${themed(skin).bg})` }} />
       <header className="top">
         {pipSupported() && (
           <button className={`pinbtn ${pip.active ? 'on' : ''}`} onClick={() => (pip.active ? pip.close() : pip.open())} aria-label="항상 위에 띄우기" title="항상 위에 띄우기">📌</button>
@@ -357,13 +360,13 @@ export default function App() {
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}
         </button>
-        <h1><img src={themed(dark).logo} alt="MINI OFFICE WORLD" /></h1>
+        <h1><img src={themed(skin).logo} alt="MINI OFFICE WORLD" /></h1>
       </header>
 
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
 
       <main className="stage">
-        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} onReceived={onReceived} selected={selected} onRoom={setRoom}
+        <House skin={skin} dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} onReceived={onReceived} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
 
@@ -446,7 +449,7 @@ export default function App() {
       )}
       {room && (
         <Sheet glass tall title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
-          <RoomView room={room} activities={activities} shown={shown} dark={dark} />
+          <RoomView room={room} activities={activities} shown={shown} dark={dark} skin={skin} />
         </Sheet>
       )}
       {view === 'settings' && (

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import Avatar from './Avatar'
 import { AVATARS, type AvatarId } from '../avatars'
-import { COUNTER_IMG, themed } from '../assets'
+import { COUNTER_IMG, themed, type Skin } from '../assets'
 import { COUNTER, COUNTER_DARK_DROP, ROOMS, type RoomId } from '../rooms'
 import type { Activity } from '../schedule'
 import type { Staff } from '../types'
@@ -18,6 +18,7 @@ interface Props {
   /** 지금 남아 있는(끝나지 않은) 일 개수 */
   remaining: number
   dark?: boolean
+  skin?: Skin
   /** 접수대에서 일을 받기 시작한 아바타 */
   onReceived?: (id: AvatarId) => void
   /** 나(관리자)가 말하는 중이면 마감 알림 말풍선을 잠깐 숨겨요 */
@@ -32,8 +33,8 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false, hush = false, onReceived }: Props) {
-  const th = themed(dark)
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false, skin, hush = false, onReceived }: Props) {
+  const th = themed(skin ?? dark)
   // 마감이 가까운 일을 4.5초마다 번갈아 알려줘요
   const [ri, setRi] = useState(0)
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
 
   return (
     <svg viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
-      <image href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
+      <image href={th.house} width={th.houseDim.w} height={th.houseDim.h} className={th.tint.house ? 'tint-house' : undefined} />
       {/* 방을 누르면 확대해서 볼 수 있게 하는 투명 영역 */}
       {ROOMS.map((r) => (
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"
@@ -61,7 +62,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} speech={speech[info.id]} hideName
           delay={1.2} selected={selected === info.id} onSelect={onSelect} />
       ))}
-      <image href={th.counter} x={COUNTER.x} y={COUNTER.bottom - COUNTER_IMG.h * COUNTER.w / COUNTER_IMG.w}
+      <image className={th.tint.counter ? 'tint-house' : undefined} href={th.counter} x={COUNTER.x} y={COUNTER.bottom - COUNTER_IMG.h * COUNTER.w / COUNTER_IMG.w}
         width={COUNTER.w} height={COUNTER_IMG.h * COUNTER.w / COUNTER_IMG.w} pointerEvents="none" />
       {/* 카운터 앞 이름판: 남은 일 개수를 보여 줘요 (일을 끝내면 줄어들고, 0이면 모두 대기) */}
       <g pointerEvents="none">
