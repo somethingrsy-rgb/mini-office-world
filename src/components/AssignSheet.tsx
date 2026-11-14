@@ -7,8 +7,8 @@ import type { WorkItem } from '../work'
 interface Props {
   who: Staff
   items: WorkItem[]
-  onCreate: (v: { title: string; due: string; importance: Importance }) => void
-  onAssign: (item: WorkItem) => void
+  onCreate: (v: { title: string; due: string; importance: Importance; start: boolean }) => void
+  onAssign: (item: WorkItem, start: boolean) => void
 }
 
 /** 아바타에게 일 시키기: 새 일을 바로 만들거나, 이미 등록한 일을 맡김 */
@@ -18,20 +18,22 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
   const [due, setDue] = useState('')
   const [importance, setImportance] = useState<Importance>('normal')
   const [err, setErr] = useState('')
+  const [start, setStart] = useState(false)
   const others = items.filter((i) => i.assignee !== who)
   const name = (id: string) => AVATARS.find((a) => a.id === id)!
 
   return (
     <div className="assign">
-      <p className="muted">{info.name}에게 일을 시키면 바로 일하는 자리로 가서 일해요. ({info.role} 담당 자리)</p>
+      <p className="muted">일을 나눠 주면 {info.name}이(가) 접수대로 와서 일을 받아가요. 일을 시작하려면 "진행 중"으로 바꾸거나 아래 "바로 시작"을 켜 주세요.</p>
+      <label className="startrow"><input type="checkbox" checked={start} onChange={(e) => setStart(e.target.checked)} /> 바로 시작 (받은 뒤 {info.role} 자리로 가서 일해요)</label>
 
-      <h3 className="sh">✏️ 새 일 시키기</h3>
+      <h3 className="sh">✏️ 새 일 나눠 주기</h3>
       <form
         className="form"
         onSubmit={(e) => {
           e.preventDefault()
           if (!title.trim()) return setErr('시킬 일을 입력해 주세요.')
-          onCreate({ title: title.trim(), due, importance })
+          onCreate({ title: title.trim(), due, importance, start })
         }}
       >
         <label>
@@ -55,10 +57,10 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
           </div>
         </div>
         {err && <p className="err">{err}</p>}
-        <button type="submit" className="primary">{info.emoji} {info.name}에게 시키기</button>
+        <button type="submit" className="primary">{info.emoji} {info.name}에게 나눠 주기</button>
       </form>
 
-      <h3 className="sh">📋 등록된 일 맡기기</h3>
+      <h3 className="sh">📋 등록된 일 나눠 주기</h3>
       {others.length === 0 ? (
         <p className="muted pad">다른 아바타가 맡은 일이 없어요. 위에서 새 일을 시켜 보세요.</p>
       ) : (
@@ -71,7 +73,7 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
                   {i.title}
                   <small> · {i.sub ? `${i.task.title} · ` : ''}지금 {name(i.assignee).emoji} {name(i.assignee).name}{i.due ? ` · ${fmtDate(i.due)} ${di.label}` : ''}</small>
                 </span>
-                <button className="primary sm" onClick={() => onAssign(i)}>맡기기</button>
+                <button className="primary sm" onClick={() => onAssign(i, start)}>맡기기</button>
               </li>
             )
           })}

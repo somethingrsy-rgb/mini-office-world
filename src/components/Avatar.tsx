@@ -46,13 +46,24 @@ function useWalker(id: AvatarInfo['id'], target: Activity['spot']) {
 /** 발 위치(x, y)를 기준으로 그리는 3D 캐릭터. 위치 이동은 CSS transition으로 처리 */
 export default function Avatar({ info, activity, selected, alert, cheer = 0, delay = 0, onSelect }: Props) {
   const w = useWalker(info.id, activity.spot)
+  // 환호는 이동을 시작한 뒤 목적지에 도착하면 시작하고, 3초쯤 뒤 끝나요
+  const [wantCheer, setWantCheer] = useState(false)
   const [happy, setHappy] = useState(false)
   useEffect(() => {
     if (!cheer) return
-    setHappy(true)
-    const t = window.setTimeout(() => setHappy(false), 2800)
+    const t = window.setTimeout(() => setWantCheer(true), 350) // 이동이 시작될 시간을 줌
     return () => window.clearTimeout(t)
   }, [cheer])
+  useEffect(() => {
+    if (!wantCheer || w.moving) return
+    setWantCheer(false)
+    setHappy(true)
+  }, [wantCheer, w.moving])
+  useEffect(() => {
+    if (!happy) return
+    const t = window.setTimeout(() => setHappy(false), 3200)
+    return () => window.clearTimeout(t)
+  }, [happy])
 
   const pose = w.moving ? 'walk' : activity.pose
   const key = happy ? 'cheer' : spriteFor(info.id, pose)

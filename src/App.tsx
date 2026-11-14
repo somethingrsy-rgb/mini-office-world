@@ -41,8 +41,16 @@ export default function App() {
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)
   const [assignFor, setAssignFor] = useState<Staff | null>(null)
-  // 일을 시킨 아바타: 20분 동안은 시간표와 상관없이 일 장소에서 일해요
-  const [orders, setOrders] = useState<Partial<Record<Staff, { title: string; until: number }>>>({})
+  // 특별 행동: 일을 받으러 접수대로(pickup), 일을 끝내고 완료 칸으로(finish). 끝나는 시각을 기억해 둬요
+  const [pickups, setPickups] = useState<Record<string, number>>({})
+  const [finishes, setFinishes] = useState<Record<string, number>>({})
+  const [tick, setTick] = useState(0)
+  const startEvent = (kind: 'pickup' | 'finish', ids: string[], ms: number) => {
+    const until = Date.now() + ms
+    const set = kind === 'pickup' ? setPickups : setFinishes
+    set((m) => { const n = { ...m }; ids.forEach((id) => (n[id] = until)); return n })
+    window.setTimeout(() => setTick((t) => t + 1), ms + 300) // 끝났을 때 원래 행동으로 돌아가게 다시 계산
+  }
   useEffect(() => { preloadAssets() }, [])
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
@@ -79,19 +87,20 @@ export default function App() {
   const items = useMemo(() => buildItems(tasks), [tasks, real])
   const works = useMemo(() => workByAvatar(items), [items])
   const activities = useMemo(
-    () =>
-      Object.fromEntries(
+    () => {
+      const t = Date.now()
+      return Object.fromEntries(
         AVATARS.map((a) => {
           const w = a.id === 'user' ? undefined : works[a.id as Staff]
-          const top = w?.doing[0]
-          const ord = a.id === 'user' ? undefined : orders[a.id as Staff]
-          const job = ord && ord.until > Date.now()
-            ? { title: ord.title, urgent: true, forced: true }
-            : top ? { title: top.title, urgent: w!.doing.some((i) => i.level === 'urgent' || i.level === 'overdue') } : null
-          return [a.id, getActivity(a.id, now, job, settings.schedule)]
+          const top = w?.doing[0] // '진행 중'인 일이 있으면 일하는 자리로 가요
+          const job = top ? { title: top.title } : null
+          const event = a.id === 'user' ? null : (finishes[a.id] ?? 0) > t ? 'finish' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
+          return [a.id, getActivity(a.id, now, job, settings.schedule, event)]
         }),
-      ) as Record<AvatarId, ReturnType<typeof getActivity>>,
-    [now, works, settings, orders, real],
+      ) as Record<AvatarId, ReturnType<typeof getActivity>>
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [now, works, settings, pickups, finishes, tick, real],
   )
   const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
   const totals = {
@@ -112,26 +121,38 @@ export default function App() {
     return () => window.clearTimeout(t)
   }, [toast])
 
-  const giveOrder = (id: Staff, title: string) => {
-    setOrders((o) => ({ ...o, [id]: { title, until: Date.now() + 20 * 60000 } }))
-    const a = AVATARS.find((x) => x.id === id)!
-    notify(`${a.emoji} ${a.name}에게 「${title}」를 맡겼어요. 일하러 가요!`)
-    setSelected(id)
+  const names = (ids: string[]) => ids.map((id) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.emoji} ${a.name}` }).join(', ')
+  /** 그 업무에 관여하는(아직 끝나지 않은 일을 맡은) 직원들 */
+  const staffOf = (t: Task) => {
+    const set = new Set<Staff>()
+    if (t.subtasks.length === 0 || t.subtasks.every((x) => x.done)) set.add(taskAssignee(t))
+    t.subtasks.filter((x) => !x.done).forEach((x) => set.add(subAssignee(t, x)))
+    return set
   }
-  const createAndAssign = (v: { title: string; due: string; importance: Importance }) => {
+  /** 일을 나눠 주면 새로 맡은 아바타가 접수대로 와서 일을 받아가요 */
+  const distribute = (t: Task, old?: Task) => {
+    if (t.status === 'done') return
+    const prev = old ? staffOf(old) : new Set<Staff>()
+    const fresh = [...staffOf(t)].filter((id) => !prev.has(id))
+    if (fresh.length === 0) return
+    startEvent('pickup', fresh, 18000)
+    notify(`📥 일을 받으러 접수대로 와요: ${names(fresh)}`)
+  }
+  const createAndAssign = (v: { title: string; due: string; importance: Importance; start: boolean }) => {
     if (!assignFor) return
-    save({ id: newId(), title: v.title, desc: '', due: v.due || null, importance: v.importance, status: 'doing', assignee: assignFor, subtasks: [], createdAt: Date.now(), completedAt: null })
-    giveOrder(assignFor, v.title)
+    const t: Task = { id: newId(), title: v.title, desc: '', due: v.due || null, importance: v.importance, status: v.start ? 'doing' : 'todo', assignee: assignFor, subtasks: [], createdAt: Date.now(), completedAt: null }
+    save(t)
+    distribute(t)
     setAssignFor(null)
   }
-  const assignExisting = (it: WorkItem) => {
+  const assignExisting = (it: WorkItem, start: boolean) => {
     if (!assignFor) return
     let t = it.sub
       ? { ...it.task, subtasks: it.task.subtasks.map((s) => (s.id === it.sub!.id ? { ...s, assignee: assignFor } : s)) }
       : { ...it.task, assignee: assignFor }
-    if (t.status === 'todo') t = { ...t, status: 'doing' }
+    if (start && t.status === 'todo') t = { ...t, status: 'doing' }
     save(t)
-    giveOrder(assignFor, it.title)
+    distribute(t, it.task)
     setAssignFor(null)
   }
 
@@ -139,22 +160,29 @@ export default function App() {
     const old = tasks.find((x) => x.id === t.id)
     save(t)
     if (!old) return
+    // '진행 중'으로 바꾸면 담당 아바타가 일하는 자리로 가요
+    if (old.status !== 'doing' && t.status === 'doing') notify(`🛠 일하러 가요: ${names([...staffOf(t)])}`)
+    // 일을 끝내면 담당 아바타가 완료 칸으로 가서 보고하고 환호해요
     if (old.status !== 'done' && t.status === 'done') {
       const ids = new Set<string>([taskAssignee(t), ...t.subtasks.map((s) => subAssignee(t, s))])
       const allDone = tasks.every((x) => x.id === t.id || x.status === 'done')
       if (allDone) {
+        startEvent('finish', ['momo', 'luna', 'coco', 'mimi'], 26000)
         cheerUp(['momo', 'luna', 'coco', 'mimi', 'user'])
         notify('🎊 등록된 모든 업무를 끝냈어요! 정말 수고했어요')
       } else {
+        startEvent('finish', [...ids], 26000)
         cheerUp([...ids, 'user'])
-        notify(`🎉 「${t.title}」 업무 완료!`)
+        notify(`🎉 「${t.title}」 업무 완료! 완료 칸으로 가요`)
       }
       return
     }
     const newly = t.subtasks.filter((s) => s.done && !old.subtasks.find((o) => o.id === s.id)?.done)
     if (newly.length) {
-      cheerUp(newly.map((s) => subAssignee(t, s)))
-      notify(`✅ 「${newly[0].title}」 완료!`)
+      const ids = newly.map((s) => subAssignee(t, s))
+      startEvent('finish', ids, 26000)
+      cheerUp(ids)
+      notify(`✅ 「${newly[0].title}」 완료! 완료 칸으로 가요`)
     }
   }
   const info = AVATARS.find((a) => a.id === selected)
@@ -277,7 +305,7 @@ export default function App() {
           <TaskForm
             initial={editing}
             onCancel={close}
-            onSave={(t) => { save(t); setEditing(undefined); setView('list') }}
+            onSave={(t) => { save(t); distribute(t, editing); setEditing(undefined); setView('list') }}
           />
         </Sheet>
       )}

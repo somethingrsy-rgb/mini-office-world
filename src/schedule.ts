@@ -2,7 +2,7 @@ import type { AvatarId } from './avatars'
 
 export type Pose =
   | 'stand' | 'walk' | 'type' | 'sort' | 'read' | 'search'
-  | 'cal' | 'check' | 'coffee' | 'eat' | 'chat' | 'sit'
+  | 'cal' | 'check' | 'coffee' | 'eat' | 'chat' | 'sit' | 'receive' | 'done'
 
 export interface Spot { x: number; y: number; face: 'l' | 'r' }
 
@@ -48,7 +48,15 @@ const STROLL: Spot[] = [spot(200, 1205), spot(320, 1225), spot(700, 1225), spot(
 const SOFA: Record<AvatarId, Spot> = {
   momo: spot(430, AT - 14), luna: spot(500, AT - 14), coco: spot(570, AT - 14), mimi: spot(465, AT - 14), user: spot(535, AT - 14),
 }
-const PATROL: Spot[] = [spot(295, F1), spot(795, F1), spot(400, F2), spot(750, F2), spot(580, F1)]
+/** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
+const RECEPTION: Spot = spot(215, F1)
+const PICKUP: Record<AvatarId, Spot> = {
+  momo: spot(300, F1, 'l'), luna: spot(95, F1), coco: spot(335, F1, 'l'), mimi: spot(130, F1), user: RECEPTION,
+}
+/** 완료 칸(결과 확인 방): 일을 끝낸 아바타가 가서 보고하는 곳 */
+const DONE: Record<AvatarId, Spot> = {
+  momo: spot(710, F1), luna: spot(775, F1), coco: spot(840, F1), mimi: spot(905, F1), user: spot(775, F1),
+}
 
 function hash(s: string, n: number) {
   let h = 2166136261 ^ n
@@ -61,11 +69,11 @@ export const HUB_OFFSET: Record<AvatarId, number> = { momo: -40, luna: -20, coco
 
 const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'user']
 
-/** 업무 행동: 담당 역할에 따른 기본 업무 자세 */
+/** 업무 행동: 담당 역할에 따른 일하는 자리와 자세 */
 function work(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
   switch (id) {
     case 'momo':
-      return { spot: spot(215, F1), pose: 'sort', label: '새 업무를 접수하고 정리하고 있어요' }
+      return { spot: spot(410, F1), pose: 'sort', label: '새 업무를 접수하고 분류하고 있어요' }
     case 'luna':
       return slot % 2
         ? { spot: spot(300, F2), pose: 'read', label: '책을 펴고 자료를 검토하고 있어요' }
@@ -74,12 +82,10 @@ function work(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'lab
       return { spot: spot(770, F2), pose: slot % 2 ? 'sort' : 'type', label: slot % 2 ? '문서 내용을 적고 있어요' : '컴퓨터로 문서를 작성하고 있어요' }
     case 'mimi':
       return slot % 2
-        ? { spot: spot(545, F1), pose: 'cal', label: '달력을 확인하고 있어요' }
-        : { spot: spot(450, F1), pose: 'type', label: '진행 상황을 정리하고 있어요' }
-    default: {
-      const p = PATROL[slot % PATROL.length]
-      return { spot: p, pose: 'check', label: '사무실을 둘러보며 업무를 점검하고 있어요' }
-    }
+        ? { spot: spot(580, F1), pose: 'cal', label: '달력을 확인하고 있어요' }
+        : { spot: spot(580, F1), pose: 'type', label: '진행 상황을 정리하고 있어요' }
+    default:
+      return { spot: RECEPTION, pose: 'stand', label: '접수대에서 업무를 받고 있어요' }
   }
 }
 
@@ -94,8 +100,11 @@ export function periodName(m: number, s: ScheduleCfg = DEFAULT_SCHEDULE) {
   return '퇴근 후'
 }
 
-/** 업무 연동 정보: 진행 중인 대표 업무 (없으면 null → 자유로운 생활) */
-export interface Job { title: string; urgent: boolean; /** 사용자가 직접 일을 시켜서 시간표와 상관없이 바로 일하러 감 */ forced?: boolean }
+/** 업무 연동 정보: 담당 업무가 '진행 중'이면 일하는 자리로 가서 일함 (없으면 null → 라운지·정원에서 쉼) */
+export interface Job { title: string }
+
+/** 사용자가 일을 나눠 주거나(pickup) 일을 끝냈을 때(finish) 잠깐 하는 특별한 행동 */
+export type AvatarEvent = 'pickup' | 'finish' | null
 
 function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
   const r = hash(id, slot + 7919)
@@ -105,51 +114,46 @@ function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 
   return { spot: SOFA[id], pose: 'sit', label: '소파에서 잠깐 쉬고 있어요' }
 }
 
-export function getActivity(id: AvatarId, minutes: number, job: Job | null = null, s: ScheduleCfg = DEFAULT_SCHEDULE): Activity {
+export function getActivity(
+  id: AvatarId,
+  minutes: number,
+  job: Job | null = null,
+  s: ScheduleCfg = DEFAULT_SCHEDULE,
+  event: AvatarEvent = null,
+): Activity {
   const m = Math.floor(minutes)
   const idx = ORDER.indexOf(id)
   const period = periodName(m, s)
 
-  // 일을 시키면 시간표(출퇴근·점심·커피)와 상관없이 바로 자기 일 장소로 가서 일함
-  if (job?.forced && id !== 'user') {
+  // 나(관리자)는 접수대에 계속 있어요
+  if (id === 'user') return { spot: RECEPTION, pose: 'stand', label: '접수대에서 업무를 받고 있어요', period }
+
+  // 일을 끝냈어요 → 완료 칸으로 가서 보고
+  if (event === 'finish') return { spot: DONE[id], pose: 'done', label: '완료 칸에 가서 일을 마쳤다고 보고하고 있어요', period }
+  // 일을 나눠 줬어요 → 접수대로 와서 일을 받아감
+  if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period }
+
+  // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
+  if (job) {
     const w = work(id, Math.floor(m / 4))
     return { ...w, period, task: job.title, label: `「${job.title}」 ${w.label}` }
   }
 
-  // 출근: 아바타마다 1~2분씩 간격을 두고 도착, 퇴근도 순서대로
+  // 일이 없으면 시간표대로 생활: 출근 → 라운지·정원에서 쉬기 → 점심·커피 → 퇴근
   const arriveAt = s.arrive - 9 + idx * 2
   const leaveAt = s.leave + idx * 2
   if (m < arriveAt || m >= leaveAt) {
     return { spot: OFF, pose: 'stand', label: m < arriveAt ? '아직 출근 전이에요' : '퇴근했어요', period, away: true }
   }
-  if (m < s.arrive) {
-    const w = work(id, 0)
-    return { ...w, period, label: '출근해서 자리로 가고 있어요' }
-  }
+  if (m < s.arrive) return { spot: SEATS_LUNCH[id], pose: 'stand', label: '출근해서 라운지로 가고 있어요', period }
   if (m >= s.lunchStart && m < s.lunchEnd) {
     return { spot: SEATS_LUNCH[id], pose: 'eat', label: '카페에서 점심을 먹고 있어요', period }
   }
   if (m >= s.coffeeStart && m < s.coffeeEnd) {
     return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '커피타임을 갖고 있어요', period }
   }
-  if (m >= s.leave - 20) {
-    // 퇴근 직전엔 정리 중
-    if (m >= leaveAt - 4) return { spot: spot(HUB_X, F1), pose: 'stand', label: '퇴근 준비를 하고 있어요', period }
-  }
-
-  // 일반 업무 시간: 4분 단위로 행동이 바뀜
-  const slot = Math.floor(m / 4)
-  const r = hash(id, slot)
-  if (id === 'user') {
-    // 관리자는 사무실을 둘러봄 (62%) / 나머지는 생활
-    return r < 62 ? { ...work(id, slot), period } : { ...life(id, slot, idx), period }
-  }
-  // 담당 업무가 진행 중이면 대부분 일하고(긴급이면 계속), 업무가 없으면 자유로운 생활
-  if (job && r < (job.urgent ? 101 : 80)) {
-    const w = work(id, slot)
-    return { ...w, period, task: job.title, label: `「${job.title}」 ${w.label}` }
-  }
-  return { ...life(id, slot, idx), period }
+  if (m >= leaveAt - 4) return { spot: spot(HUB_X, F1), pose: 'stand', label: '퇴근 준비를 하고 있어요', period }
+  return { ...life(id, Math.floor(m / 4), idx), period }
 }
 
 // ── 이동 경로 ─────────────────────────────────────

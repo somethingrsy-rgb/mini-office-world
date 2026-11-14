@@ -35,6 +35,7 @@ export function spriteFor(id: AvatarId, pose: Pose): SpriteKey {
 export const BUBBLE: Partial<Record<Pose, string>> = {
   read: 'bubble-book', search: 'bubble-search', cal: 'bubble-calendar', check: 'bubble-check',
   coffee: 'bubble-coffee', eat: 'bubble-food', chat: 'bubble-chat', sit: 'bubble-music', sort: 'bubble-inbox',
+  receive: 'bubble-inbox', done: 'bubble-check',
 }
 
 /** 앱을 열 때 미리 받아 두면 자세가 바뀔 때 깜빡이지 않아요 */
