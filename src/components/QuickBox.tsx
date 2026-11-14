@@ -12,7 +12,7 @@ export default function QuickBox({ onQuick }: { onQuick: (entries: QuickEntry[])
   const mgr = AVATARS.find((a) => a.id === 'user')!.name
 
   const submit = () => { if (allOk) { onQuick(entries); setText('') } }
-  const preview = entries.length > 0 && (
+  const preview = entries.some((e) => e.ok) && (
     <ul className="qprev">
       {entries.map((e, i) => {
         const a = e.assignee ? AVATARS.find((x) => x.id === e.assignee)! : null
@@ -22,9 +22,7 @@ export default function QuickBox({ onQuick }: { onQuick: (entries: QuickEntry[])
             {e.desc && <span> · {e.desc}</span>}
             {e.due && <span className="qd"> · 마감 {fmtDate(e.due)}</span>}
           </li>
-        ) : (
-          <li key={i} className="bad">⚠️ {e.line.length > 24 ? e.line.slice(0, 24) + '…' : e.line} — {e.error}</li>
-        )
+        ) : null
       })}
     </ul>
   )
