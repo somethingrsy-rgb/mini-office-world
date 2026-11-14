@@ -293,3 +293,11 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .top p { margin:2px 0 4px; }
 .gear { z-index:3; }
 .top h1, .top p { pointer-events:none; }
+
+/* 해야 할 일 글라스 시트: 줄도 반투명하게 */
+.sheet.glass .todorow { background:rgba(255,255,255,.55); border-color:rgba(255,255,255,.8); box-shadow:0 2px 10px rgba(120,70,170,.12); }
+.sheet.glass .todorow.lv-soon { background:rgba(255,246,220,.62); }
+.sheet.glass .todorow.lv-urgent, .sheet.glass .todorow.lv-overdue { background:rgba(255,232,236,.65); }
+.sheet.glass .todorow.lift { background:rgba(255,255,255,.85); }
+.sheet.glass .rank { background:rgba(255,255,255,.7); }
+.sheet.glass .todohint { opacity:.8; }

@@ -326,7 +326,7 @@ export default function App() {
         </Sheet>
       )}
       {view === 'todo' && (
-        <Sheet title="📌 해야 할 일" onClose={close}>
+        <Sheet glass title="📌 해야 할 일" onClose={close}>
           <TodoSheet
             tasks={ordered}
             manual={settings.order.length > 0}
