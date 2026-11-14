@@ -797,3 +797,9 @@ html[data-theme="dark"] .pipbar { border-top-color:rgba(255,255,255,.1); }
 /* 작은 창이 열려 있을 때: 살짝 커지고 노랗게 빛나요 */
 .pinbtn.on img { transform:scale(1.08); filter:drop-shadow(0 0 7px rgba(255,214,90,.95)) brightness(1.06); }
 html[data-theme="dark"] .pinbtn { filter:drop-shadow(0 3px 10px rgba(0,0,0,.6)); }
+
+/* ── 아이패드 등 넓은 화면: 폰처럼 꽉 차게 ──────────────────────────────────────
+   하우스가 화면 높이를 가득 채우도록 앱 폭을 키우고, 아래 버튼 줄도 같은 폭으로 맞춰요 */
+:root { --appw: min(100vw, max(520px, calc((100dvh - var(--pt) - var(--pb) - 171px) * 0.786 + 24px))); }
+.app { max-width:var(--appw); }
+.dock { left:50%; right:auto; width:var(--appw); transform:translateX(-50%); box-sizing:border-box; }
