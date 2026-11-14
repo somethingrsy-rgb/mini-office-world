@@ -18,6 +18,8 @@ interface Props {
   /** 지금 남아 있는(끝나지 않은) 일 개수 */
   remaining: number
   dark?: boolean
+  /** 접수대에서 일을 받기 시작한 아바타 */
+  onReceived?: (id: AvatarId) => void
   /** 나(관리자)가 말하는 중이면 마감 알림 말풍선을 잠깐 숨겨요 */
   hush?: boolean
   /** 마감이 2일 이내(오늘·기한 초과 포함)인 일 — 접수대의 내가 번갈아 알려줘요 */
@@ -30,7 +32,7 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false, hush = false }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false, hush = false, onReceived }: Props) {
   const th = themed(dark)
   // 마감이 가까운 일을 4.5초마다 번갈아 알려줘요
   const [ri, setRi] = useState(0)
@@ -78,7 +80,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </g>
       )}
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]}
+        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
     </svg>

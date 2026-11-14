@@ -79,6 +79,13 @@ export default function App() {
     set((m) => { const n = { ...m }; ids.forEach((id) => (n[id] = until)); return n })
     window.setTimeout(() => setTick((t) => t + 1), ms + 300) // 끝났을 때 원래 행동으로 돌아가게 다시 계산
   }
+  /** 접수대 앞에 도착해서 일을 받기 시작하면, 3초만 머문 뒤 다음 행동(라운지·산책)으로 넘어가요 */
+  const RECEIVE_MS = 3000
+  const onReceived = (id: string) => {
+    const until = Date.now() + RECEIVE_MS
+    setPickups((m) => (m[id] && m[id] > until + 200 ? { ...m, [id]: until } : m))
+    window.setTimeout(() => setTick((t) => t + 1), RECEIVE_MS + 300)
+  }
   /** 새 일을 받으면 나가던 중이던 아바타도 다시 접수대로 불러요 */
   const clearLeaving = (ids: string[]) => {
     const drop = (m: Record<string, number>) => { const n = { ...m }; ids.forEach((id) => delete n[id]); return n }
@@ -348,7 +355,7 @@ export default function App() {
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
 
       <main className="stage">
-        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} selected={selected} onRoom={setRoom}
+        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} onReceived={onReceived} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
 

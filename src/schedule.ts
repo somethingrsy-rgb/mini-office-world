@@ -55,10 +55,10 @@ const SOFA: Record<AvatarId, Spot> = {
   momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), user: spot(500, AT - 14),
 }
 /** 정문(아치 앞 길 끝): 새로 일을 받은 아바타는 여기서 들어와 계단 쪽 통로를 지나 접수대로 걸어가요 */
-const gateSpot = (id: AvatarId): Spot => spot(HUB_X + HUB_OFFSET[id], 1246, 'r')
+const gateSpot = (id: AvatarId): Spot => spot(500 + HUB_OFFSET[id], 1246, 'r')
 
 /** 정문 밖: 일을 마친 아바타는 여기까지 걸어가서 사라져요 */
-const exitSpot = (id: AvatarId): Spot => spot(HUB_X + HUB_OFFSET[id], 1264, 'r')
+const exitSpot = (id: AvatarId): Spot => spot(500 + HUB_OFFSET[id], 1264, 'r')
 
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
 // 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
@@ -78,7 +78,7 @@ function hash(s: string, n: number) {
 }
 
 /** 계단·현관에서 아바타끼리 겹치지 않도록 통로 위치를 조금씩 달리함 */
-export const HUB_OFFSET: Record<AvatarId, number> = { momo: -40, luna: -20, coco: 0, mimi: 20, user: 40 }
+export const HUB_OFFSET: Record<AvatarId, number> = { momo: -12, luna: -6, coco: 0, mimi: 6, user: 12 }
 
 const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'user']
 
@@ -199,18 +199,41 @@ export function getActivity(
 }
 
 // ── 이동 경로 ─────────────────────────────────────
+// 아바타는 각 층의 바닥을 따라 가로로 걷고, 층을 오르내릴 때는 방 사이의 벽(기둥) 자리로만 움직여요.
 const floorIndex = (y: number) => (y < 550 ? 0 : y < 850 ? 1 : y < 1100 ? 2 : 3)
 const FLOOR_LIST = [FLOOR_Y.attic, FLOOR_Y.f2, FLOOR_Y.f1, FLOOR_Y.out]
 
-/** 층이 다르면 중앙 통로(계단·현관)를 거쳐 이동 */
-export function route(from: { x: number; y: number }, to: { x: number; y: number }, hubX = HUB_X) {
+/** 층 사이를 오르내리는 벽 자리 (하우스 좌표). 같은 벽에서 아바타끼리 겹치지 않게 사람마다 조금씩 어긋나요 */
+const WALLS: number[][] = [
+  [543],       // 다락 ↔ 2층: 자료실과 문서작성실 사이의 가운데 벽
+  [347, 662],  // 2층 ↔ 1층: 접수실|사무실, 사무실|결과 확인 사이의 벽 (가까운 쪽을 써요)
+  [500],       // 1층 ↔ 정원: 정문
+]
+
+/** 층이 다르면 벽 자리를 따라 이동 (offset은 아바타별로 벽 폭 안에서 어긋나게) */
+export function route(from: { x: number; y: number }, to: { x: number; y: number }, offset = 0) {
   if (from.x === to.x && from.y === to.y) return []
   const a = floorIndex(from.y)
   const b = floorIndex(to.y)
   if (a === b) return [to]
-  const pts: { x: number; y: number }[] = [{ x: hubX, y: from.y }]
+  const pts: { x: number; y: number }[] = []
   const dir = b > a ? 1 : -1
-  for (let f = a + dir; f !== b; f += dir) pts.push({ x: hubX, y: FLOOR_LIST[f] })
-  pts.push({ x: hubX, y: to.y }, to)
+  let x = from.x
+  for (let f = a; f !== b; f += dir) {
+    const link = Math.min(f, f + dir) // WALLS 의 번호: 위층 번호
+    // 벽이 둘이면, 지금 위치에서 목적지까지 덜 돌아가는 벽을 골라요
+    const wx = WALLS[link].reduce((best, c) => (Math.abs(x - c) + Math.abs(c - to.x) < Math.abs(x - best) + Math.abs(best - to.x) ? c : best)) + offset
+    pts.push({ x: wx, y: FLOOR_LIST[f] === undefined ? from.y : (f === a ? from.y : FLOOR_LIST[f]) }) // 지금 층 바닥을 따라 벽까지
+    pts.push({ x: wx, y: f + dir === b ? to.y : FLOOR_LIST[f + dir] }) // 벽을 따라 다음 층으로
+    x = wx
+  }
+  pts.push(to) // 도착한 층 바닥을 따라 목적지까지
   return pts
+}
+
+/** 경로의 걸어갈 총 거리 */
+export function routeLength(from: { x: number; y: number }, to: { x: number; y: number }, offset = 0) {
+  let px = from.x, py = from.y, sum = 0
+  for (const p of route(from, to, offset)) { sum += Math.hypot(p.x - px, p.y - py); px = p.x; py = p.y }
+  return sum
 }
