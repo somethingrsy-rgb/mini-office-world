@@ -12,6 +12,7 @@ export interface SubTask {
   due: string | null // YYYY-MM-DD
   assignee: Assignee
   done: boolean
+  doneAt?: number | null
 }
 
 export interface Task {

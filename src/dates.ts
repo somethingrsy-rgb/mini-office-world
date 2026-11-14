@@ -42,3 +42,43 @@ export function compareTasks(a: Task, b: Task, today = todayStr()) {
   if (a.importance !== b.importance) return IMP[a.importance] - IMP[b.importance]
   return a.createdAt - b.createdAt
 }
+
+// ── 달력 계산 ──────────────────────────────
+export const DOW = ['일', '월', '화', '수', '목', '금', '토']
+
+const fromStr = (s: string) => new Date(`${s}T00:00:00`)
+export const toStr = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
+export function addDays(s: string, n: number) {
+  const d = fromStr(s)
+  d.setDate(d.getDate() + n)
+  return toStr(d)
+}
+
+/** 그 주 월요일 */
+export function startOfWeek(s: string) {
+  const d = fromStr(s)
+  return addDays(s, -((d.getDay() + 6) % 7))
+}
+
+export const dowOf = (s: string) => DOW[fromStr(s).getDay()]
+export const fmtLong = (s: string) => `${Number(s.slice(5, 7))}월 ${Number(s.slice(8, 10))}일 (${dowOf(s)})`
+
+export function addMonths(ym: string, n: number) {
+  const [y, m] = ym.split('-').map(Number)
+  const d = new Date(y, m - 1 + n, 1)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
+}
+
+/** 월 달력 칸(앞뒤 빈칸은 null). 일요일 시작 */
+export function monthCells(ym: string): (string | null)[] {
+  const [y, m] = ym.split('-').map(Number)
+  const first = new Date(y, m - 1, 1).getDay()
+  const days = new Date(y, m, 0).getDate()
+  const cells: (string | null)[] = Array(first).fill(null)
+  for (let d = 1; d <= days; d++) cells.push(`${ym}-${pad(d)}`)
+  while (cells.length % 7) cells.push(null)
+  return cells
+}
+
+export const sameDay = (ts: number | null | undefined, day: string) => !!ts && toStr(new Date(ts)) === day

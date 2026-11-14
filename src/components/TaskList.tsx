@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { AVATARS } from '../avatars'
 import { isAutoSub, subAssignee, taskAssignee } from '../assign'
+import { taskProgress } from '../entries'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
 import { IMPORTANCE_LABEL, STATUS_LABEL, type Status, type Task } from '../types'
 
@@ -38,7 +39,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
     onSave({ ...t, status, completedAt: status === 'done' ? Date.now() : null })
 
   const toggleSub = (t: Task, subId: string) => {
-    const subtasks = t.subtasks.map((s) => (s.id === subId ? { ...s, done: !s.done } : s))
+    const subtasks = t.subtasks.map((s) => (s.id === subId ? { ...s, done: !s.done, doneAt: !s.done ? Date.now() : null } : s))
     const anyDone = subtasks.some((s) => s.done)
     onSave({ ...t, subtasks, status: t.status === 'todo' && anyDone ? 'doing' : t.status })
   }
@@ -67,6 +68,9 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
               <span className="task-title">{t.title}</span>
               <span className={`badge lv-${di.level}`}>{di.label}</span>
             </button>
+            {t.subtasks.length > 0 && (
+              <div className="bar" aria-label="진행률"><i style={{ width: `${Math.round(taskProgress(t) * 100)}%` }} /></div>
+            )}
             <div className="task-meta">
               {STATUS_LABEL[t.status]} · {whoTask(t)}
               {t.due && <> · 마감 {fmtDate(t.due)}</>}

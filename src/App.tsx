@@ -6,7 +6,10 @@ import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
 import { useTasks } from './useTasks'
-import { dueInfo } from './dates'
+import { addDays, dueInfo, todayStr } from './dates'
+import ScheduleView from './components/ScheduleView'
+import BriefingView from './components/BriefingView'
+import { makeBriefing, overallProgress } from './entries'
 import { subAssignee, taskAssignee } from './assign'
 import AvatarCard from './components/AvatarCard'
 import { buildItems, workByAvatar } from './work'
@@ -24,10 +27,24 @@ export default function App() {
   const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
   const [playing, setPlaying] = useState(false)
   const [panel, setPanel] = useState(false)
-  const { tasks, storageError, save, remove } = useTasks()
-  const [view, setView] = useState<null | 'form' | 'list'>(null)
+  const { tasks, ready, storageError, save, remove } = useTasks()
+  const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
+  const briefing = useMemo(() => makeBriefing(tasks, todayStr(), addDays(todayStr(), 1)), [tasks, real])
+  const prog = overallProgress(tasks)
+
+  // 하루 한 번 앱을 열면 미미가 오늘의 업무를 브리핑
+  useEffect(() => {
+    if (!ready) return
+    try {
+      const key = 'mow-briefing-day'
+      if (localStorage.getItem(key) === todayStr()) return
+      localStorage.setItem(key, todayStr())
+    } catch { /* 저장 불가 환경이면 열 때마다 보여 줌 */ }
+    setView('brief')
+  }, [ready])
+
   const close = () => { setView(null); setEditing(undefined) }
 
   useEffect(() => {
@@ -129,6 +146,15 @@ export default function App() {
 
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
 
+      {tasks.length > 0 && (
+        <button className="summary" onClick={() => setView('brief')}>
+          <span>📊 진행률 <b>{prog.pct}%</b></span>
+          <span className="bar"><i style={{ width: `${prog.pct}%` }} /></span>
+          <span>⏰ 오늘 {briefing.dueToday.length}</span>
+          {briefing.overdue.length > 0 && <span className="red">⚠️ 초과 {briefing.overdue.length}</span>}
+        </button>
+      )}
+
       <main className="stage">
         <House activities={activities} alerts={alerts} cheers={cheers} selected={selected} onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
       </main>
@@ -145,12 +171,23 @@ export default function App() {
 
       <nav className="dock">
         <button onClick={() => { setEditing(undefined); setView('form') }}>＋ 업무 등록</button>
-        <button disabled>📅 일정표</button>
+        <button onClick={() => setView('schedule')}>📅 일정표</button>
         <button onClick={() => setView('list')}>
           📋 업무 목록{urgent > 0 && <span className="notif">{urgent}</span>}
         </button>
       </nav>
 
+      {view === 'brief' && (
+        <Sheet title="💛 오늘의 업무 브리핑" onClose={close}>
+          <BriefingView b={briefing} hasTasks={tasks.length > 0} onClose={close}
+            onGo={() => { tasks.length > 0 ? setView('list') : (setEditing(undefined), setView('form')) }} />
+        </Sheet>
+      )}
+      {view === 'schedule' && (
+        <Sheet title="일정표" onClose={close}>
+          <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
+        </Sheet>
+      )}
       {view === 'form' && (
         <Sheet title={editing ? '업무 수정' : '신규 업무 등록'} onClose={close}>
           <TaskForm
