@@ -233,15 +233,16 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
 
       <section>
         <h3 className="sh">🧑‍💼 아바타 이름</h3>
-        <div className="nametable" role="table" aria-label="아바타 이름">
-          <div className="nt-head" role="row"><span>업무</span><span>이름</span></div>
+        <p className="muted">이름을 눌러서 바꿀 수 있어요. 최대 6글자예요.</p>
+        <div className="namecards">
           {AVATARS.map((a) => (
-            <label key={a.id} className="nt-row" role="row">
-              <span className="nt-role">{a.role}</span>
-              <span className="nt-name">
+            <label key={a.id} className="namecard">
+              <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
+              <span className="nc-body">
+                <small className="nc-role">{a.role}</small>
                 <input value={settings.names[a.id] ?? a.name} maxLength={6} placeholder={defaultName(a.id)} onChange={(e) => setName(a.id, e.target.value)} aria-label={`${a.role} 이름`} />
-                <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
               </span>
+              <span className="nc-edit" aria-hidden>✎</span>
             </label>
           ))}
         </div>
