@@ -591,3 +591,37 @@ html[data-theme="dark"] .avchip::after, html[data-theme="dark"] .dock button::af
 html[data-theme="dark"] .avchip, html[data-theme="dark"] .dock button { box-shadow:
     inset 0 1.5px 1px rgba(255,240,200,.5), inset 0 -8px 16px rgba(255,235,190,.04), 0 10px 26px rgba(0,0,0,.5); }
 html[data-theme="dark"] .avchip.on { box-shadow:inset 0 1.5px 1px rgba(255,240,200,.65), inset 0 0 14px rgba(232,198,124,.28), 0 0 0 2px rgba(232,198,124,.5), 0 10px 26px rgba(0,0,0,.5); }
+
+/* ═══════════ 글래스모피즘(담백한 서리 유리): 아바타 선택 칸·아래 버튼 ═══════════
+   분홍빛·번들거리는 반사를 빼고, 흰 반투명 + 강한 흐림 + 얇은 흰 테두리만 남겨요 */
+.avchip::before, .avchip::after, .dock button::before, .dock button::after { display:none; }
+.avchip, .dock button {
+  background:rgba(255,255,255,.22);
+  -webkit-backdrop-filter:blur(16px) saturate(1.4); backdrop-filter:blur(16px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.5);
+  box-shadow:0 8px 24px rgba(60,30,100,.18), inset 0 1px 0 rgba(255,255,255,.45);
+  color:var(--ink); text-shadow:none;
+}
+.dock button { background:rgba(255,255,255,.26); border-radius:22px; }
+.dock button img { filter:drop-shadow(0 2px 3px rgba(60,30,100,.2)); }
+.avchip.on { background:rgba(255,255,255,.42); border-color:rgba(255,255,255,.85);
+  box-shadow:0 8px 24px rgba(60,30,100,.2), inset 0 1px 0 rgba(255,255,255,.7), 0 0 0 2px rgba(255,255,255,.55); }
+.avchip span { text-shadow:none; }
+/* 일이 없는 아바타: 유리 위의 워터마크처럼 */
+.avchip.off { background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.28); box-shadow:0 4px 14px rgba(60,30,100,.08); }
+.avchip.off img { opacity:.28; filter:grayscale(1) brightness(1.25) blur(.4px); }
+.avchip.off span { opacity:.5; }
+
+html[data-theme="dark"] .avchip, html[data-theme="dark"] .dock button {
+  background:rgba(255,255,255,.07);
+  -webkit-backdrop-filter:blur(16px) saturate(1.2); backdrop-filter:blur(16px) saturate(1.2);
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.14);
+  color:var(--ink); text-shadow:none;
+}
+html[data-theme="dark"] .dock button { background:rgba(255,255,255,.09); }
+html[data-theme="dark"] .avchip.on { background:rgba(255,255,255,.16); border-color:rgba(255,235,190,.6);
+  box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.25), 0 0 0 2px rgba(232,198,124,.4); }
+html[data-theme="dark"] .avchip.off { background:rgba(255,255,255,.035); border-color:rgba(255,255,255,.1); box-shadow:none; }
+html[data-theme="dark"] .avchip.off img { opacity:.22; }
+html[data-theme="dark"] .avchip span { text-shadow:none; }
