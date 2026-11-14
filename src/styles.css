@@ -348,3 +348,14 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 
 /* 설명 카드를 없앤 만큼 화면 전체를 아래로 내려요 (로고가 카메라 영역에 걸리지 않게) */
 .app { padding-top:calc(max(env(safe-area-inset-top), 28px) + 52px); }
+
+/* ── 한 화면 고정 배치: 로고 → 하우스 → 아바타 줄 → (고정) 아래 버튼 ─────────────────
+   화면 높이에 맞춰 하우스 크기가 자동으로 조절돼서 스크롤 없이 한 화면에 들어가요 */
+html, body { height:100%; overflow:hidden; overscroll-behavior:none; }
+.app { height:100dvh; min-height:0; box-sizing:border-box; display:flex; flex-direction:column; overflow:hidden;
+  padding-bottom:calc(92px + env(safe-area-inset-bottom)); }
+.top { flex:none; }
+.stage { flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; }
+.house { width:100%; height:100%; }
+.avbar { flex:none; margin-top:10px; }
+.warn { flex:none; }

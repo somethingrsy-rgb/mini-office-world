@@ -6,20 +6,20 @@ type Phase = 'loading' | 'closed' | 'open' | 'gone'
 const HOLD_MS = 1100 // 상자가 닫힌 채 보이는 시간
 const OPEN_MS = 1300 // 상자가 열리는 시간
 
-/** 메인 화면 하우스의 위치·크기에 맞춘 상자 자리. 화면 변형(transform)과 상관없이 레이아웃 값으로 계산해요 */
+/** 메인 화면에 하우스가 실제로 그려지는 자리(스테이지 안에서 비율을 지키며 가운데 정렬)에 맞춘 상자 자리.
+ *  화면이 나타나기 전의 변형(transform)과 상관없이 레이아웃 값으로 계산해요 */
 function measureHouse() {
   const stage = document.querySelector('.stage') as HTMLElement | null
   const app = stage?.offsetParent as HTMLElement | null
-  if (!stage || !app || stage.offsetWidth < 50) return null
+  if (!stage || !app || stage.offsetWidth < 50 || stage.offsetHeight < 50) return null
+  const HOUSE_RATIO = 1272 / 1000 // 하우스 그림 높이/너비
+  const houseW = Math.min(stage.offsetWidth, stage.offsetHeight / HOUSE_RATIO)
   const r = app.getBoundingClientRect()
-  const width = stage.offsetWidth
+  const cx = r.left + stage.offsetLeft + stage.offsetWidth / 2
+  const cy = r.top + stage.offsetTop + stage.offsetHeight / 2
+  const width = houseW
   const height = (width * 936) / 720 // 상자 그림 비율
-  return {
-    left: r.left + stage.offsetLeft,
-    top: r.top + stage.offsetTop + (stage.offsetHeight - height) / 2,
-    width,
-    height,
-  }
+  return { left: cx - width / 2, top: cy - height / 2, width, height }
 }
 
 /**
