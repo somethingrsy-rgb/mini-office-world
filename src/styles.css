@@ -482,3 +482,86 @@ html[data-theme="dark"] .top h1 img { height:84px; margin:-5px 0; }
 html[data-theme="dark"] .avchip.off { background:#2a2e36; box-shadow:none; }
 html[data-theme="dark"] .avchip.off img { opacity:.5; filter:grayscale(1) brightness(.9); }
 html[data-theme="dark"] .avchip.off span { color:#8e8a82; opacity:.9; }
+
+/* ═══════════════ 리퀴드 글래스: 아바타 선택 칸과 아래 버튼 ═══════════════
+   반투명 유리에 뒤 배경이 번지고, 위쪽 가장자리에 빛 반사가 지나가는 느낌이에요 */
+.avchip, .dock button {
+  position:relative; overflow:hidden; isolation:isolate;
+  background:linear-gradient(155deg, rgba(255,255,255,.58) 0%, rgba(255,255,255,.2) 55%, rgba(255,255,255,.34) 100%);
+  -webkit-backdrop-filter:blur(20px) saturate(1.9) brightness(1.06); backdrop-filter:blur(20px) saturate(1.9) brightness(1.06);
+  border:1px solid rgba(255,255,255,.7);
+  box-shadow:
+    inset 0 1.5px 1px rgba(255,255,255,.95),
+    inset 0 -10px 18px rgba(255,255,255,.12),
+    inset 0 0 0 1px rgba(255,255,255,.16),
+    0 10px 26px rgba(110,60,170,.26), 0 2px 6px rgba(110,60,170,.14);
+  transition:background .5s ease, box-shadow .5s ease, border-color .5s ease, transform .15s ease;
+}
+/* 위쪽 빛 반사 */
+.avchip::before, .dock button::before {
+  content:''; position:absolute; z-index:-1; left:7%; right:7%; top:2px; height:44%;
+  border-radius:999px 999px 60% 60% / 100% 100% 40% 40%;
+  background:linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,0));
+  opacity:.62; pointer-events:none;
+}
+/* 아래쪽 은은한 굴절빛 */
+.avchip::after, .dock button::after {
+  content:''; position:absolute; z-index:-1; inset:auto 12% 3px 12%; height:26%;
+  border-radius:999px; background:radial-gradient(ellipse at 50% 100%, rgba(255,255,255,.5), rgba(255,255,255,0) 70%);
+  opacity:.5; pointer-events:none;
+}
+
+/* 아래 버튼: 막대 배경 없이 유리 알약 세 개가 떠 있어요 */
+.dock { background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; border-top:0; box-shadow:none; pointer-events:none;
+  padding:8px 14px calc(12px + env(safe-area-inset-bottom)); gap:10px; }
+.dock button { pointer-events:auto; max-width:none; border-radius:24px; padding:8px 0 9px; color:#4d2f6b; text-shadow:0 1px 0 rgba(255,255,255,.7);
+  background:linear-gradient(155deg, rgba(255,255,255,.55) 0%, rgba(255,140,190,.30) 55%, rgba(255,255,255,.32) 100%); }
+.dock button:active { transform:scale(.96); }
+.dock button img { filter:drop-shadow(0 2px 3px rgba(90,40,120,.25)); }
+
+/* 아바타 칸 */
+.avchip { border-radius:22px; padding:5px 2px 6px; }
+.avchip img { transition:opacity .7s ease, filter .7s ease, transform .5s cubic-bezier(.2,1.3,.4,1); filter:drop-shadow(0 3px 4px rgba(90,40,120,.28)); }
+.avchip span { transition:opacity .6s ease, color .6s ease; text-shadow:0 1px 0 rgba(255,255,255,.7); }
+.avchip.on { border-color:rgba(255,134,182,.95);
+  box-shadow:inset 0 1.5px 1px rgba(255,255,255,.95), inset 0 0 14px rgba(255,134,182,.35), 0 0 0 2px rgba(255,134,182,.5), 0 10px 26px rgba(110,60,170,.26); background:linear-gradient(155deg, rgba(255,255,255,.7), rgba(255,200,225,.34)); }
+.avchip small { z-index:2; }
+
+/* 일이 없는 아바타: 워터마크처럼 흐릿하게 비쳐요 → 일을 받으면 선명해져요 */
+.avchip.off { background:linear-gradient(155deg, rgba(255,255,255,.22), rgba(255,255,255,.06)); border-color:rgba(255,255,255,.4);
+  box-shadow:inset 0 1px 1px rgba(255,255,255,.55), 0 4px 14px rgba(110,60,170,.1); }
+.avchip.off::before, .avchip.off::after { opacity:.2; }
+.avchip.off img { opacity:.3; filter:grayscale(1) contrast(.85) brightness(1.25) blur(.5px) drop-shadow(none); }
+.avchip.off span { opacity:.5; color:var(--ink); }
+/* 일을 받아 깨어날 때 살짝 통통 튀어요 */
+.avchip:not(.off) img { animation:chipwake .6s cubic-bezier(.2,1.3,.4,1); }
+@keyframes chipwake { 0% { transform:scale(.9); } 100% { transform:scale(1); } }
+
+/* ── 다크 모드: 어두운 유리 + 금빛 테두리 ── */
+html[data-theme="dark"] .avchip, html[data-theme="dark"] .dock button {
+  background:linear-gradient(155deg, rgba(255,235,190,.2) 0%, rgba(255,255,255,.04) 55%, rgba(255,235,190,.1) 100%);
+  border:1px solid rgba(255,225,160,.42);
+  -webkit-backdrop-filter:blur(20px) saturate(1.6) brightness(.95); backdrop-filter:blur(20px) saturate(1.6) brightness(.95);
+  box-shadow:inset 0 1.5px 1px rgba(255,240,200,.55), inset 0 -10px 18px rgba(255,235,190,.05), inset 0 0 0 1px rgba(255,235,190,.08), 0 10px 26px rgba(0,0,0,.5);
+  color:var(--ink);
+}
+html[data-theme="dark"] .avchip::before, html[data-theme="dark"] .dock button::before { background:linear-gradient(180deg, rgba(255,240,200,.5), rgba(255,240,200,0)); opacity:.5; }
+html[data-theme="dark"] .avchip::after, html[data-theme="dark"] .dock button::after { background:radial-gradient(ellipse at 50% 100%, rgba(255,225,160,.35), rgba(255,225,160,0) 70%); }
+html[data-theme="dark"] .dock { background:transparent; border-top:0; }
+html[data-theme="dark"] .dock button { color:#f6e6bd; text-shadow:0 1px 2px rgba(0,0,0,.6);
+  background:linear-gradient(155deg, rgba(255,230,160,.26) 0%, rgba(217,174,92,.12) 55%, rgba(255,235,190,.14) 100%); }
+html[data-theme="dark"] .avchip span { text-shadow:0 1px 2px rgba(0,0,0,.6); }
+html[data-theme="dark"] .avchip.on { border-color:#e8c67c; background:linear-gradient(155deg, rgba(255,230,160,.3), rgba(217,174,92,.14));
+  box-shadow:inset 0 1.5px 1px rgba(255,240,200,.7), inset 0 0 14px rgba(232,198,124,.3), 0 0 0 2px rgba(232,198,124,.5), 0 10px 26px rgba(0,0,0,.5); }
+html[data-theme="dark"] .avchip.off { background:linear-gradient(155deg, rgba(255,255,255,.07), rgba(255,255,255,.02)); border-color:rgba(255,235,190,.2);
+  box-shadow:inset 0 1px 1px rgba(255,240,200,.25), 0 4px 14px rgba(0,0,0,.3); }
+html[data-theme="dark"] .avchip.off img { opacity:.26; filter:grayscale(1) contrast(.85) brightness(1.1) blur(.5px); }
+html[data-theme="dark"] .avchip.off span { opacity:.5; color:var(--ink); }
+html[data-theme="dark"] .avchip small.wait { background:linear-gradient(180deg,#f0d28a,#d9ae5c); color:#241b08; }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .avchip, .dock button { background:rgba(255,255,255,.8); }
+  html[data-theme="dark"] .avchip, html[data-theme="dark"] .dock button { background:rgba(40,36,28,.9); }
+}
+
+/* 글래스 버튼이 이전보다 커져서 아래 고정 버튼 자리를 늘렸어요 */
+:root { --pb: calc(92px + env(safe-area-inset-bottom)); }
