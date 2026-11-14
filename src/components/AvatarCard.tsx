@@ -39,12 +39,13 @@ interface Props {
   onStart?: (item: WorkItem) => void
   onWait?: (item: WorkItem) => void
   onComplete?: (item: WorkItem) => void
+  hideTitle?: boolean
 }
 
-export default function AvatarCard({ info, activity, work, totals, onAssign, onStart, onWait, onComplete }: Props) {
+export default function AvatarCard({ info, activity, work, totals, onAssign, onStart, onWait, onComplete, hideTitle }: Props) {
   return (
     <>
-      <div className="card-title">{info.emoji} {info.name} <span>{info.role}</span></div>
+      {!hideTitle && <div className="card-title">{info.emoji} {info.name} <span>{info.role}</span></div>}
       <p>{activity.label}</p>
       {work && work.doing.length === 0 && work.planned.length > 0 && (
         <p className="waiting">⏳ 대기 중 · 예정된 일 {work.planned.length}건</p>
@@ -61,7 +62,7 @@ export default function AvatarCard({ info, activity, work, totals, onAssign, onS
           </div>
         </div>
       )}
-      {onAssign && <button className="ghost assignbtn" onClick={onAssign}>＋ {info.name}에게 일 시키기</button>}
+      {onAssign && <button className="ghost assignbtn" onClick={onAssign}>📋 이미 등록한 일 맡기기</button>}
       {work ? (
         work.items.length === 0 ? (
           <p className="muted">맡은 업무가 없어요. 느긋하게 쉬는 중이에요 ☕</p>

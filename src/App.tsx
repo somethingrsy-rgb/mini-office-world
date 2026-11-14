@@ -21,6 +21,7 @@ import { buildItems, workByAvatar, type WorkItem } from './work'
 import TodoSheet from './components/TodoSheet'
 import { orderTasks, rankMap } from './order'
 import AssignSheet from './components/AssignSheet'
+import QuickAssign from './components/QuickAssign'
 import { newId, type Importance, type Staff, type Task } from './types'
 
 const realMinutes = () => {
@@ -187,6 +188,13 @@ export default function App() {
     distribute(t)
     setAssignFor(null)
   }
+  /** 아바타를 눌러 제목·마감일만 적어 나눠 주기: 대기 상태로 등록되고, 그 아바타가 접수대로 와서 일을 받아가요 */
+  const quickAssign = (who: Staff, v: { title: string; due: string }) => {
+    const t: Task = { id: newId(), title: v.title, desc: '', due: v.due || null, importance: 'normal', status: 'todo', assignee: who, subtasks: [], createdAt: Date.now(), completedAt: null }
+    save(t)
+    distribute(t)
+    setSelected(null)
+  }
   const assignExisting = (it: WorkItem, start: boolean) => {
     if (!assignFor) return
     let t = it.sub
@@ -196,6 +204,7 @@ export default function App() {
     save(t)
     distribute(t, it.task)
     setAssignFor(null)
+    setSelected(null)
   }
 
   /** 일을 끝낸 아바타 중 남은 일이 없는 아바타는 완료 칸에서 인사한 뒤 퇴근해요 */
@@ -241,14 +250,16 @@ export default function App() {
     }
   }
   /** 대기 중인 아바타의 일을 '진행 중'으로: 담당 아바타가 일하는 자리로 가요 (업무 단위) */
-  const startItem = (it: WorkItem) => saveTask({ ...it.task, status: 'doing' })
+  const startItem = (it: WorkItem) => { saveTask({ ...it.task, status: 'doing' }); setSelected(null) }
   /** 진행 중인 일을 다시 대기로: 담당 아바타가 라운지·정원으로 돌아가요 (업무 단위) */
   const waitItem = (it: WorkItem) => {
     saveTask({ ...it.task, status: 'todo' })
     notify(`⏸ 「${it.task.title}」 업무를 대기로 돌렸어요`)
+    setSelected(null)
   }
   /** 일을 완료: 세부 할 일이면 그 할 일만, 마지막 할 일이면 업무 전체가 완료돼요. 담당 아바타가 완료 칸으로 가요 */
   const completeItem = (it: WorkItem) => {
+    setSelected(null)
     if (!it.sub) return saveTask({ ...it.task, status: 'done', completedAt: Date.now() })
     const subtasks = it.task.subtasks.map((s) => (s.id === it.sub!.id ? { ...s, done: true, doneAt: Date.now() } : s))
     const allDone = subtasks.every((s) => s.done)
@@ -321,15 +332,7 @@ export default function App() {
       </div>
 
       <section className="card">
-        {info && act ? (
-          <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals}
-            onAssign={info.id === 'user' ? undefined : () => setAssignFor(info.id as Staff)}
-            onStart={info.id === 'user' ? undefined : startItem}
-            onWait={info.id === 'user' ? undefined : waitItem}
-            onComplete={info.id === 'user' ? undefined : completeItem} />
-        ) : (
-          <p className="muted">아바타를 터치하면 정보를, 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
-        )}
+        <p className="muted">아바타를 터치하면 일을 나눠 줄 수 있어요. 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
       </section>
 
       {storageError && <p className="warn">⚠️ 이 환경에서는 업무를 저장할 수 없어요. (사생활 보호 모드인지 확인해 주세요)</p>}
@@ -367,6 +370,15 @@ export default function App() {
       {view === 'schedule' && (
         <Sheet title="일정표" onClose={close}>
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
+        </Sheet>
+      )}
+      {info && act && info.id !== 'user' && !assignFor && (
+        <Sheet glass title={`${info.emoji} ${info.name} · ${info.role}`} onClose={() => setSelected(null)}>
+          <QuickAssign info={info} onSubmit={(v) => quickAssign(info.id as Staff, v)} />
+          <div className="glassdiv" />
+          <AvatarCard hideTitle info={info} activity={act} work={works[info.id as Staff]} totals={totals}
+            onAssign={() => setAssignFor(info.id as Staff)}
+            onStart={startItem} onWait={waitItem} onComplete={completeItem} />
         </Sheet>
       )}
       {assignFor && (
