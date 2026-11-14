@@ -16,6 +16,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
+    'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
     'logo': 'logo', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
@@ -182,6 +183,18 @@ def main(src):
         save(rg, f'{OUT}/ui/{out}.webp', 92)
         meta[out] = {'w': rg.width, 'h': rg.height}
 
+    # 다크 모드 그림: 밤하늘 배경(불투명), 어두운 하우스·상자(투명 PNG)
+    bgd = load(src, 'bgdark'); bgd = bgd.resize((900, round(bgd.height * 900 / bgd.width)), Image.LANCZOS)
+    save(bgd, f'{OUT}/bg-dark.webp', 82)
+    _, hd = load_alpha(src, 'housedark')
+    hd = trim(hd); hd = hd.resize((1000, round(hd.height * 1000 / hd.width)), Image.LANCZOS)
+    save(hd, f'{OUT}/house-dark.webp', 90)
+    meta['houseDark'] = {'w': hd.width, 'h': hd.height}
+    _, bd = load_alpha(src, 'boxdark')
+    bd = trim(bd); bd = bd.resize((720, round(bd.height * 720 / bd.width)), Image.LANCZOS)
+    save(bd, f'{OUT}/ui/box-dark.webp', 92)
+    meta['boxDark'] = {'w': bd.width, 'h': bd.height}
+
     # 설정 버튼(투명 PNG): 가장 큰 덩어리만 남겨 알파 얼룩을 지우고, 화면에서 쓰는 크기(2배)로 줄여요
     im = Image.open(os.path.join(src, 'settings-button.png')).convert('RGBA')
     al = np.asarray(im)[:, :, 3].astype(np.float32)
@@ -207,6 +220,19 @@ def main(src):
     ct = ct.resize((700, round(ct.height * 700 / ct.width)), Image.LANCZOS)
     save(ct, f'{OUT}/counter.webp', 92)
     meta['counter'] = {'w': ct.width, 'h': ct.height}
+    # 다크 하우스용 카운터: 분홍을 크림·골드 톤으로 바꿔요 (밝기는 살리고 색만 바꿈)
+    a_ = np.asarray(ct).astype(np.float32)
+    lum = (a_[:, :, 0] * .3 + a_[:, :, 1] * .59 + a_[:, :, 2] * .11) / 255.0
+    lo, mid, hi = np.array([46, 34, 24]), np.array([226, 208, 168]), np.array([255, 246, 222])
+    t = np.clip(lum, 0, 1)[..., None]
+    duo = np.where(t < .6, lo + (mid - lo) * (t / .6), mid + (hi - mid) * ((t - .6) / .4))
+    r_, g_, b_ = a_[:, :, 0], a_[:, :, 1], a_[:, :, 2]
+    gold = np.clip((0.45 - b_ / (r_ + 1)) * 5, 0, 1)                          # 금색: 파랑이 아주 적음 → 그대로 살려요
+    green = np.clip((g_ - np.maximum(r_, b_) - 8) / 30, 0, 1)                   # 초록 잎도 그대로
+    keep = np.maximum(gold, green)[..., None]
+    out = duo * (1 - keep) + a_[:, :, :3] * keep
+    cd = Image.fromarray(np.dstack([np.clip(out, 0, 255), a_[:, :, 3]]).astype(np.uint8), 'RGBA')
+    save(cd, f'{OUT}/counter-dark.webp', 92)
 
     # 카운터 뒤에 선 나(허리 위) 6자세. 머리 크기가 서 있는 그림과 같아지게 배율을 맞춰요
     im = load(src, 'userdesk'); rgba = to_rgba(im, white_fg(im)); fg = np.asarray(rgba)[:, :, 3] > 8

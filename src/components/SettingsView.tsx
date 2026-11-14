@@ -120,6 +120,16 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
       </section>
 
       <section>
+        <h3 className="sh">🌙 화면 모드</h3>
+        <div className="chips">
+          {([['auto', '자동'], ['light', '라이트'], ['dark', '다크']] as [Settings['theme'], string][]).map(([k, l]) => (
+            <button key={k} className={`chip sm ${settings.theme === k ? 'on imp-normal' : ''}`} onClick={() => onSettings({ ...settings, theme: k })}>{l}</button>
+          ))}
+        </div>
+        <p className="muted">자동은 휴대폰의 다크 모드 설정을 따라가요.</p>
+      </section>
+
+      <section>
         <h3 className="sh">💾 데이터 백업·복원</h3>
         <p className="muted">업무는 이 기기의 브라우저에만 저장돼요. 기기를 바꾸거나 브라우저 데이터를 지우면 사라지니 가끔 백업해 두세요.</p>
         <p className={`bk ${days === null || days > 14 ? 'old' : ''}`}>

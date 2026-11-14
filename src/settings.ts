@@ -6,9 +6,13 @@ export interface Settings {
   names: Partial<Record<AvatarId, string>>
   /** 내가 정한 해야 할 일 순서 (업무 id 목록) */
   order: string[]
+  /** 화면 모드: auto=휴대폰 설정을 따라가요 */
+  theme: ThemeMode
 }
 
-export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [] }
+export type ThemeMode = 'auto' | 'light' | 'dark'
+
+export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [], theme: 'auto' }
 
 const KEY = 'mow-settings'
 const BACKUP_KEY = 'mow-last-backup'
@@ -35,7 +39,8 @@ export function sanitizeSettings(raw: unknown): Settings {
     }
   }
   const order = Array.isArray(r.order) ? r.order.filter((v): v is string => typeof v === 'string').slice(0, 1000) : []
-  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order } : { schedule, names, order }
+  const theme: ThemeMode = r.theme === 'light' || r.theme === 'dark' ? r.theme : 'auto'
+  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme } : { schedule, names, order, theme }
 }
 
 /** 시간표가 순서대로인지 검사. 문제가 있으면 안내 문구를 돌려줌 */

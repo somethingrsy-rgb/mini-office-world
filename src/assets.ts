@@ -14,6 +14,19 @@ export const COUNTER_IMG = ASSET_META.counter as { w: number; h: number }
 export const FX = ASSET_META.fx as unknown as Record<string, Dim>
 export const ROOM_IMG = ASSET_META.rooms as unknown as Record<string, Dim>
 export const HOUSE = ASSET_META.house as { w: number; h: number }
+export const HOUSE_DARK = ASSET_META.houseDark as { w: number; h: number }
+export const BOX = ASSET_META.box as { w: number; h: number }
+export const BOX_DARK = ASSET_META.boxDark as { w: number; h: number }
+
+/** 라이트·다크에 따라 달라지는 그림 */
+export const themed = (dark: boolean) => ({
+  bg: asset(dark ? 'bg-dark.webp' : 'bg.webp'),
+  house: asset(dark ? 'house-dark.webp' : 'house.webp'),
+  houseDim: dark ? HOUSE_DARK : HOUSE,
+  counter: asset(dark ? 'counter-dark.webp' : 'counter.webp'),
+  box: asset(dark ? 'ui/box-dark.webp' : 'ui/box.webp'),
+  boxDim: dark ? BOX_DARK : BOX,
+})
 
 /** 스프라이트 1px이 하우스 좌표에서 차지하는 크기 (서 있는 아바타 키 ≈ 165) */
 export const U = 0.56

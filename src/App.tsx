@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import House from './components/House'
 import { AVATARS, applyNames, type AvatarId } from './avatars'
-import { asset, preloadAssets } from './assets'
+import { asset, preloadAssets, themed } from './assets'
 import { ROOMS, type RoomId } from './rooms'
 import RoomView from './components/RoomView'
 import { getActivity } from './schedule'
@@ -42,6 +42,20 @@ export default function App() {
   const { tasks, ready, storageError, save, remove, replaceAll } = useTasks()
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
   const [backupTick, setBackupTick] = useState(0)
+  // 화면 모드: 자동이면 휴대폰의 다크 모드 설정을 따라가요
+  const [sysDark, setSysDark] = useState(() => window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false)
+  useEffect(() => {
+    const mq = window.matchMedia?.('(prefers-color-scheme: dark)')
+    if (!mq) return
+    const on = (e: MediaQueryListEvent) => setSysDark(e.matches)
+    mq.addEventListener?.('change', on)
+    return () => mq.removeEventListener?.('change', on)
+  }, [])
+  const dark = settings.theme === 'dark' || (settings.theme === 'auto' && sysDark)
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0b0f14' : '#c8a8ee')
+  }, [dark])
   const updateSettings = (s: Settings) => { applyNames(s.names); saveSettings(s); setSettingsState(s) }
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
@@ -301,8 +315,8 @@ export default function App() {
 
   return (
     <div className={`app ${revealed ? '' : 'pre'}`}>
-      {!introDone && <Intro onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
-      <div className="sky" style={{ backgroundImage: `url(${asset('bg.webp')})` }} />
+      {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
+      <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
       <header className="top">
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}
@@ -313,7 +327,7 @@ export default function App() {
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
 
       <main className="stage">
-        <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={speech} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
+        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={speech} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
 
@@ -396,7 +410,7 @@ export default function App() {
       )}
       {room && (
         <Sheet title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
-          <RoomView room={room} activities={activities} shown={shown} />
+          <RoomView room={room} activities={activities} shown={shown} dark={dark} />
         </Sheet>
       )}
       {view === 'settings' && (

@@ -198,6 +198,14 @@ export const ASSET_META = {
   "w": 720,
   "h": 936
  },
+ "houseDark": {
+  "w": 1000,
+  "h": 1286
+ },
+ "boxDark": {
+  "w": 720,
+  "h": 926
+ },
  "counter": {
   "w": 700,
   "h": 483

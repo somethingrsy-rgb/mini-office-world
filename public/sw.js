@@ -1,5 +1,5 @@
 // 오프라인에서도 앱이 열리도록 정적 파일을 기기에 보관하는 서비스 워커
-const CACHE = 'mow-v3'
+const CACHE = 'mow-v4'
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './apple-touch-icon.png']
 
 self.addEventListener('install', (e) => {
