@@ -25,6 +25,7 @@ import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
 import Intro from './components/Intro'
 import { useLoungeChat } from './chat'
+import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
 import { roomOf } from './rooms'
 import WorkingPanel from './components/WorkingPanel'
@@ -315,11 +316,29 @@ export default function App() {
   const info = AVATARS.find((a) => a.id === selected)
   const act = selected ? activities[selected] : null
 
+  // 항상 맨 위에 떠 있는 작은 창 (PC 크롬·엣지): 하우스 축소판 + 남은 일 + 마감 알림
+  const pip = useAlwaysOnTop(dark, () => (
+    <div className="pipapp" style={{ backgroundImage: `url(${themed(dark).bg})` }}>
+      <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
+      <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
+        remaining={items.length} reminders={reminders} hush={!!userSay} selected={null} onRoom={() => {}} onSelect={() => {}} />
+      <div className="pipinfo">
+        <b>{items.length > 0 ? `남은 일 ${items.length}` : '다 끝! 🎉'}</b>
+        {reminders.slice(0, 3).map((r, i) => <span key={i} className={r.level}>⏰ {r.text}</span>)}
+        {reminders.length === 0 && items.length > 0 && <span>급한 일은 없어요</span>}
+      </div>
+    </div>
+  ))
+
   return (
     <div className={`app ${revealed ? '' : 'pre'}`}>
       {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
+      {pip.portal}
       <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
       <header className="top">
+        {pipSupported() && (
+          <button className={`pinbtn ${pip.active ? 'on' : ''}`} onClick={() => (pip.active ? pip.close() : pip.open())} aria-label="항상 위에 띄우기" title="항상 위에 띄우기">📌</button>
+        )}
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}
         </button>

@@ -625,3 +625,24 @@ html[data-theme="dark"] .avchip.on { background:rgba(255,255,255,.16); border-co
 html[data-theme="dark"] .avchip.off { background:rgba(255,255,255,.035); border-color:rgba(255,255,255,.1); box-shadow:none; }
 html[data-theme="dark"] .avchip.off img { opacity:.22; }
 html[data-theme="dark"] .avchip span { text-shadow:none; }
+
+/* ── 항상 위 창(PC) ── */
+.pinbtn { position:absolute; left:0; top:12px; z-index:3; width:40px; height:40px; border-radius:50%; font-size:18px; padding:0; cursor:pointer;
+  background:rgba(255,255,255,.26); border:1px solid rgba(255,255,255,.5); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); box-shadow:0 4px 12px rgba(60,30,100,.2); }
+.pinbtn.on { background:rgba(255,255,255,.55); box-shadow:0 0 0 2px rgba(255,255,255,.7), 0 4px 12px rgba(60,30,100,.25); }
+html[data-theme="dark"] .pinbtn { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.18); }
+html[data-theme="dark"] .pinbtn.on { background:rgba(232,198,124,.3); }
+.pipbody { margin:0; overflow:hidden; }
+.pipapp { box-sizing:border-box; min-height:100vh; display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 8px 10px;
+  background-size:cover; background-position:center bottom; color:var(--ink); }
+.pipapp .piplogo { height:46px; width:auto; flex:none; filter:drop-shadow(0 2px 6px rgba(60,30,100,.35)); }
+.pipapp .house { width:100%; height:auto; max-height:none; min-height:0; flex:1 1 auto; }
+.pipinfo { flex:none; width:100%; display:flex; flex-direction:column; gap:4px; padding:8px 10px; border-radius:16px; font-size:12px;
+  background:rgba(255,255,255,.3); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px); border:1px solid rgba(255,255,255,.5); }
+.pipinfo b { font-size:14px; }
+.pipinfo .urgent { color:#d62d52; font-weight:700; } .pipinfo .soon { color:#9a6b00; font-weight:700; }
+html[data-theme="dark"] .pipinfo { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.16); }
+html[data-theme="dark"] .pipinfo .urgent { color:#ff8fa3; } html[data-theme="dark"] .pipinfo .soon { color:#ffd36b; }
+/* 항상 위 창: 창 크기가 바뀌어도 하우스가 창 안에 맞게 줄어들어요 */
+.pipapp { height:100vh; min-height:0; overflow:hidden; }
+.pipapp .house { height:auto; flex:1 1 0; min-height:0; width:100%; }
