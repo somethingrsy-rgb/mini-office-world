@@ -346,11 +346,6 @@ export default function App() {
       <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
       <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
         remaining={items.length} reminders={reminders} hush={!!userSay} selected={null} onRoom={() => {}} onSelect={() => {}} />
-      <div className="pipinfo">
-        <b>{items.length > 0 ? `남은 일 ${items.length}` : '다 끝! 🎉'}</b>
-        {reminders.slice(0, 3).map((r, i) => <span key={i} className={r.level}>⏰ {r.text}</span>)}
-        {reminders.length === 0 && items.length > 0 && <span>급한 일은 없어요</span>}
-      </div>
       <QuickBox compact onQuick={quickDistribute} />
     </div>
   ))

@@ -732,3 +732,11 @@ html[data-theme="dark"] .qprev li.bad { background:rgba(255,77,109,.18); color:#
 .quickbox.compact { flex:none; width:100%; box-sizing:border-box; padding:8px 10px; gap:6px; }
 .quickbox.compact textarea { font-size:13px; }
 .quickbox.compact .primary { padding:9px 0; font-size:14px; }
+
+/* 항상 위 작은 창의 업무분배: 제목 줄 오른쪽에 작은 박스 버튼 */
+.quickbox.compact .qhead { display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; font-weight:800; }
+.quickbox.compact .qsend { margin:0; padding:5px 12px; border-radius:9px; border:1.5px solid var(--pink); background:rgba(255,255,255,.55); color:var(--ink); font-size:12.5px; font-weight:800; cursor:pointer; }
+.quickbox.compact .qsend:not(:disabled) { background:var(--pink); color:#fff; }
+.quickbox.compact .qsend:disabled { opacity:.4; cursor:default; }
+html[data-theme="dark"] .quickbox.compact .qsend { background:rgba(255,255,255,.08); color:var(--ink); border-color:rgba(232,198,124,.6); }
+html[data-theme="dark"] .quickbox.compact .qsend:not(:disabled) { background:#d9ae5c; color:#241b08; }
