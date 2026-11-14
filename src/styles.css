@@ -175,6 +175,8 @@ input:focus, textarea:focus, select:focus { outline:2px solid var(--pink); borde
 html { background:#c8a8ee; }
 body { background:transparent; }
 .sky { position:fixed; inset:0; z-index:-1; background-size:cover; background-position:center bottom; background-repeat:no-repeat; }
+/* 라이트 모드 배경: 채도를 낮춰 차분하게 (원본 그림은 그대로) */
+.sky { filter:saturate(.42) brightness(1.04) contrast(.94); }
 .app { position:relative; }
 .top h1 { color:#fff; text-shadow:0 2px 8px rgba(90,40,140,.55); }
 .top p { color:#fff; opacity:.92; text-shadow:0 1px 5px rgba(90,40,140,.5); }
@@ -809,3 +811,12 @@ html { -webkit-text-size-adjust:100%; touch-action:manipulation; }
 
 .quickbox.compact { margin-bottom:14px; }
 .pipapp .quickbox.compact { margin-bottom:0; }
+
+/* ── 라이트 모드 차분한 톤: 아래 아바타 칸·업무 버튼도 배경에 맞춰 채도를 낮춰요 ── */
+html:not([data-theme="dark"]) .avchip, html:not([data-theme="dark"]) .dock button {
+  -webkit-backdrop-filter:blur(16px) saturate(.75); backdrop-filter:blur(16px) saturate(.75);
+  border-color:rgba(255,255,255,.55); color:#4a4458;
+  box-shadow:0 8px 22px rgba(70,60,90,.16), inset 0 1px 0 rgba(255,255,255,.5);
+}
+html:not([data-theme="dark"]) .avchip.on { border-color:rgba(170,150,190,.9); box-shadow:0 0 0 2px rgba(170,150,190,.55), 0 8px 22px rgba(70,60,90,.18), inset 0 1px 0 rgba(255,255,255,.6); }
+html:not([data-theme="dark"]) .avchip:not(.off) img, html:not([data-theme="dark"]) .dock button img { filter:saturate(.8) drop-shadow(0 2px 3px rgba(70,60,90,.2)); }
