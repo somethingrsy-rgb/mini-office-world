@@ -398,7 +398,7 @@ export default function App() {
       <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
       <header className="top">
         {pipSupported() && (
-          <button className={`pinbtn ${pip.active ? 'on' : ''}`} onClick={() => (pip.active ? pip.close() : pip.open())} aria-label="항상 위에 띄우기" title="항상 위에 띄우기">📌</button>
+          <button className={`pinbtn ${pip.active ? 'on' : ''}`} onClick={() => (pip.active ? pip.close() : pip.open())} aria-label="항상 위에 띄우기" title="항상 위에 띄우기"><img src={asset('ui/pin.webp')} alt="" /></button>
         )}
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}

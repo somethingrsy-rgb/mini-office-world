@@ -17,7 +17,7 @@ SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'kiki': 'avatar-kiki', 'user': 'avatar-user',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
-    'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
+    'pinbtn': 'pin-button', 'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
@@ -214,6 +214,17 @@ def main(src):
     bd = trim(bd); bd = bd.resize((720, round(bd.height * 720 / bd.width)), Image.LANCZOS)
     save(bd, f'{OUT}/ui/box-dark.webp', 92)
     meta['boxDark'] = {'w': bd.width, 'h': bd.height}
+
+    # 항상 위 작은 창 버튼(투명 PNG): 가장 큰 덩어리만 남겨 번진 가장자리 얼룩을 지우고 화면에서 쓰는 크기(2배)로 줄여요
+    im = Image.open(os.path.join(src, 'pin-button.png')).convert('RGBA')
+    al = np.asarray(im)[:, :, 3].astype(np.float32)
+    lab, n = ndi.label(al > 40)
+    sizes = ndi.sum(al > 40, lab, range(1, n + 1))
+    keep = ndi.binary_dilation(lab == (int(np.argmax(sizes)) + 1), iterations=6)
+    al = np.where(keep & (al >= 24), al, 0)
+    pn = trim(Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], al.astype(np.uint8)]), 'RGBA'))
+    pn = pn.resize((192, round(pn.height * 192 / pn.width)), Image.LANCZOS)
+    save(pn, f'{OUT}/ui/pin.webp', 92)
 
     # 업무 목록 버튼 아이콘(투명 PNG)
     _, li = load_alpha(src, 'listicon')

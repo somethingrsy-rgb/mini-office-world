@@ -788,3 +788,12 @@ html[data-theme="dark"] .pipbar { border-top-color:rgba(255,255,255,.1); }
 .pipbar input[type=range]:focus-visible { outline:0 !important; }
 .pipbar input[type=checkbox]:focus-visible { outline:1px solid #9a9ea6 !important; outline-offset:1px; }
 .pipbar input[type=checkbox] { -webkit-appearance:auto; appearance:auto; }
+
+/* 항상 위 작은 창 버튼: 핀 이모지 대신 그림 버튼 (설정 버튼과 같은 크기·배경 없는 모양) */
+.pinbtn { left:0; top:6px; width:48px; height:48px; padding:0; border:0; border-radius:50%; background:transparent !important; box-shadow:none !important;
+  -webkit-backdrop-filter:none; backdrop-filter:none; filter:drop-shadow(0 3px 6px rgba(90,40,140,.4)); }
+.pinbtn img { width:100%; height:100%; display:block; transition:transform .2s ease, filter .2s ease; }
+.pinbtn:active { transform:scale(.94); }
+/* 작은 창이 열려 있을 때: 살짝 커지고 노랗게 빛나요 */
+.pinbtn.on img { transform:scale(1.08); filter:drop-shadow(0 0 7px rgba(255,214,90,.95)) brightness(1.06); }
+html[data-theme="dark"] .pinbtn { filter:drop-shadow(0 3px 10px rgba(0,0,0,.6)); }
