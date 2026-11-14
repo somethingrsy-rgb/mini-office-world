@@ -155,26 +155,26 @@ def main(src):
             save(sp, f'{OUT}/avatars/{av}-{p}.webp', 88)
             meta['avatars'][av][p] = {'w': sp.width, 'h': sp.height}
 
-    # 접수대 카운터(우체통 포함): 나(관리자) 앞에 놓는 앞면 조각
-    im = load(src, 'counter')
-    fgc = white_fg(im, 236)
-    a = np.asarray(im).astype(np.int16)
-    lab, n = ndi.label((a.min(axis=2) >= 232) & (a.max(axis=2) - a.min(axis=2) <= 14))  # 기둥·바닥 사이에 갇힌 순백 영역도 배경이에요
-    for i in range(1, n + 1):
-        if (lab == i).sum() > 400:
-            fgc &= ~(lab == i)
-    # 우체통 기둥과 카운터 사이 틈(옅은 그림자)과 카운터 아래 그림자도 지워요
-    gap = np.zeros(fgc.shape, bool)
-    h_, w_ = fgc.shape
-    sat = a.max(axis=2) - a.min(axis=2)
-    lowsat = (a.min(axis=2) >= 205) & (sat <= 26)
-    gx0, gx1 = int(w_ * 0.13), int(w_ * 0.205)
-    gap[int(h_ * 0.52):int(h_ * 0.97), gx0:gx1] = True
-    gap[int(h_ * 0.93):, :] = True
-    fgc &= ~(gap & lowsat)
-    ct = trim(to_rgba(im, fgc, fill=False))
+    # 접수대 카운터(우체통 포함): 투명 배경 PNG(reception-counter-alpha)가 있으면 그 알파를 쓰고,
+    # 투명 영역의 옅은 얼룩 점은 지워요. 없으면 흰 배경을 지워서 만들어요.
+    alpha_path = next((os.path.join(src, f) for f in ('reception-counter-alpha.png',) if os.path.exists(os.path.join(src, f))), None)
+    if alpha_path:
+        im = Image.open(alpha_path).convert('RGBA')
+        al = np.asarray(im)[:, :, 3].astype(np.float32)
+        lab, n = ndi.label(al > 8)
+        sizes = ndi.sum(al > 8, lab, range(1, n + 1))
+        keep = lab == (int(np.argmax(sizes)) + 1)
+        keep = ndi.binary_dilation(keep, iterations=2)  # 가장자리 부드러운 부분은 살림
+        al = np.where(keep, al, 0)
+        al = np.where(al < 12, 0, al)
+        ct = Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], al.astype(np.uint8)]), 'RGBA')
+        ct = trim(ct)
+    else:
+        im = load(src, 'counter')
+        fgc = white_fg(im, 236)
+        ct = trim(to_rgba(im, fgc))
     ct = ct.resize((700, round(ct.height * 700 / ct.width)), Image.LANCZOS)
-    save(ct, f'{OUT}/counter.webp', 90)
+    save(ct, f'{OUT}/counter.webp', 92)
     meta['counter'] = {'w': ct.width, 'h': ct.height}
 
     # 카운터 뒤에 선 나(허리 위) 6자세. 머리 크기가 서 있는 그림과 같아지게 배율을 맞춰요

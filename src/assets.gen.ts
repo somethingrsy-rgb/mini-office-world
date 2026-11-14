@@ -192,7 +192,7 @@ export const ASSET_META = {
  },
  "counter": {
   "w": 700,
-  "h": 463
+  "h": 483
  },
  "props": {
   "desk": {
