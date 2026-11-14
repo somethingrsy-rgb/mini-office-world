@@ -24,6 +24,7 @@ export const themed = (dark: boolean) => ({
   house: asset(dark ? 'house-dark.webp' : 'house.webp'),
   houseDim: dark ? HOUSE_DARK : HOUSE,
   counter: asset(dark ? 'counter-dark.webp' : 'counter.webp'),
+  logo: asset(dark ? 'ui/logo-dark.webp' : 'ui/logo.webp'),
   box: asset(dark ? 'ui/box-dark.webp' : 'ui/box.webp'),
   boxDim: dark ? BOX_DARK : BOX,
 })

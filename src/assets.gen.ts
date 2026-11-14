@@ -194,6 +194,10 @@ export const ASSET_META = {
   "w": 760,
   "h": 298
  },
+ "logoDark": {
+  "w": 760,
+  "h": 342
+ },
  "box": {
   "w": 720,
   "h": 936

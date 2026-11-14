@@ -321,7 +321,7 @@ export default function App() {
         <button className="gear" onClick={() => setView('settings')} aria-label="설정">
           <img src={asset('ui/settings.webp')} alt="" />{needBackup && <span className="dotbadge" />}
         </button>
-        <h1><img src={asset('ui/logo.webp')} alt="MINI OFFICE WORLD" /></h1>
+        <h1><img src={themed(dark).logo} alt="MINI OFFICE WORLD" /></h1>
       </header>
 
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}

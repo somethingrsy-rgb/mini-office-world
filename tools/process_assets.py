@@ -17,7 +17,7 @@ SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'user': 'avatar-user',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
-    'logo': 'logo', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
+    'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
     'library': 'room-library', 'writing': 'room-writing', 'cafe': 'room-cafe', 'garden': 'room-garden',
 }
@@ -176,12 +176,12 @@ def main(src):
             meta['avatars'][av][p] = {'w': sp.width, 'h': sp.height}
 
     # 로고와 인트로 상자(투명 PNG): 알파 얼룩을 지우고 화면에서 쓰는 크기로 줄여요
-    for key, width, out in (('logo', 760, 'logo'), ('box', 720, 'box')):
+    for key, width, out in (('logo', 760, 'logo'), ('logodark', 760, 'logo-dark'), ('box', 720, 'box')):
         _, rg = load_alpha(src, key)
         rg = trim(rg)
         rg = rg.resize((width, round(rg.height * width / rg.width)), Image.LANCZOS)
         save(rg, f'{OUT}/ui/{out}.webp', 92)
-        meta[out] = {'w': rg.width, 'h': rg.height}
+        meta[out.replace('-d', 'D')] = {'w': rg.width, 'h': rg.height}
 
     # 다크 모드 그림: 밤하늘 배경(불투명), 어두운 하우스·상자(투명 PNG)
     bgd = load(src, 'bgdark'); bgd = bgd.resize((900, round(bgd.height * 900 / bgd.width)), Image.LANCZOS)
