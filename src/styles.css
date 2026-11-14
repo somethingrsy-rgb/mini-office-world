@@ -840,3 +840,49 @@ html[data-theme="dark"] .remindbar { background:rgba(30,26,20,.9); color:#f6e6bd
 /* 알림이 있는 동안 버튼 줄을 위로 올리고 그만큼 하우스 영역을 줄여요 */
 .app.hasrem { --pb: calc(112px + env(safe-area-inset-bottom)); }
 .app.hasrem .dock { bottom:calc(36px + env(safe-area-inset-bottom)); padding-bottom:6px; }
+
+/* ── 업무 검색·분류 / 완료 기록·통계 ── */
+.seg { display:flex; gap:6px; margin-bottom:10px; }
+.seg button { flex:1; border:0; border-radius:12px; padding:9px 0; font-size:13px; font-weight:800; background:rgba(255,255,255,.4); color:var(--ink); }
+.seg button.on { background:var(--pink); color:#fff; }
+.searchbar { display:flex; gap:6px; align-items:center; margin-bottom:6px; }
+.searchbar input { flex:1; min-height:40px; }
+.tabs.cats button { background:rgba(255,255,255,.4); }
+.tabs.cats button.on { background:#9b7be0; color:#fff; }
+.monthnav { display:flex; align-items:center; justify-content:center; gap:18px; margin:2px 0 10px; font-size:15px; }
+.monthnav button { border:0; width:34px; height:34px; border-radius:50%; font-size:20px; font-weight:800; background:rgba(255,255,255,.5); color:var(--ink); }
+.monthnav button:disabled { opacity:.35; }
+.statgrid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.stat { background:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.7); border-radius:14px; padding:10px 12px; display:flex; flex-direction:column; gap:2px; }
+.stat small { font-size:11.5px; opacity:.7; font-weight:700; }
+.stat b { font-size:20px; }
+.stat em { font-size:11px; font-style:normal; opacity:.65; }
+.hsub { margin:16px 0 6px; font-size:13px; }
+.rolebars { display:flex; flex-direction:column; gap:5px; }
+.rb { display:grid; grid-template-columns:44px 1fr 26px; align-items:center; gap:8px; font-size:12.5px; font-weight:700; }
+.rb div { height:10px; border-radius:6px; background:rgba(155,123,224,.18); overflow:hidden; }
+.rb i { display:block; height:100%; background:#9b7be0; border-radius:6px; }
+.rb b { text-align:right; }
+.daybars { display:flex; align-items:flex-end; gap:2px; height:70px; }
+.db { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; gap:2px; min-width:0; }
+.db i { width:100%; border-radius:3px 3px 0 0; background:rgba(155,123,224,.2); }
+.db i.on { background:#ff86b6; }
+.db small { font-size:9px; opacity:.6; height:11px; }
+.hgroup { margin-top:8px; }
+.hdate { font-size:12px; font-weight:800; opacity:.65; margin-bottom:4px; }
+.hitem { background:rgba(255,255,255,.45); border:1px solid rgba(255,255,255,.7); border-radius:12px; padding:8px 12px; margin-bottom:5px; display:flex; flex-direction:column; gap:2px; }
+.hitem b { font-size:14px; }
+.hitem small { font-size:12px; opacity:.75; }
+.hrole { margin-left:6px; font-size:11px; font-weight:800; padding:1px 7px; border-radius:999px; background:#f1eaff; color:#6b4fb0; }
+.hitem em { font-style:normal; font-weight:800; }
+.hitem em.ok { color:#1f9e78; }
+.hitem em.late { color:#e0345c; }
+.empty-note { text-align:center; opacity:.7; padding:28px 0; font-size:13px; }
+html[data-theme="dark"] .seg button, html[data-theme="dark"] .monthnav button, html[data-theme="dark"] .tabs.cats button { background:rgba(255,255,255,.08); }
+html[data-theme="dark"] .seg button.on { background:#d9ae5c; color:#241b08; }
+html[data-theme="dark"] .tabs.cats button.on { background:#d9ae5c; color:#241b08; }
+html[data-theme="dark"] .stat, html[data-theme="dark"] .hitem { background:rgba(255,255,255,.06); border-color:rgba(255,235,190,.16); }
+html[data-theme="dark"] .rb i { background:#d9ae5c; }
+html[data-theme="dark"] .rb div { background:rgba(255,235,190,.14); }
+html[data-theme="dark"] .db i.on { background:#d9ae5c; }
+html[data-theme="dark"] .hrole { background:rgba(255,255,255,.1); color:#f3e3bb; }

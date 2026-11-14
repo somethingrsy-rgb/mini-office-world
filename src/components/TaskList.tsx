@@ -4,6 +4,7 @@ import { asset } from '../assets'
 import { isAutoSub, subAssignee, taskAssignee } from '../assign'
 import Linkify from './Linkify'
 import RichText from './RichText'
+import HistoryView from './HistoryView'
 import { taskProgress } from '../entries'
 import { fmtWorked, workedMs } from '../worktime'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
@@ -11,6 +12,15 @@ import { IMPORTANCE_LABEL, STATUS_LABEL, type Status, type Task } from '../types
 
 type Filter = 'all' | Status | 'overdue'
 const TABS: [Filter, string][] = [['all', '전체'], ['todo', '예정'], ['doing', '진행 중'], ['done', '완료'], ['overdue', '기한 초과']]
+
+const STAFF = AVATARS.filter((a) => a.id !== 'user')
+/** 업무에 관여하는 모든 직원(담당 + 세부 할 일 담당) */
+const involved = (t: Task) => new Set<string>([taskAssignee(t), ...t.subtasks.map((s) => subAssignee(t, s))])
+const matchQuery = (t: Task, q: string) => {
+  if (!q) return true
+  const hay = [t.title, t.desc, ...t.subtasks.map((s) => s.title), ...[...involved(t)].map((id) => { const a = AVATARS.find((x) => x.id === id); return a ? `${a.name} ${a.role}` : '' })].join(' ').toLowerCase()
+  return q.toLowerCase().split(/\s+/).filter(Boolean).every((w) => hay.includes(w))
+}
 
 const nm = (id: string) => {
   const a = AVATARS.find((x) => x.id === id)!
@@ -34,11 +44,16 @@ interface Props {
 export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [open, setOpen] = useState<string | null>(null)
+  const [mode, setMode] = useState<'list' | 'history'>('list')
+  const [query, setQuery] = useState('')
+  const [cat, setCat] = useState<string>('all') // 분류(담당 아바타 id)
   const today = todayStr()
+  // 검색어·분류를 먼저 적용하고, 그 안에서 상태 탭(전체·예정·…)을 세요
+  const scoped = useMemo(() => tasks.filter((t) => matchQuery(t, query.trim()) && (cat === 'all' || involved(t).has(cat))), [tasks, query, cat])
 
   const sorted = useMemo(() => [...tasks].sort((a, b) => compareTasks(a, b, today)), [tasks, today])
   const match = (t: Task, f: Filter) => (f === 'all' ? true : f === 'overdue' ? isOverdue(t, today) : t.status === f)
-  const shown = sorted.filter((t) => match(t, filter))
+  const shown = sorted.filter((t) => scoped.includes(t) && match(t, filter))
 
   const setStatus = (t: Task, status: Status) =>
     onSave({ ...t, status, completedAt: status === 'done' ? Date.now() : null })
@@ -49,12 +64,29 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }
     onSave({ ...t, subtasks, status: t.status === 'todo' && anyDone ? 'doing' : t.status })
   }
 
+  const filtering = !!query.trim() || cat !== 'all'
   return (
     <div>
+      <div className="seg" role="tablist" aria-label="보기 방식">
+        <button role="tab" aria-selected={mode === 'list'} className={mode === 'list' ? 'on' : ''} onClick={() => setMode('list')}>📋 목록</button>
+        <button role="tab" aria-selected={mode === 'history'} className={mode === 'history' ? 'on' : ''} onClick={() => setMode('history')}>📊 완료 기록·통계</button>
+      </div>
+
+      {mode === 'history' ? <HistoryView tasks={tasks} /> : (<>
+      <div className="searchbar">
+        <input type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="제목·상세내용·담당자로 검색" aria-label="업무 검색" autoCapitalize="off" autoCorrect="off" />
+        {filtering && <button className="ghost sm" onClick={() => { setQuery(''); setCat('all') }}>초기화</button>}
+      </div>
+      <div className="tabs cats" aria-label="분류">
+        <button className={cat === 'all' ? 'on' : ''} onClick={() => setCat('all')}>모든 분류</button>
+        {STAFF.map((a) => (
+          <button key={a.id} className={cat === a.id ? 'on' : ''} onClick={() => setCat(cat === a.id ? 'all' : a.id)}>{a.role}</button>
+        ))}
+      </div>
       <div className="tabs">
         {TABS.map(([k, l]) => (
           <button key={k} className={filter === k ? 'on' : ''} onClick={() => setFilter(k)}>
-            {l} <b>{tasks.filter((t) => match(t, k)).length}</b>
+            {l} <b>{scoped.filter((t) => match(t, k)).length}</b>
           </button>
         ))}
       </div>
@@ -62,7 +94,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }
       {shown.length === 0 && (
         <div className="empty">
           <img src={asset(tasks.length === 0 ? 'props/plant.webp' : 'props/trophy.webp')} alt="" />
-          <p>{tasks.length === 0 ? '아직 등록된 업무가 없어요. 첫 업무를 등록해 보세요 ✨' : '해당하는 업무가 없어요.'}</p>
+          <p>{tasks.length === 0 ? '아직 등록된 업무가 없어요. 첫 업무를 등록해 보세요 ✨' : filtering ? '검색 결과가 없어요. 검색어나 분류를 바꿔 보세요.' : '해당하는 업무가 없어요.'}</p>
         </div>
       )}
 
@@ -117,7 +149,8 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }
           </article>
         )
       })}
-      {onResetAll && tasks.length > 0 && (
+      </>)}
+      {onResetAll && tasks.length > 0 && mode === 'list' && (
         <button
           className="ghost danger resetall"
           onClick={() => window.confirm(`등록된 업무 ${tasks.length}건을 모두 지우고 처음 상태로 리셋할까요?\n\n되돌릴 수 없어요. 아바타 이름·시간표 같은 설정은 그대로예요.\n(필요하면 설정에서 먼저 백업해 두세요)`) && onResetAll()}
