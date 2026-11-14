@@ -1,14 +1,21 @@
 import { useMemo, useState } from 'react'
 import { AVATARS } from '../avatars'
+import { isAutoSub, subAssignee, taskAssignee } from '../assign'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
 import { IMPORTANCE_LABEL, STATUS_LABEL, type Status, type Task } from '../types'
 
 type Filter = 'all' | Status | 'overdue'
 const TABS: [Filter, string][] = [['all', '전체'], ['todo', '예정'], ['doing', '진행 중'], ['done', '완료'], ['overdue', '기한 초과']]
 
-const who = (id: Task['assignee']) => {
-  const a = AVATARS.find((x) => x.id === id)
-  return a ? `${a.emoji} ${a.name}` : '자동 배정'
+const nm = (id: string) => {
+  const a = AVATARS.find((x) => x.id === id)!
+  return `${a.emoji} ${a.name}`
+}
+/** 업무에 관여하는 담당 아바타들 (중복 제거) */
+const whoTask = (t: Task) => {
+  const ids = new Set<string>([taskAssignee(t), ...t.subtasks.filter((s) => !s.done).map((s) => subAssignee(t, s))])
+  if (t.subtasks.length === 0 || t.subtasks.every((s) => s.done)) ids.add(taskAssignee(t))
+  return [...ids].map(nm).join(' ')
 }
 
 interface Props {
@@ -61,7 +68,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
               <span className={`badge lv-${di.level}`}>{di.label}</span>
             </button>
             <div className="task-meta">
-              {STATUS_LABEL[t.status]} · {who(t.assignee)}
+              {STATUS_LABEL[t.status]} · {whoTask(t)}
               {t.due && <> · 마감 {fmtDate(t.due)}</>}
               {t.subtasks.length > 0 && <> · 할 일 {doneCnt}/{t.subtasks.length}</>}
             </div>
@@ -73,7 +80,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete }: Props) {
                   <label key={s.id} className={`sub ${s.done ? 'done' : ''}`}>
                     <input type="checkbox" checked={s.done} onChange={() => toggleSub(t, s.id)} />
                     <span>{s.title}</span>
-                    <small>{who(s.assignee ?? t.assignee)}{s.due ? ` · ${fmtDate(s.due)}` : ''}</small>
+                    <small>{nm(subAssignee(t, s))}{isAutoSub(t, s) ? ' (자동)' : ''}{s.due ? ` · ${fmtDate(s.due)}` : ''}</small>
                   </label>
                 ))}
                 {allDone && (

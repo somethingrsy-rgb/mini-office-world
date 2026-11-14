@@ -12,6 +12,8 @@ export interface Activity {
   label: string
   /** 현재 시간대 이름 (출근 전 / 오전 업무 등) */
   period: string
+  /** 지금 처리 중인 업무 이름 */
+  task?: string
   /** 집 밖(퇴근 상태)인지 */
   away?: boolean
 }
@@ -94,7 +96,18 @@ export function periodName(m: number) {
   return '퇴근 후'
 }
 
-export function getActivity(id: AvatarId, minutes: number): Activity {
+/** 업무 연동 정보: 진행 중인 대표 업무 (없으면 null → 자유로운 생활) */
+export interface Job { title: string; urgent: boolean }
+
+function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
+  const r = hash(id, slot + 7919)
+  if (r < 30) return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '커피를 마시며 쉬고 있어요' }
+  if (r < 55) return { spot: CHAT_SPOTS[id], pose: 'chat', label: '동료와 수다를 떨고 있어요' }
+  if (r < 80) return { spot: STROLL[(r + idx) % STROLL.length], pose: 'stand', label: '정원을 산책하고 있어요' }
+  return { spot: SOFA[id], pose: 'sit', label: '소파에서 잠깐 쉬고 있어요' }
+}
+
+export function getActivity(id: AvatarId, minutes: number, job: Job | null = null): Activity {
   const m = Math.floor(minutes)
   const s = SCHEDULE
   const idx = ORDER.indexOf(id)
@@ -121,14 +134,19 @@ export function getActivity(id: AvatarId, minutes: number): Activity {
     if (m >= leaveAt - 4) return { spot: spot(HUB_X, 426), pose: 'stand', label: '퇴근 준비를 하고 있어요', period }
   }
 
-  // 일반 업무 시간: 4분 단위로 행동을 바꿈 (업무 70% / 생활 30%)
+  // 일반 업무 시간: 4분 단위로 행동이 바뀜
   const slot = Math.floor(m / 4)
   const r = hash(id, slot)
-  if (r < 62) return { ...work(id, slot), period }
-  if (r < 74) return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '커피를 마시며 쉬고 있어요', period }
-  if (r < 84) return { spot: CHAT_SPOTS[id], pose: 'chat', label: '동료와 수다를 떨고 있어요', period }
-  if (r < 94) return { spot: STROLL[(r + idx) % STROLL.length], pose: 'stand', label: '정원을 산책하고 있어요', period }
-  return { spot: SOFA[id], pose: 'sit', label: '소파에서 잠깐 쉬고 있어요', period }
+  if (id === 'user') {
+    // 관리자는 사무실을 둘러봄 (62%) / 나머지는 생활
+    return r < 62 ? { ...work(id, slot), period } : { ...life(id, slot, idx), period }
+  }
+  // 담당 업무가 진행 중이면 대부분 일하고(긴급이면 계속), 업무가 없으면 자유로운 생활
+  if (job && r < (job.urgent ? 101 : 80)) {
+    const w = work(id, slot)
+    return { ...w, period, task: job.title, label: `「${job.title}」 ${w.label}` }
+  }
+  return { ...life(id, slot, idx), period }
 }
 
 // ── 이동 경로 ─────────────────────────────────────

@@ -1,9 +1,12 @@
 import Avatar from './Avatar'
 import { AVATARS, type AvatarId } from '../avatars'
 import type { Activity } from '../schedule'
+import type { Staff } from '../types'
 
 interface Props {
   activities: Record<AvatarId, Activity>
+  alerts: Partial<Record<Staff, 'soon' | 'urgent' | null>>
+  cheers: Record<string, number>
   selected: AvatarId | null
   onSelect: (id: AvatarId) => void
 }
@@ -52,7 +55,7 @@ const Fairy = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
   <circle cx={cx} cy={cy} r={r} fill="#fff7b8" className="twinkle" />
 )
 
-export default function House({ activities, selected, onSelect }: Props) {
+export default function House({ activities, alerts, cheers, selected, onSelect }: Props) {
   const sel = (id: AvatarId) => selected === id
   return (
     <svg viewBox="0 0 400 540" className="house" role="img" aria-label="미니어처 오피스 하우스">
@@ -159,7 +162,7 @@ export default function House({ activities, selected, onSelect }: Props) {
 
       {/* 아바타 */}
       {AVATARS.map((info, i) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} delay={i * 0.3} selected={sel(info.id)} onSelect={onSelect} />
+        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} delay={i * 0.3} selected={sel(info.id)} onSelect={onSelect} />
       ))}
     </svg>
   )

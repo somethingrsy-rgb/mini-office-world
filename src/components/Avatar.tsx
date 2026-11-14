@@ -8,6 +8,8 @@ interface Props {
   info: AvatarInfo
   activity: Activity
   selected?: boolean
+  alert?: 'soon' | 'urgent' | null
+  cheer?: number
   delay?: number
   onSelect: (id: AvatarInfo['id']) => void
 }
@@ -107,10 +109,17 @@ function Props({ pose }: { pose: Pose }) {
 }
 
 /** 발 위치를 기준으로 그리는 치비 SVG 아바타 (키 약 46). 위치 이동은 CSS transition으로 처리 */
-export default function Avatar({ info, activity, selected, delay = 0, onSelect }: Props) {
+export default function Avatar({ info, activity, selected, alert, cheer = 0, delay = 0, onSelect }: Props) {
   const { hair, outfit, hairStyle } = info
   const skin = '#ffe3d0'
   const w = useWalker(info.id, activity.spot)
+  const [happy, setHappy] = useState(false)
+  useEffect(() => {
+    if (!cheer) return
+    setHappy(true)
+    const t = window.setTimeout(() => setHappy(false), 2800)
+    return () => window.clearTimeout(t)
+  }, [cheer])
   const pose: Pose = w.moving ? 'walk' : activity.pose
   const bubble = !w.moving ? BUBBLE[pose] : undefined
   const sitting = pose === 'sit' || pose === 'eat' || pose === 'coffee' || pose === 'type' || pose === 'sort' || pose === 'read'
@@ -124,8 +133,9 @@ export default function Avatar({ info, activity, selected, delay = 0, onSelect }
       aria-label={`${info.name} 선택`}
     >
       <ellipse cx="0" cy="1" rx="13" ry="3.5" fill="#000" opacity=".12" />
-      <g className={`bob ${w.moving ? 'walking' : ''}`} style={{ animationDelay: `${delay}s` }}>
+      <g className={`bob ${w.moving ? 'walking' : ''} ${happy ? 'hop' : ''}`} style={{ animationDelay: `${delay}s` }}>
         <g transform={`translate(0 ${sitting && !w.moving ? 3 : 0}) scale(${w.face === 'l' ? -1 : 1} 1)`}>
+          {alert === 'urgent' && <ellipse cx="0" cy="-20" rx="21" ry="29" fill="#ff4d6d" className="glow" />}
           {selected && <circle cx="0" cy="-24" r="25" fill="none" stroke="#ff7ab5" strokeWidth="2" strokeDasharray="4 3" className="ring" />}
           {/* 다리 */}
           <rect x="-5" y="-4" width="4" height="5" rx="2" fill={skin} className="leg l" />
@@ -151,11 +161,21 @@ export default function Avatar({ info, activity, selected, delay = 0, onSelect }
               <rect x="9" y="-33" width="5" height="16" rx="2.5" fill={hair} />
             </>
           )}
-          <circle cx="-5" cy="-27" r="1.8" fill="#4a3a52" className="blink" />
-          <circle cx="5" cy="-27" r="1.8" fill="#4a3a52" className="blink" />
+          {happy ? (
+            <>
+              <path d="M-8 -26q3-4 6 0M2 -26q3-4 6 0" stroke="#4a3a52" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+            </>
+          ) : (
+            <>
+              <circle cx="-5" cy="-27" r="1.8" fill="#4a3a52" className="blink" />
+              <circle cx="5" cy="-27" r="1.8" fill="#4a3a52" className="blink" />
+            </>
+          )}
           <circle cx="-8.5" cy="-23" r="2.4" fill="#ff9ab8" opacity=".6" />
           <circle cx="8.5" cy="-23" r="2.4" fill="#ff9ab8" opacity=".6" />
-          {pose === 'eat' || pose === 'chat' ? (
+          {happy ? (
+            <path d="M-4 -23q4 5 8 0z" fill="#c46a8a" />
+          ) : pose === 'eat' || pose === 'chat' ? (
             <ellipse cx="0" cy="-21.5" rx="2.2" ry="1.8" fill="#c46a8a" className="munch" />
           ) : (
             <path d="M-2 -22q2 2 4 0" stroke="#c46a8a" strokeWidth="1.2" fill="none" strokeLinecap="round" />
@@ -163,7 +183,21 @@ export default function Avatar({ info, activity, selected, delay = 0, onSelect }
           <Props pose={pose} />
         </g>
       </g>
-      {bubble && (
+      {alert && (
+        <g className={alert === 'urgent' ? 'alert pulse' : 'alert'}>
+          <circle cx="15" cy="-46" r="6.5" fill={alert === 'urgent' ? '#ff4d6d' : '#f5b301'} stroke="#fff" strokeWidth="1.5" />
+          <text x="15" y="-42.5" textAnchor="middle" fontSize="10" fontWeight="900" fill="#fff">!</text>
+        </g>
+      )}
+      {happy && (
+        <g className="sparks" pointerEvents="none">
+          {[['★', '#ffd23f', -26, -62], ['✿', '#ff86b6', 0, -74], ['★', '#9b7be0', 26, -62], ['✿', '#7fd6c2', -18, -46], ['★', '#ff86b6', 18, -46], ['✿', '#ffd23f', 0, -54]].map(([c, col, dx, dy], i) => (
+            <text key={i} className="spark" textAnchor="middle" fontSize="11" fill={col as string}
+              style={{ ['--dx' as string]: `${dx}px`, ['--dy' as string]: `${dy}px`, animationDelay: `${i * 0.08}s` }}>{c}</text>
+          ))}
+        </g>
+      )}
+      {bubble && !happy && (
         <g className="bubble">
           <rect x="-12" y="-72" width="24" height="16" rx="8" fill="#fff" opacity=".92" />
           <path d="M-3 -56l3 4 3-4z" fill="#fff" opacity=".92" />

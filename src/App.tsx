@@ -7,7 +7,10 @@ import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
 import { useTasks } from './useTasks'
 import { dueInfo } from './dates'
-import type { Task } from './types'
+import { subAssignee, taskAssignee } from './assign'
+import AvatarCard from './components/AvatarCard'
+import { buildItems, workByAvatar } from './work'
+import type { Staff, Task } from './types'
 
 const realMinutes = () => {
   const d = new Date()
@@ -39,10 +42,62 @@ export default function App() {
   }, [playing])
 
   const now = sim ?? real
+  // 업무 → 담당 아바타별 업무 목록 (now가 바뀌면 날짜 기준도 다시 계산)
+  const items = useMemo(() => buildItems(tasks), [tasks, real])
+  const works = useMemo(() => workByAvatar(items), [items])
   const activities = useMemo(
-    () => Object.fromEntries(AVATARS.map((a) => [a.id, getActivity(a.id, now)])) as Record<AvatarId, ReturnType<typeof getActivity>>,
-    [now],
+    () =>
+      Object.fromEntries(
+        AVATARS.map((a) => {
+          const w = a.id === 'user' ? undefined : works[a.id as Staff]
+          const top = w?.doing[0]
+          const job = top ? { title: top.title, urgent: w!.doing.some((i) => i.level === 'urgent' || i.level === 'overdue') } : null
+          return [a.id, getActivity(a.id, now, job)]
+        }),
+      ) as Record<AvatarId, ReturnType<typeof getActivity>>,
+    [now, works],
   )
+  const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
+  const totals = {
+    doing: items.filter((i) => i.started).length,
+    planned: items.filter((i) => !i.started).length,
+    soon: items.filter((i) => ['soon', 'urgent', 'overdue'].includes(i.level)).length,
+  }
+
+  // 완료 이벤트: 웃는 표정 + 별/꽃 + 알림
+  const [cheers, setCheers] = useState<Record<string, number>>({})
+  const [toast, setToast] = useState<{ text: string; key: number } | null>(null)
+  const cheerUp = (ids: string[]) =>
+    setCheers((c) => { const n = { ...c }; ids.forEach((id) => (n[id] = (n[id] ?? 0) + 1)); return n })
+  const notify = (text: string) => setToast({ text, key: Date.now() })
+  useEffect(() => {
+    if (!toast) return
+    const t = window.setTimeout(() => setToast(null), 3200)
+    return () => window.clearTimeout(t)
+  }, [toast])
+
+  const saveTask = (t: Task) => {
+    const old = tasks.find((x) => x.id === t.id)
+    save(t)
+    if (!old) return
+    if (old.status !== 'done' && t.status === 'done') {
+      const ids = new Set<string>([taskAssignee(t), ...t.subtasks.map((s) => subAssignee(t, s))])
+      const allDone = tasks.every((x) => x.id === t.id || x.status === 'done')
+      if (allDone) {
+        cheerUp(['momo', 'luna', 'coco', 'mimi', 'user'])
+        notify('🎊 등록된 모든 업무를 끝냈어요! 정말 수고했어요')
+      } else {
+        cheerUp([...ids, 'user'])
+        notify(`🎉 「${t.title}」 업무 완료!`)
+      }
+      return
+    }
+    const newly = t.subtasks.filter((s) => s.done && !old.subtasks.find((o) => o.id === s.id)?.done)
+    if (newly.length) {
+      cheerUp(newly.map((s) => subAssignee(t, s)))
+      notify(`✅ 「${newly[0].title}」 완료!`)
+    }
+  }
   const info = AVATARS.find((a) => a.id === selected)
   const act = selected ? activities[selected] : null
 
@@ -72,17 +127,15 @@ export default function App() {
         </div>
       )}
 
+      {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
+
       <main className="stage">
-        <House activities={activities} selected={selected} onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
+        <House activities={activities} alerts={alerts} cheers={cheers} selected={selected} onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
       </main>
 
       <section className="card">
         {info && act ? (
-          <>
-            <div className="card-title">{info.emoji} {info.name} <span>{info.role}</span></div>
-            <p>{act.label}</p>
-            <p className="muted">진행 중인 업무가 없어요. (업무 연동은 3~4단계에서 추가돼요)</p>
-          </>
+          <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals} />
         ) : (
           <p className="muted">아바타를 터치하면 정보를 볼 수 있어요 ✨ 시계를 누르면 시간을 바꿔볼 수 있어요.</p>
         )}
@@ -109,7 +162,7 @@ export default function App() {
       )}
       {view === 'list' && (
         <Sheet title="업무 목록" onClose={close}>
-          <TaskList tasks={tasks} onSave={save} onDelete={remove} onEdit={(t) => { setEditing(t); setView('form') }} />
+          <TaskList tasks={tasks} onSave={saveTask} onDelete={remove} onEdit={(t) => { setEditing(t); setView('form') }} />
         </Sheet>
       )}
     </div>

@@ -3,7 +3,8 @@ import type { AvatarId } from './avatars'
 export type Importance = 'high' | 'normal' | 'low'
 export type Status = 'todo' | 'doing' | 'done'
 /** 직원 아바타만 담당할 수 있음. null이면 자동 배정(4단계) */
-export type Assignee = Exclude<AvatarId, 'user'> | null
+export type Staff = Exclude<AvatarId, 'user'>
+export type Assignee = Staff | null
 
 export interface SubTask {
   id: string

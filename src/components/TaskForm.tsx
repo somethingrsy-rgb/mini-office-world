@@ -1,13 +1,15 @@
 import { useState } from 'react'
 import { AVATARS } from '../avatars'
+import { subAssignee, taskAssignee } from '../assign'
 import { IMPORTANCE_LABEL, newId, type Assignee, type Importance, type SubTask, type Task } from '../types'
 
 const STAFF = AVATARS.filter((a) => a.id !== 'user')
+const nameOf = (id: string) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.emoji} ${a.name}` }
 
-function AssigneeSelect({ value, onChange }: { value: Assignee; onChange: (v: Assignee) => void }) {
+function AssigneeSelect({ value, onChange, auto }: { value: Assignee; onChange: (v: Assignee) => void; auto?: string }) {
   return (
     <select value={value ?? ''} onChange={(e) => onChange((e.target.value || null) as Assignee)} aria-label="담당 아바타">
-      <option value="">자동 배정</option>
+      <option value="">{auto ? `자동 배정 → ${auto}` : '자동 배정'}</option>
       {STAFF.map((a) => (
         <option key={a.id} value={a.id}>{a.emoji} {a.name}</option>
       ))}
@@ -67,7 +69,7 @@ export default function TaskForm({ initial, onSave, onCancel }: Props) {
         </label>
         <label>
           담당 아바타
-          <AssigneeSelect value={assignee} onChange={setAssignee} />
+          <AssigneeSelect value={assignee} onChange={setAssignee} auto={title.trim() || desc.trim() ? nameOf(taskAssignee({ title, desc, assignee: null })) : undefined} />
         </label>
       </div>
       <div className="field">
@@ -87,7 +89,7 @@ export default function TaskForm({ initial, onSave, onCancel }: Props) {
           <div className="subrow" key={s.id}>
             <input value={s.title} onChange={(e) => patchSub(s.id, { title: e.target.value })} placeholder="세부 할 일" maxLength={80} />
             <input type="date" value={s.due ?? ''} onChange={(e) => patchSub(s.id, { due: e.target.value || null })} aria-label="개별 마감일" />
-            <AssigneeSelect value={s.assignee} onChange={(v) => patchSub(s.id, { assignee: v })} />
+            <AssigneeSelect value={s.assignee} onChange={(v) => patchSub(s.id, { assignee: v })} auto={s.title.trim() ? nameOf(subAssignee({ title, desc, assignee }, { title: s.title, assignee: null })) : undefined} />
             <button type="button" className="x" aria-label="삭제" onClick={() => setSubs((a) => a.filter((x) => x.id !== s.id))}>✕</button>
           </div>
         ))}
