@@ -722,3 +722,8 @@ html[data-theme="dark"] .qprev li.bad { background:rgba(255,77,109,.18); color:#
 .chk .emo { height:16px; }
 .ea .emo { height:18px; }
 .qprev .emo { height:1.3em; }
+
+/* 아바타 시트의 일 목록 */
+.avtasks .todorow .primary.sm { margin:0; flex:none; padding:7px 10px; font-size:12px; }
+.atdesc { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; white-space:pre-wrap; opacity:.75; }
+.avtasks .tmain b { white-space:normal; }

@@ -22,8 +22,7 @@ import TodoSheet from './components/TodoSheet'
 import { fmtWorked, workedMs } from './worktime'
 import { orderTasks, rankMap } from './order'
 import type { QuickEntry } from './quick'
-import AssignSheet from './components/AssignSheet'
-import QuickAssign from './components/QuickAssign'
+import AvatarTasks from './components/AvatarTasks'
 import Intro from './components/Intro'
 import RichText from './components/RichText'
 import { useLoungeChat } from './chat'
@@ -67,7 +66,6 @@ export default function App() {
   // 앱을 열 때 상자가 열리는 인트로: revealed가 true가 되면 뒤 화면이 서서히 나타나요
   const [revealed, setRevealed] = useState(false)
   const [introDone, setIntroDone] = useState(false)
-  const [assignFor, setAssignFor] = useState<Staff | null>(null)
   // 특별 행동: 일을 받으러 정문→접수대로(pickup), 일을 끝내고 결과 확인 칸으로(finish), 정문으로 나가기(leave). 끝나는 시각을 기억해 둬요
   const [pickups, setPickups] = useState<Record<string, number>>({})
   const [finishes, setFinishes] = useState<Record<string, number>>({})
@@ -233,20 +231,16 @@ export default function App() {
     startEvent('pickup', fresh, 18000)
     notify(`🚪 일을 받으러 와요: ${names(fresh)}`)
   }
-  const createAndAssign = (v: { title: string; desc: string; due: string; importance: Importance; start: boolean }) => {
-    if (!assignFor) return
-    const t: Task = { id: newId(), title: v.title, desc: v.desc, due: v.due || null, importance: v.importance, status: v.start ? 'doing' : 'todo', assignee: assignFor, subtasks: [], createdAt: Date.now(), completedAt: null }
-    save(t)
-    distribute(t)
-    setAssignFor(null)
+  /** 아바타의 일 목록에서 순서를 바꾸면: 그 일들이 전체 순서에서 차지하던 자리를 새 순서로 채워요 (다른 아바타의 일 순서는 그대로) */
+  const reorderMine = (mine: string[]) => {
+    const all = ordered.map((t) => t.id)
+    const slots = all.map((id, i) => (mine.includes(id) ? i : -1)).filter((i) => i >= 0)
+    if (slots.length !== mine.length) return
+    const next = [...all]
+    slots.forEach((slot, k) => { next[slot] = mine[k] })
+    updateSettings({ ...settings, order: next })
   }
-  /** 아바타를 눌러 제목·주요 내용·마감일을 적어 나눠 주기: 대기 상태로 등록되고, 그 아바타가 접수대로 와서 일을 받아가요 */
-  const quickAssign = (who: Staff, v: { title: string; desc: string; due: string }) => {
-    const t: Task = { id: newId(), title: v.title, desc: v.desc, due: v.due || null, importance: 'normal', status: 'todo', assignee: who, subtasks: [], createdAt: Date.now(), completedAt: null }
-    save(t)
-    distribute(t)
-    setSelected(null)
-  }
+
   /** 빠른 분배: 나(관리자)에게 "분류/제목/상세내용/마감일"을 적으면 담당 아바타에게 바로 나눠 줘요.
    *  새로 맡은 아바타는 정문으로 들어와 접수대에서 일을 받고(3초) 라운지에서 대기해요 */
   const quickDistribute = (entries: QuickEntry[]) => {
@@ -271,18 +265,6 @@ export default function App() {
     window.setTimeout(() => setUserSay(null), 4200)
     close()
   }
-  const assignExisting = (it: WorkItem, start: boolean) => {
-    if (!assignFor) return
-    let t = it.sub
-      ? { ...it.task, subtasks: it.task.subtasks.map((s) => (s.id === it.sub!.id ? { ...s, assignee: assignFor } : s)) }
-      : { ...it.task, assignee: assignFor }
-    if (start && t.status === 'todo') t = { ...t, status: 'doing' }
-    save(t)
-    distribute(t, it.task)
-    setAssignFor(null)
-    setSelected(null)
-  }
-
   const FINISH_MS = 9000 // 결과 확인 칸에서 보고하는 시간
   const LEAVE_MS = 6500  // 정문으로 걸어 나가는 시간
   /** 일을 끝내면: 결과 확인 칸에 갔다가, 남은 일이 없는 아바타는 정문으로 나가서 사라지고 나는 "수고했어!"라고 말해요 */
@@ -444,33 +426,20 @@ export default function App() {
           <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
         </Sheet>
       )}
-      {info && act && info.id !== 'user' && !assignFor && (() => {
+      {info && act && info.id !== 'user' && (() => {
         const w = works[info.id as Staff]
         const working = w.doing.length > 0
         return (
           <Sheet glass title={working ? `${info.emoji} ${info.name} · 일하는 중` : `${info.emoji} ${info.name} · ${info.role}`} onClose={() => setSelected(null)}>
-            {working ? (
-              // 일하는 중이면 대기·완료 버튼만
-              <WorkingPanel info={info} activity={act} doing={w.doing} onWait={waitItem} onComplete={completeItem} />
-            ) : (
-              // 일이 없거나 대기 중이면 새 일 나눠 주기(제목·마감일) + 진행하기
-              <>
-                {!shown.includes(info.id as Staff) && <p className="muted">{info.name}에게 일을 주면 정문으로 들어와서 접수대로 와요 🚪</p>}
-                <QuickAssign info={info} onSubmit={(v) => quickAssign(info.id as Staff, v)} />
-                <div className="glassdiv" />
-                <AvatarCard hideTitle info={info} activity={act} work={w} totals={totals}
-                  onAssign={() => setAssignFor(info.id as Staff)}
-                  onStart={startItem} onWait={waitItem} onComplete={completeItem} />
-              </>
+            {working && <WorkingPanel info={info} activity={act} doing={w.doing} onWait={waitItem} onComplete={completeItem} />}
+            {working && w.planned.length > 0 && <div className="glassdiv" />}
+            {(!working || w.planned.length > 0) && (
+              <AvatarTasks info={info} items={w.planned} managerName={AVATARS.find((a) => a.id === 'user')!.name}
+                onStart={startItem} onOrder={reorderMine} onGoManager={() => { setSelected(null); setView('todo') }} />
             )}
           </Sheet>
         )
       })()}
-      {assignFor && (
-        <Sheet glass tall title={`${AVATARS.find((a) => a.id === assignFor)!.emoji} ${AVATARS.find((a) => a.id === assignFor)!.name}에게 일 시키기`} onClose={() => setAssignFor(null)}>
-          <AssignSheet who={assignFor} items={items} onCreate={createAndAssign} onAssign={assignExisting} />
-        </Sheet>
-      )}
       {room && (
         <Sheet glass tall title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
           <RoomView room={room} activities={activities} shown={shown} dark={dark} />
