@@ -29,3 +29,25 @@ html, body { margin:0; background:linear-gradient(#f3e8ff,#ffe6f2); color:var(--
   background:var(--pink); color:#fff; }
 .dock button:disabled { background:var(--lav); }
 @media (prefers-reduced-motion: reduce) { .bob,.blink,.ring,.twinkle { animation:none } }
+.clock { margin:0 auto 8px; width:fit-content; padding:5px 14px; background:#fff; border-radius:999px; font-size:13px; font-weight:700; box-shadow:0 2px 8px rgba(140,100,200,.15); cursor:pointer; }
+.clock em { font-style:normal; font-weight:500; opacity:.6; font-size:11px; }
+.timebox { background:#fff; border-radius:16px; padding:10px 12px; margin-bottom:8px; }
+.timebox input { width:100%; }
+.timebtns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.timebtns button { border:0; border-radius:12px; padding:6px 10px; font-size:12px; font-weight:700; background:var(--lav); color:#fff; }
+.leg { transform-box:fill-box; transform-origin:50% 0; }
+.walking { animation-duration:.45s; }
+.walking .leg.l { animation:legl .45s ease-in-out infinite; }
+.walking .leg.r { animation:legr .45s ease-in-out infinite; }
+.tap { animation:tap .35s ease-in-out infinite; }
+.tap.b { animation-delay:.17s; }
+.steam { animation:tw 1.6s ease-in-out infinite; }
+.munch { animation:munch .6s ease-in-out infinite; transform-box:fill-box; transform-origin:center; }
+.bubble { animation:pop .3s ease-out; pointer-events:none; }
+@keyframes legl { 0%,100%{transform:rotate(25deg)} 50%{transform:rotate(-25deg)} }
+@keyframes legr { 0%,100%{transform:rotate(-25deg)} 50%{transform:rotate(25deg)} }
+@keyframes tap { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+@keyframes munch { 0%,100%{transform:scale(1)} 50%{transform:scale(.5)} }
+@keyframes pop { from{opacity:0} to{opacity:1} }
+.bob.walking { animation-name:bob; }
+@media (prefers-reduced-motion: reduce) { .tap,.steam,.munch,.walking .leg { animation:none } }

@@ -1,12 +1,12 @@
 import Avatar from './Avatar'
 import { AVATARS, type AvatarId } from '../avatars'
+import type { Activity } from '../schedule'
 
 interface Props {
+  activities: Record<AvatarId, Activity>
   selected: AvatarId | null
   onSelect: (id: AvatarId) => void
 }
-
-const av = (id: AvatarId) => AVATARS.find((a) => a.id === id)!
 
 function Room({ x, y, w, h, fill, label }: { x: number; y: number; w: number; h: number; fill: string; label: string }) {
   return (
@@ -52,7 +52,7 @@ const Fairy = ({ cx, cy, r }: { cx: number; cy: number; r: number }) => (
   <circle cx={cx} cy={cy} r={r} fill="#fff7b8" className="twinkle" />
 )
 
-export default function House({ selected, onSelect }: Props) {
+export default function House({ activities, selected, onSelect }: Props) {
   const sel = (id: AvatarId) => selected === id
   return (
     <svg viewBox="0 0 400 540" className="house" role="img" aria-label="미니어처 오피스 하우스">
@@ -158,12 +158,9 @@ export default function House({ selected, onSelect }: Props) {
       <text x="200" y="520" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff" opacity=".9">✨ MINI OFFICE ✨</text>
 
       {/* 아바타 */}
-      <Avatar info={av('momo')} x={80} y={426} delay={0} selected={sel('momo')} onSelect={onSelect} />
-      <Avatar info={av('luna')} x={110} y={296} delay={0.3} selected={sel('luna')} onSelect={onSelect} />
-      <Avatar info={av('coco')} x={264} y={296} delay={0.6} selected={sel('coco')} flip onSelect={onSelect} />
-      <Avatar info={av('mimi')} x={206} y={426} delay={0.9} selected={sel('mimi')} onSelect={onSelect} />
-      <Avatar info={av('user')} x={150} y={164} delay={1.2} selected={sel('user')} onSelect={onSelect} />
-      {/* 아바타가 방 앞에 서도록 방 기준 위치 보정은 2단계(이동)에서 처리 */}
+      {AVATARS.map((info, i) => (
+        <Avatar key={info.id} info={info} activity={activities[info.id]} delay={i * 0.3} selected={sel(info.id)} onSelect={onSelect} />
+      ))}
     </svg>
   )
 }
