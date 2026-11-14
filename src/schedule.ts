@@ -14,6 +14,10 @@ export interface Activity {
   period: string
   /** 지금 처리 중인 업무 이름 */
   task?: string
+  /** 처음 화면에 나타날 때의 시작 자리 (새로 일을 받은 아바타는 라운지에서 나타나요) */
+  enter?: Spot
+  /** 천천히 걷는 이동(산책·라운지)인지 */
+  slow?: boolean
 }
 
 /** 기본 생활 시간표 (분 단위). 나중에 사용자가 바꿀 수 있게 한곳에 모아 둠 */
@@ -105,11 +109,14 @@ export interface Job { title: string }
 /** 사용자가 일을 나눠 주거나(pickup) 일을 끝냈을 때(finish) 잠깐 하는 특별한 행동 */
 export type AvatarEvent = 'pickup' | 'finish' | null
 
-/** 대기: 일을 받았거나 일을 마친 아바타는 맨 위 라운지에서 기다려요 */
-function lounge(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
-  return hash(id, slot + 31) < 50
-    ? { spot: SEATS_COFFEE[id], pose: 'coffee', label: '라운지에서 커피를 마시며 대기하고 있어요' }
-    : { spot: SOFA[id], pose: 'sit', label: '라운지 소파에서 대기하고 있어요' }
+/** 대기: 일을 받았거나 마친 아바타는 라운지에서 쉬고 대화하다가, 천천히 아래 정원으로 산책도 다녀와요 */
+function lounge(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label' | 'slow'> {
+  const idx = ORDER.indexOf(id)
+  const r = hash(id, slot + 31)
+  if (r < 26) return { spot: SEATS_COFFEE[id], pose: 'coffee', label: '라운지에서 커피를 마시며 대기하고 있어요', slow: true }
+  if (r < 50) return { spot: SOFA[id], pose: 'sit', label: '라운지 소파에서 대기하고 있어요', slow: true }
+  if (r < 62) return { spot: CHAT_SPOTS[id], pose: 'chat', label: '라운지에서 동료와 이야기하고 있어요', slow: true }
+  return { spot: STROLL[(r + idx) % STROLL.length], pose: 'stand', label: '정원을 천천히 산책하고 있어요', slow: true }
 }
 
 function life(id: AvatarId, slot: number, idx: number): Pick<Activity, 'spot' | 'pose' | 'label'> {
@@ -128,6 +135,8 @@ export function getActivity(
   event: AvatarEvent = null,
   /** 일을 받았거나 마쳐서 라운지에서 대기해야 하는지 (진행 중인 일이 있으면 무시) */
   waiting = false,
+  /** 라운지·산책 행동이 바뀌는 순서(약 40초마다 올라가요) */
+  wander = Math.floor(minutes / 4),
 ): Activity {
   const m = Math.floor(minutes)
   const idx = ORDER.indexOf(id)
@@ -143,7 +152,7 @@ export function getActivity(
   // 일을 끝냈어요 → 완료 칸으로 가서 보고
   if (event === 'finish') return { spot: DONE[id], pose: 'done', label: '완료 칸에 가서 일을 마쳤다고 보고하고 있어요', period }
   // 일을 나눠 줬어요 → 접수대로 와서 일을 받아감
-  if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period }
+  if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period, enter: SEATS_COFFEE[id] }
 
   // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
   if (job) {
@@ -152,7 +161,7 @@ export function getActivity(
   }
 
   // 일을 받았거나 마친 아바타는 라운지에서 대기해요 (퇴근하지 않아요)
-  if (waiting) return { ...lounge(id, Math.floor(m / 4)), period }
+  if (waiting) return { ...lounge(id, wander), period }
 
   // 아무 일도 없으면 시간표대로 생활: 라운지·정원에서 쉬기 → 점심·커피 (퇴근하지 않아요)
   if (m >= s.lunchStart && m < s.lunchEnd) {

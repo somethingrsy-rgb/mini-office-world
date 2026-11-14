@@ -10,6 +10,10 @@ interface Props {
   activities: Record<AvatarId, Activity>
   alerts: Partial<Record<Staff, 'soon' | 'urgent' | null>>
   cheers: Record<string, number>
+  /** 화면에 나올 직원 아바타 (일을 받은 아바타만) */
+  shown: AvatarId[]
+  /** 라운지에서 나누는 대화 */
+  speech: Partial<Record<AvatarId, string>>
   labels: Partial<Record<Staff, { text: string; more: number; worked?: string | null } | null>>
   /** 지금 남아 있는(끝나지 않은) 일 개수 */
   remaining: number
@@ -23,7 +27,7 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, remaining, reminders, selected, onSelect, onRoom }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom }: Props) {
   // 마감이 가까운 일을 4.5초마다 번갈아 알려줘요
   const [ri, setRi] = useState(0)
   useEffect(() => {
@@ -66,8 +70,8 @@ export default function House({ activities, alerts, cheers, labels, remaining, r
           <text x={remCx} y="750" textAnchor="middle" fontSize="24" fontWeight="800" fill="#5b4a78">{remText}</text>
         </g>
       )}
-      {AVATARS.filter((a) => a.id !== 'user').map((info, i) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]}
+      {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
+        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
     </svg>

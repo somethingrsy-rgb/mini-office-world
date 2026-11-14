@@ -3,7 +3,8 @@ import type { AvatarInfo } from '../avatars'
 import { asset, BUBBLE, FX, spriteFor, SPRITES, U, type SpriteKey } from '../assets'
 import { HUB_OFFSET, HUB_X, route, type Activity } from '../schedule'
 
-const WALK_SPEED = 210 // 하우스 좌표/초
+const WALK_SPEED = 190 // 하우스 좌표/초 (일하러 가거나 접수대로 갈 때)
+const SLOW_SPEED = 85 // 산책·라운지 이동은 천천히
 
 interface Props {
   info: AvatarInfo
@@ -13,14 +14,18 @@ interface Props {
   cheer?: number
   /** 머리 위에 띄울 맡은 일 이름 (more는 그 밖에 맡은 일 수) */
   taskLabel?: { text: string; more: number; worked?: string | null } | null
+  /** 라운지에서 나누는 대화 (말풍선 글) */
+  speech?: string | null
   delay?: number
   hideName?: boolean
   onSelect: (id: AvatarInfo['id']) => void
 }
 
-function useWalker(id: AvatarInfo['id'], target: Activity['spot']) {
-  const cur = useRef({ x: target.x, y: target.y })
-  const [st, setSt] = useState({ x: target.x, y: target.y, dur: 0, face: target.face, moving: false })
+function useWalker(id: AvatarInfo['id'], target: Activity['spot'], slow: boolean, enter?: Activity['spot']) {
+  // 처음 나타날 때는 enter(예: 라운지)에서 시작해서 목적지로 걸어가요
+  const start = enter ?? target
+  const cur = useRef({ x: start.x, y: start.y })
+  const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: start.face, moving: false })
 
   useEffect(() => {
     const pts = route(cur.current, target, HUB_X + HUB_OFFSET[id])
@@ -34,7 +39,7 @@ function useWalker(id: AvatarInfo['id'], target: Activity['spot']) {
       const p = pts[i++]
       const dx = p.x - cur.current.x
       const dist = Math.hypot(dx, p.y - cur.current.y)
-      const dur = Math.max(0.2, dist / WALK_SPEED)
+      const dur = Math.max(0.2, dist / (slow ? SLOW_SPEED : WALK_SPEED))
       cur.current = { x: p.x, y: p.y }
       setSt((s) => ({ x: p.x, y: p.y, dur, moving: true, face: Math.abs(dx) < 5 ? s.face : dx > 0 ? 'r' : 'l' }))
       timer = window.setTimeout(step, dur * 1000)
@@ -51,10 +56,10 @@ function useWalker(id: AvatarInfo['id'], target: Activity['spot']) {
 const textWidth = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 /** 여럿이 모여 있어도 일 이름표가 겹치지 않게 아바타마다 높이를 엇갈리게 */
 const LABEL_LIFT: Record<string, number> = { momo: 0, luna: 44, coco: 0, mimi: 44, user: 0 }
-const clip = (t: string, max: number) => ([...t].length > max ? [...t].slice(0, max).join('') + '…' : t)
+const clip = (t: string, max = 16) => ([...t].length > max ? [...t].slice(0, max).join('') + '…' : t)
 
-export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, delay = 0, hideName, onSelect }: Props) {
-  const w = useWalker(info.id, activity.spot)
+export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, speech, delay = 0, hideName, onSelect }: Props) {
+  const w = useWalker(info.id, activity.spot, !!activity.slow, activity.enter)
   // 환호는 이동을 시작한 뒤 목적지에 도착하면 시작하고, 3초쯤 뒤 끝나요
   const [wantCheer, setWantCheer] = useState(false)
   const [happy, setHappy] = useState(false)
@@ -82,7 +87,9 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   const W = m.w * U
   const H = m.h * U
   const flip = (key === 'walk' || key === 'stand') && w.face === 'l'
-  const bubbleName = !w.moving && !happy ? BUBBLE[pose] : undefined
+  // 대화 말풍선은 멈춰 있을 때만 보여요 (걷는 중에는 숨김)
+  const talk = !w.moving && !happy ? speech : null
+  const bubbleName = !w.moving && !happy && !talk ? BUBBLE[pose] : undefined
   const bm = bubbleName ? FX[bubbleName] : undefined
   const bw = bm ? bm.w * 0.8 : 0
   const bh = bm ? bm.h * 0.8 : 0
@@ -90,14 +97,14 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
 
   return (
     <g
-      className="avatar"
+      className="avatar appear"
       style={{ transform: `translate(${w.x}px, ${w.y}px)`, transition: `transform ${w.dur}s linear` }}
       onClick={() => onSelect(info.id)}
       role="button"
       aria-label={`${info.name} 선택`}
     >
       <ellipse cx="0" cy="4" rx={W * 0.36} ry="9" fill="#5b3a7a" opacity=".16" />
-      <g className={`bob ${w.moving ? 'walking' : ''} ${happy ? 'hop' : ''}`} style={{ animationDelay: `${delay}s` }}>
+      <g className={`bob ${w.moving ? 'walking' : ''} ${w.moving && activity.slow ? 'slowwalk' : ''} ${happy ? 'hop' : ''}`} style={{ animationDelay: `${delay}s` }}>
         {alert === 'urgent' && <ellipse cx="0" cy={-H / 2} rx={W * 0.62} ry={H * 0.6} fill="#ff4d6d" className="glow" />}
         {selected && (
           <circle cx="0" cy={-H / 2} r={Math.max(W, H) * 0.62} fill="none" stroke="#ff7ab5" strokeWidth="6" strokeDasharray="16 12" className="ring" style={{ transformOrigin: `0px ${-H / 2}px` }} />
@@ -140,6 +147,23 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
                 </g>
               )
             })()}
+          </g>
+        )
+      })()}
+      {talk && (() => {
+        const text = clip(talk, 16)
+        const fs = 28
+        const bw2 = textWidth(text, fs) + 44
+        const bh2 = 54
+        const top2 = H + 12 + (LABEL_LIFT[info.id] ?? 0) + (taskLabel ? 58 : 0) + (taskLabel?.worked ? 40 : 0) + 14
+        // 집 가장자리 밖으로 나가지 않게 가로 위치를 안쪽으로 보정
+        const dx = Math.max(-(w.x - bw2 / 2 - 20), Math.min(0, 980 - (w.x + bw2 / 2)))
+        return (
+          <g className="speech" pointerEvents="none" transform={`translate(${dx} 0)`} key={talk}>
+            <rect x={-bw2 / 2} y={-top2 - bh2} width={bw2} height={bh2} rx="27" fill="#fff" fillOpacity=".98" stroke="#c9b9f0" strokeWidth="4" />
+            <path d={`M${-10 - dx} ${-top2 - 2} l10 16 l10 -16z`} fill="#fff" stroke="#c9b9f0" strokeWidth="4" strokeLinejoin="round" />
+            <rect x={-14 - dx} y={-top2 - 8} width="28" height="12" fill="#fff" />
+            <text x="0" y={-top2 - 17} textAnchor="middle" fontSize={fs} fontWeight="800" fill="#5b4a78">{text}</text>
           </g>
         )
       })()}

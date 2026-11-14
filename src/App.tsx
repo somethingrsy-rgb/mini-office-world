@@ -24,6 +24,8 @@ import { orderTasks, rankMap } from './order'
 import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
 import Intro from './components/Intro'
+import { useLoungeChat } from './chat'
+import { roomOf } from './rooms'
 import WorkingPanel from './components/WorkingPanel'
 import { newId, type Importance, type Staff, type Task } from './types'
 
@@ -101,6 +103,13 @@ export default function App() {
     return () => window.clearInterval(t)
   }, [playing])
 
+  // 라운지·산책 행동이 바뀌는 순서: 약 40초마다 바뀌어서 아바타들이 천천히 돌아다녀요
+  const [wander, setWander] = useState(() => Math.floor(Date.now() / 40000))
+  useEffect(() => {
+    const t = window.setInterval(() => setWander(Math.floor(Date.now() / 40000)), 4000)
+    return () => window.clearInterval(t)
+  }, [])
+
   const now = sim ?? real
   // 업무 → 담당 아바타별 업무 목록 (now가 바뀌면 날짜 기준도 다시 계산)
   const rank = useMemo(() => rankMap(settings.order), [settings.order])
@@ -119,12 +128,12 @@ export default function App() {
           const event = a.id === 'user'
             ? (anyOf(finishes) ? 'finish' : anyOf(pickups) ? 'pickup' : null)
             : (finishes[a.id] ?? 0) > t ? 'finish' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
-          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!resting[a.id] || (!!w && w.planned.length > 0))]
+          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!resting[a.id] || (!!w && w.planned.length > 0), wander)]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, resting, tick, real],
+    [now, works, settings, pickups, finishes, resting, wander, tick, real],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(
@@ -149,6 +158,18 @@ export default function App() {
         return { text: `${who}: 「${i.title.length > 8 ? i.title.slice(0, 8) + '…' : i.title}」 ${d}`, level: (left <= 0 ? 'urgent' : 'soon') as 'soon' | 'urgent' }
       })
   }, [items, real])
+  // 화면에 나오는 직원: 일을 받은(끝내지 않은 일이 있는) 아바타, 일을 마치고 쉬는 아바타, 접수·보고 중인 아바타
+  const shown = useMemo(() => {
+    const t = Date.now()
+    return (Object.keys(works) as Staff[]).filter((id) => works[id].items.length > 0 || resting[id] || (pickups[id] ?? 0) > t || (finishes[id] ?? 0) > t)
+  }, [works, resting, pickups, finishes, tick, real])
+  // 라운지에 있는 아바타끼리 대화해요
+  const talkers = shown.map((id) => ({
+    id: id as AvatarId,
+    here: roomOf(activities[id].spot) === 'cafe',
+    task: works[id].items[0] ? { title: works[id].items[0].title, due: works[id].items[0].due } : null,
+  }))
+  const speech = useLoungeChat(talkers)
   const alerts = useMemo(() => Object.fromEntries((Object.keys(works) as Staff[]).map((k) => [k, works[k].alert])), [works])
   const totals = {
     doing: items.filter((i) => i.started).length,
@@ -292,17 +313,17 @@ export default function App() {
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
 
       <main className="stage">
-        <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
+        <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={speech} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
 
       <div className="avbar" role="tablist" aria-label="아바타 선택">
         {AVATARS.map((a) => (
-          <button key={a.id} className={`avchip ${selected === a.id ? 'on' : ''} `}
+          <button key={a.id} className={`avchip ${selected === a.id ? 'on' : ''} ${a.id !== 'user' && !shown.includes(a.id) ? 'off' : ''}`}
             onClick={() => pickAvatar(a.id)} aria-label={`${a.name} 선택`}>
             <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
             <span>{a.name}</span>
-            {a.id !== 'user' && works[a.id as Staff].doing.length === 0 && (
+            {a.id !== 'user' && shown.includes(a.id) && works[a.id as Staff].doing.length === 0 && (
               <small className="wait">대기{works[a.id as Staff].planned.length > 0 ? ` ${works[a.id as Staff].planned.length}` : ''}</small>
             )}
           </button>
@@ -310,7 +331,7 @@ export default function App() {
       </div>
 
       <section className="card">
-        <p className="muted">아바타를 터치하면 일을 나눠 줄 수 있어요. 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
+        <p className="muted">{shown.length === 0 ? '흐린 아바타를 눌러 일을 나눠 주면 라운지에 나타나요 ☕' : '아바타를 터치하면 일을 나눠 줄 수 있어요. 방을 터치하면 확대한 모습을 볼 수 있어요 ✨'}</p>
       </section>
 
       {storageError && <p className="warn">⚠️ 이 환경에서는 업무를 저장할 수 없어요. (사생활 보호 모드인지 확인해 주세요)</p>}
@@ -361,6 +382,7 @@ export default function App() {
             ) : (
               // 일이 없거나 대기 중이면 새 일 나눠 주기(제목·마감일) + 진행하기
               <>
+                {!shown.includes(info.id as Staff) && <p className="muted">{info.name}에게 일을 주면 카페 라운지에 나타나요 ☕</p>}
                 <QuickAssign info={info} onSubmit={(v) => quickAssign(info.id as Staff, v)} />
                 <div className="glassdiv" />
                 <AvatarCard hideTitle info={info} activity={act} work={w} totals={totals}
@@ -378,7 +400,7 @@ export default function App() {
       )}
       {room && (
         <Sheet title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
-          <RoomView room={room} activities={activities} />
+          <RoomView room={room} activities={activities} shown={shown} />
         </Sheet>
       )}
       {view === 'settings' && (

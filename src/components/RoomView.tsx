@@ -7,9 +7,9 @@ import type { Activity } from '../schedule'
 const RC = { left: 20, width: 46, bottom: 12 }
 
 /** 방을 확대해서 지금 그 안에 있는 아바타를 보여 줌 */
-export default function RoomView({ room, activities }: { room: RoomId; activities: Record<AvatarId, Activity> }) {
+export default function RoomView({ room, activities, shown }: { room: RoomId; activities: Record<AvatarId, Activity>; shown: AvatarId[] }) {
   const dim = ROOM_IMG[room]
-  const here = AVATARS.filter((a) => roomOf(activities[a.id].spot) === room)
+  const here = AVATARS.filter((a) => (a.id === 'user' || shown.includes(a.id)) && roomOf(activities[a.id].spot) === room)
   const isReception = room === 'reception'
   // 접수실: 나는 카운터 뒤, 일을 받으러 온 아바타는 카운터 앞
   const user = isReception ? here.find((a) => a.id === 'user') : undefined
