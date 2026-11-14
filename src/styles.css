@@ -820,3 +820,6 @@ html:not([data-theme="dark"]) .avchip, html:not([data-theme="dark"]) .dock butto
 }
 html:not([data-theme="dark"]) .avchip.on { border-color:rgba(170,150,190,.9); box-shadow:0 0 0 2px rgba(170,150,190,.55), 0 8px 22px rgba(70,60,90,.18), inset 0 1px 0 rgba(255,255,255,.6); }
 html:not([data-theme="dark"]) .avchip:not(.off) img, html:not([data-theme="dark"]) .dock button img { filter:saturate(.8) drop-shadow(0 2px 3px rgba(70,60,90,.2)); }
+
+/* 라이트 모드 하우스: 채도를 살짝만 낮춰요 (아바타는 그대로) */
+html:not([data-theme="dark"]) .houseimg { filter:saturate(.84); }
