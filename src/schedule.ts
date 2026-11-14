@@ -22,6 +22,8 @@ export interface Activity {
   leaving?: boolean
   /** 방을 같이 쓰는 경우 두 번째 자리인지 (이름표를 더 높이 띄워서 겹치지 않게) */
   seat?: 0 | 1
+  /** 건물 밖(정원길)에서 전신으로 서 있는 중 — 아침 출근 모습용 */
+  outdoors?: boolean
   /** 방을 둘이 같이 쓰는 중 (말풍선 이모지는 생략해서 벽을 넘지 않게) */
   shared?: boolean
 }
@@ -66,6 +68,9 @@ const exitSpot = (id: AvatarId): Spot => spot(500 + HUB_OFFSET[id], 1264, 'r')
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
 // 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
 const RECEPTION: Spot = spot(207, 910)
+/** 아침 출근: 정원길 아래쪽에서 시작해 정문으로 걸어 들어와 카운터로 가요 */
+export const ARRIVE_START: Spot = spot(500 + 12, 1266)
+export const ARRIVE_GOAL: Spot = RECEPTION
 const PICKUP: Record<AvatarId, Spot> = {
   // 5명이 한꺼번에 와도 겹치지 않게 카운터 앞에 두 줄로 서요 (이름표 높이가 엇갈리는 아바타끼리 이웃하도록 배치)
   momo: spot(90, 1016), coco: spot(190, 1016), kiki: spot(290, 1016, 'l'), luna: spot(140, 1048), mimi: spot(240, 1048, 'l'), user: RECEPTION,
@@ -275,3 +280,8 @@ export function spreadSpots<T extends { spot: Spot; task?: string; leaving?: boo
   }
   return out
 }
+
+/** 아침 출근 길: 정원길 아래 → 정문 안쪽 1층 바닥 → 접수실 앞 바닥 → 카운터 안쪽. 벽을 뚫고 걷지 않도록 1층 바닥을 따라가요 */
+export const ARRIVE_PATH: Spot[] = [ARRIVE_START, spot(512, 1006), spot(250, 1014), RECEPTION]
+/** 각 구간을 걷는 데 걸리는 시간(ms) — 천천히 걸어요 */
+export const arriveLegMs = (i: number) => Math.round((routeLength(ARRIVE_PATH[i - 1], ARRIVE_PATH[i], HUB_OFFSET.user) / 85) * 1000)

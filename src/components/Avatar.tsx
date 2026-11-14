@@ -98,6 +98,8 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   const clean = speech ? speech.replace(/[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim() : null
   const talk = !w.moving && !happy && clean ? clean : null
   let key: SpriteKey = happy ? (isUser ? 'desk-cheer' : 'cheer') : spriteFor(info.id, pose)
+  // 아침 출근 중에는 카운터 뒤 모습이 아니라 전신으로 걸어요
+  if (isUser && (w.moving || activity.outdoors)) key = w.moving ? 'walk' : 'stand'
   if (isUser && key === 'desk-idle' && (selected || talk)) key = 'desk-wave' // 누르거나 말할 때 손을 흔들어요
   const m = SPRITES[info.id][key]!
   const W = m.w * U

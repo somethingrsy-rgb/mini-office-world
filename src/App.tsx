@@ -4,7 +4,7 @@ import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { asset, preloadAssets, themed } from './assets'
 import { ROOMS, type RoomId } from './rooms'
 import RoomView from './components/RoomView'
-import { getActivity, spreadSpots } from './schedule'
+import { ARRIVE_PATH, arriveLegMs, getActivity, spreadSpots } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
@@ -30,7 +30,7 @@ import { initAudio, sfx } from './audio'
 import { useSync, markSettingsDirty } from './sync'
 import { stampReplace } from './tombs'
 import { useTheme } from './useTheme'
-import { useClock } from './useClock'
+import { realMinutes, useClock } from './useClock'
 import BottomBar from './components/BottomBar'
 import { usePipPrefs } from './usePipPrefs'
 import { useAvatarEvents } from './useAvatarEvents'
@@ -42,6 +42,8 @@ import { useStations } from './stations'
 import { roomOf } from './rooms'
 import WorkingPanel from './components/WorkingPanel'
 import { newId, type Importance, type Staff, type Task } from './types'
+
+const MORNING_WORDS = ['오늘도 힘내자, 요셉처럼!', '오늘도 힘내자, 요셉처럼!', '오늘도 좋은 하루 만들자!', '할 수 있어, 오늘도 화이팅!', '감사한 마음으로 시작하자!']
 
 export default function App() {
   const [selected, setSelected] = useState<AvatarId | null>(null)
@@ -65,10 +67,24 @@ export default function App() {
   // 앱을 열 때 상자가 열리는 인트로: revealed가 true가 되면 뒤 화면이 서서히 나타나요
   const [revealed, setRevealed] = useState(false)
   const [introDone, setIntroDone] = useState(false)
+  // 아침 출근: 8시~9시(출근 시각 전 1시간)에 앱을 새로 열면 내가 정원길로 걸어와 정문으로 들어와 카운터로 가요. 배경에 갔다 돌아올 때는 다시 하지 않아요
+  // arrive: 0=정원길 아래에서 대기, 1~3=길을 따라 걷는 중, -1=끝(카운터)
+  const [arrive, setArrive] = useState<number>(() => { const m = realMinutes(); const a = loadSettings().schedule.arrive; return m >= a - 60 && m < a ? 0 : -1 })
   const { pickups, setPickups, finishes, setFinishes, leaves, setLeaves, tick, startEvent, onReceived, clearLeaving } = useAvatarEvents()
   // 나(관리자)가 하는 말 ("수고했어!")
   const [userSay, setUserSay] = useState<string | null>(null)
   useEffect(() => { preloadAssets() }, [])
+  // 상자가 열리면 출근 시작 → 길을 따라 걷고 → 카운터에 도착하면 긍정의 한마디
+  useEffect(() => {
+    if (arrive < 0 || (arrive === 0 && !revealed)) return
+    const t = window.setTimeout(() => {
+      if (arrive < 3) { setArrive(arrive + 1); return }
+      setArrive(-1)
+      setUserSay(MORNING_WORDS[Math.floor(Math.random() * MORNING_WORDS.length)])
+      window.setTimeout(() => setUserSay(null), 5000)
+    }, arrive === 0 ? 700 : arriveLegMs(arrive) + 150)
+    return () => window.clearTimeout(t)
+  }, [arrive, revealed])
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
@@ -109,12 +125,14 @@ export default function App() {
           const event = a.id === 'user'
             ? (anyOf(finishes) ? 'finish' : anyOf(pickups) ? 'pickup' : null)
             : (finishes[a.id] ?? 0) > t ? 'finish' : (leaves[a.id] ?? 0) > t ? 'leave' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
-          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander, stations[a.id])]
+          const act = getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander, stations[a.id])
+          if (a.id === 'user' && arrive >= 0) return [a.id, { ...act, spot: ARRIVE_PATH[arrive], pose: 'stand' as const, outdoors: arrive < 3, slow: arrive > 0, label: '출근하는 중이에요' }]
+          return [a.id, act]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real],
+    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real, arrive],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(
