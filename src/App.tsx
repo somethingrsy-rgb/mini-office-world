@@ -219,7 +219,7 @@ export default function App() {
     if (fresh.length === 0) return
     updateResting((h) => { const n = { ...h }; fresh.forEach((id) => delete n[id]); return n })
     startEvent('pickup', fresh, 18000)
-    notify(`📥 일을 받으러 접수대로 와요: ${names(fresh)}`)
+    notify(`🚪 일을 받으러 와요: ${names(fresh)}`)
   }
   const createAndAssign = (v: { title: string; due: string; importance: Importance; start: boolean }) => {
     if (!assignFor) return
@@ -392,7 +392,7 @@ export default function App() {
             ) : (
               // 일이 없거나 대기 중이면 새 일 나눠 주기(제목·마감일) + 진행하기
               <>
-                {!shown.includes(info.id as Staff) && <p className="muted">{info.name}에게 일을 주면 카페 라운지에 나타나요 ☕</p>}
+                {!shown.includes(info.id as Staff) && <p className="muted">{info.name}에게 일을 주면 정문으로 들어와서 접수대로 와요 🚪</p>}
                 <QuickAssign info={info} onSubmit={(v) => quickAssign(info.id as Staff, v)} />
                 <div className="glassdiv" />
                 <AvatarCard hideTitle info={info} activity={act} work={w} totals={totals}

@@ -14,7 +14,7 @@ export interface Activity {
   period: string
   /** 지금 처리 중인 업무 이름 */
   task?: string
-  /** 처음 화면에 나타날 때의 시작 자리 (새로 일을 받은 아바타는 라운지에서 나타나요) */
+  /** 처음 화면에 나타날 때의 시작 자리 (새로 일을 받은 아바타는 정문에서 들어와요) */
   enter?: Spot
   /** 천천히 걷는 이동(산책·라운지)인지 */
   slow?: boolean
@@ -50,6 +50,9 @@ const SOFA: Record<AvatarId, Spot> = {
   // 소파 두 자리 + 카운터 의자 + 테이블 쪽으로 흩어져 앉아 이름표가 겹치지 않게
   momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), user: spot(500, AT - 14),
 }
+/** 정문(아치 앞 길 끝): 새로 일을 받은 아바타는 여기서 들어와 계단 쪽 통로를 지나 접수대로 걸어가요 */
+const gateSpot = (id: AvatarId): Spot => spot(HUB_X + HUB_OFFSET[id], 1246, 'r')
+
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
 // 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
 const RECEPTION: Spot = spot(207, 910)
@@ -152,7 +155,7 @@ export function getActivity(
   // 일을 끝냈어요 → 완료 칸으로 가서 보고
   if (event === 'finish') return { spot: DONE[id], pose: 'done', label: '완료 칸에 가서 일을 마쳤다고 보고하고 있어요', period }
   // 일을 나눠 줬어요 → 접수대로 와서 일을 받아감
-  if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period, enter: SEATS_COFFEE[id] }
+  if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period, enter: gateSpot(id) }
 
   // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
   if (job) {
