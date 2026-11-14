@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { AvatarInfo } from '../avatars'
+import RichText from './RichText'
 
 interface Props {
   info: AvatarInfo
@@ -35,7 +36,7 @@ export default function QuickAssign({ info, onSubmit }: Props) {
         <input type="date" value={due} onChange={(e) => setDue(e.target.value)} />
       </label>
       {err && <p className="err">{err}</p>}
-      <button type="submit" className="primary">{info.emoji} {info.name}에게 나눠 주기</button>
+      <button type="submit" className="primary"><RichText text={info.emoji} /> {info.name}에게 나눠 주기</button>
     </form>
   )
 }

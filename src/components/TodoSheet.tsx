@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AVATARS } from '../avatars'
+import RichText from './RichText'
 import { subAssignee, taskAssignee } from '../assign'
 import { dueInfo, fmtDate } from '../dates'
 import { parseQuick, type QuickEntry } from '../quick'
@@ -129,7 +130,7 @@ export default function TodoSheet({ tasks, manual, onOrder, onReset, onBrief, on
               const a = e.assignee ? AVATARS.find((x) => x.id === e.assignee)! : null
               return e.ok && a ? (
                 <li key={i} className="ok">
-                  <b>{a.emoji} {a.name}</b>{e.auto && <em> (자동)</em>} · {e.title}
+                  <b><RichText text={a.emoji} /> {a.name}</b>{e.auto && <em> (자동)</em>} · {e.title}
                   {e.desc && <span> · {e.desc}</span>}
                   {e.due && <span className="qd"> · 마감 {fmtDate(e.due)}</span>}
                 </li>
@@ -166,7 +167,7 @@ export default function TodoSheet({ tasks, manual, onOrder, onReset, onBrief, on
                   <span className="tmain">
                     <b>{t.title}</b>
                     <small>
-                      <span className={`dot imp-${t.importance}`} /> {who(t)}
+                      <span className={`dot imp-${t.importance}`} /> <RichText text={who(t)} />
                       {t.subtasks.length > 0 && ` · 남은 할 일 ${left}/${t.subtasks.length}`}
                       {t.status === 'doing' && ' · 진행 중'}
                     </small>

@@ -714,3 +714,11 @@ html[data-theme="dark"] a.link { color:#8fc0ff; }
 html[data-theme="dark"] .quickbox { background:rgba(255,255,255,.06); border-color:rgba(255,235,190,.16); }
 html[data-theme="dark"] .qprev li { background:rgba(255,255,255,.08); }
 html[data-theme="dark"] .qprev li.bad { background:rgba(255,77,109,.18); color:#ff9db0; }
+
+/* 아바타 담당 업무 아이콘(국회·예산·법·민원): 글자 이모지 자리에 들어가요 */
+.emo { height:1.25em; width:auto; display:inline-block; vertical-align:-.28em; margin:0 .12em 0 0; filter:drop-shadow(0 1px 1.5px rgba(60,30,100,.25)); }
+.toast .emo { height:1.35em; }
+.card-title .emo, .sheet-head .emo { height:1.35em; vertical-align:-.3em; }
+.chk .emo { height:16px; }
+.ea .emo { height:18px; }
+.qprev .emo { height:1.3em; }

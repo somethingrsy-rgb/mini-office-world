@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import RichText from './RichText'
 import { AVATARS } from '../avatars'
 import { addDays, addMonths, DOW, dowOf, fmtLong, monthCells, startOfWeek, todayStr } from '../dates'
 import { buildEntries, completedOn, overallProgress, type Entry } from '../entries'
@@ -15,7 +16,7 @@ function Row({ e }: { e: Entry }) {
         {e.title}
         {e.kind === 'sub' && <small> · {e.taskTitle}</small>}
       </span>
-      <span className="ea">{emoji(e.assignee)}</span>
+      <span className="ea"><RichText text={emoji(e.assignee)} /></span>
     </li>
   )
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AVATARS } from '../avatars'
+import RichText from './RichText'
 import { dueInfo, fmtDate } from '../dates'
 import { IMPORTANCE_LABEL, type Importance, type Staff } from '../types'
 import type { WorkItem } from '../work'
@@ -62,7 +63,7 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
           </div>
         </div>
         {err && <p className="err">{err}</p>}
-        <button type="submit" className="primary">{info.emoji} {info.name}에게 나눠 주기</button>
+        <button type="submit" className="primary"><RichText text={info.emoji} /> {info.name}에게 나눠 주기</button>
       </form>
 
       <h3 className="sh">📋 등록된 일 나눠 주기</h3>
@@ -76,7 +77,7 @@ export default function AssignSheet({ who, items, onCreate, onAssign }: Props) {
               <li key={i.key} className={`erow lv-${i.level}`}>
                 <span className="et">
                   {i.title}
-                  <small> · {i.sub ? `${i.task.title} · ` : ''}지금 {name(i.assignee).emoji} {name(i.assignee).name}{i.due ? ` · ${fmtDate(i.due)} ${di.label}` : ''}</small>
+                  <small> · {i.sub ? `${i.task.title} · ` : ''}지금 <RichText text={name(i.assignee).emoji} /> {name(i.assignee).name}{i.due ? ` · ${fmtDate(i.due)} ${di.label}` : ''}</small>
                 </span>
                 <button className="primary sm" onClick={() => onAssign(i, start)}>맡기기</button>
               </li>

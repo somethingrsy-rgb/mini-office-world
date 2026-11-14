@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import RichText, { stripTokens } from './RichText'
 
 export default function Sheet({ title, onClose, glass, tall, children }: { title: string; onClose: () => void; glass?: boolean; tall?: boolean; children: ReactNode }) {
   useEffect(() => {
@@ -9,10 +10,10 @@ export default function Sheet({ title, onClose, glass, tall, children }: { title
 
   return (
     <div className={`backdrop ${glass ? 'glass' : ''}`} onClick={onClose}>
-      <div className={`sheet ${glass ? 'glass' : ''} ${tall ? 'tall' : ''}`} role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
+      <div className={`sheet ${glass ? 'glass' : ''} ${tall ? 'tall' : ''}`} role="dialog" aria-label={stripTokens(title)} onClick={(e) => e.stopPropagation()}>
         {glass && <div className="grab" aria-hidden />}
         <div className="sheet-head">
-          <h2>{title}</h2>
+          <h2><RichText text={title} /></h2>
           <button className="x" onClick={onClose} aria-label="닫기">✕</button>
         </div>
         <div className="sheet-body">{children}</div>

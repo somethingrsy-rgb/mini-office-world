@@ -4,14 +4,14 @@ import { subAssignee, taskAssignee } from '../assign'
 import { IMPORTANCE_LABEL, newId, type Assignee, type Importance, type SubTask, type Task } from '../types'
 
 const STAFF = AVATARS.filter((a) => a.id !== 'user')
-const nameOf = (id: string) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.emoji} ${a.name}` }
+const nameOf = (id: string) => { const a = AVATARS.find((x) => x.id === id)!; return `${a.name} (${a.role})` }
 
 function AssigneeSelect({ value, onChange, auto }: { value: Assignee; onChange: (v: Assignee) => void; auto?: string }) {
   return (
     <select value={value ?? ''} onChange={(e) => onChange((e.target.value || null) as Assignee)} aria-label="담당 아바타">
       <option value="">{auto ? `자동 → ${auto}` : '자동 배정'}</option>
       {STAFF.map((a) => (
-        <option key={a.id} value={a.id}>{a.emoji} {a.name}</option>
+        <option key={a.id} value={a.id}>{a.name} ({a.role})</option>
       ))}
     </select>
   )

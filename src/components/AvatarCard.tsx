@@ -1,4 +1,5 @@
 import type { AvatarInfo } from '../avatars'
+import RichText from './RichText'
 import Linkify from './Linkify'
 import { dueInfo, fmtDate } from '../dates'
 import type { Activity } from '../schedule'
@@ -46,7 +47,7 @@ interface Props {
 export default function AvatarCard({ info, activity, work, totals, onAssign, onStart, onWait, onComplete, hideTitle }: Props) {
   return (
     <>
-      {!hideTitle && <div className="card-title">{info.emoji} {info.name} <span>{info.role}</span></div>}
+      {!hideTitle && <div className="card-title"><RichText text={info.emoji} /> {info.name} <span>{info.role}</span></div>}
       <p>{activity.label}</p>
       {work && work.doing.length === 0 && work.planned.length > 0 && (
         <p className="waiting">⏳ 대기 중 · 예정된 일 {work.planned.length}건</p>

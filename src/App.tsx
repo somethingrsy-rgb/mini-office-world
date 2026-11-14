@@ -25,6 +25,7 @@ import type { QuickEntry } from './quick'
 import AssignSheet from './components/AssignSheet'
 import QuickAssign from './components/QuickAssign'
 import Intro from './components/Intro'
+import RichText from './components/RichText'
 import { useLoungeChat } from './chat'
 import { pipSupported, useAlwaysOnTop } from './pip'
 import { useStations } from './stations'
@@ -385,7 +386,7 @@ export default function App() {
         <h1><img src={themed(dark).logo} alt="MINI OFFICE WORLD" /></h1>
       </header>
 
-      {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
+      {toast && <div className="toast" key={toast.key}><RichText text={toast.text} /></div>}
 
       <main className="stage">
         <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} onReceived={onReceived} selected={selected} onRoom={setRoom}

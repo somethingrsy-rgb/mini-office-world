@@ -3,6 +3,7 @@ import { AVATARS } from '../avatars'
 import { asset } from '../assets'
 import { isAutoSub, subAssignee, taskAssignee } from '../assign'
 import Linkify from './Linkify'
+import RichText from './RichText'
 import { taskProgress } from '../entries'
 import { fmtWorked, workedMs } from '../worktime'
 import { compareTasks, dueInfo, fmtDate, isOverdue, todayStr } from '../dates'
@@ -81,7 +82,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }
               <div className="bar" aria-label="진행률"><i style={{ width: `${Math.round(taskProgress(t) * 100)}%` }} /></div>
             )}
             <div className="task-meta">
-              {STATUS_LABEL[t.status]} · {whoTask(t)}
+              {STATUS_LABEL[t.status]} · <RichText text={whoTask(t)} />
               {t.due && <> · 마감 {fmtDate(t.due)}</>}
               {t.subtasks.length > 0 && <> · 할 일 {doneCnt}/{t.subtasks.length}</>}
               {workedMs(t) >= 60000 && <> · ⏱ {fmtWorked(workedMs(t))}</>}
@@ -94,7 +95,7 @@ export default function TaskList({ tasks, onSave, onEdit, onDelete, onResetAll }
                   <label key={s.id} className={`sub ${s.done ? 'done' : ''}`}>
                     <input type="checkbox" checked={s.done} onChange={() => toggleSub(t, s.id)} />
                     <span>{s.title}</span>
-                    <small>{nm(subAssignee(t, s))}{isAutoSub(t, s) ? ' (자동)' : ''}{s.due ? ` · ${fmtDate(s.due)}` : ''}</small>
+                    <small><RichText text={nm(subAssignee(t, s))} />{isAutoSub(t, s) ? ' (자동)' : ''}{s.due ? ` · ${fmtDate(s.due)}` : ''}</small>
                   </label>
                 ))}
                 {allDone && (

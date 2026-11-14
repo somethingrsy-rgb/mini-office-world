@@ -1,4 +1,5 @@
 import { AVATARS } from '../avatars'
+import RichText from './RichText'
 import { asset } from '../assets'
 import { fmtDate } from '../dates'
 import { dueInfo } from '../dates'
@@ -37,7 +38,7 @@ export default function BriefingView({ b, hasTasks, ordered, onGo, onTodo, onClo
               </>
             ) : b.top && topWho ? (
               <p>
-                가장 급한 업무는 「{b.top.title}」({fmtDate(b.top.date)}, 담당 {topWho.emoji} {topWho.name})예요. 먼저 확인해 볼까요?
+                가장 급한 업무는 「{b.top.title}」({fmtDate(b.top.date)}, 담당 <RichText text={topWho.emoji} /> {topWho.name})예요. 먼저 확인해 볼까요?
               </p>
             ) : (
               <p>급한 업무는 없어요. 여유롭게 시작해요 ☕</p>

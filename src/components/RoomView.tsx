@@ -1,4 +1,5 @@
 import { AVATARS, type AvatarId } from '../avatars'
+import RichText from './RichText'
 import { asset, COUNTER_IMG, ROOM_IMG, spriteFor, SPRITES, themed } from '../assets'
 import { roomOf, type RoomId } from '../rooms'
 import type { Activity } from '../schedule'
@@ -58,7 +59,7 @@ export default function RoomView({ room, activities, shown, dark = false }: { ro
       ) : (
         <ul className="elist who">
           {here.map((a) => (
-            <li key={a.id} className="erow"><span className="chk">{a.emoji}</span><span className="et"><b>{a.name}</b><small> · {activities[a.id].label}</small></span></li>
+            <li key={a.id} className="erow"><span className="chk"><RichText text={a.emoji} /></span><span className="et"><b>{a.name}</b><small> · {activities[a.id].label}</small></span></li>
           ))}
         </ul>
       )}

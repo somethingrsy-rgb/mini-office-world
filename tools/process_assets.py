@@ -220,6 +220,36 @@ def main(src):
     li = trim(li); li = li.resize((round(li.width * 192 / li.height), 192), Image.LANCZOS)
     save(li, f'{OUT}/ui/list.webp', 92)
 
+    # 담당 업무 아이콘 4개(국회·예산·법·민원): 한 장에 가로로 나란히 있는 그림에서 아이콘 본체만 잘라 각 아바타의 이모지로 써요.
+    # 아래의 이름표와 주황색 반짝이(작은 조각)는 빼요.
+    im = Image.open(os.path.join(src, 'role-icons.png')).convert('RGBA')
+    al = np.asarray(im)[:, :, 3]
+    top = int(im.height * 0.82)                     # 이름표(국회·예산…)는 맨 아래쪽이라 잘라 내요
+    mask = al > 8; mask[top:] = False
+    lab, n = ndi.label(ndi.binary_dilation(mask, iterations=3))
+    objs = ndi.find_objects(lab)
+    comps = []
+    for i, sl in enumerate(objs, start=1):
+        area = int(((lab[sl] == i) & mask[sl]).sum())
+        cx = (sl[1].start + sl[1].stop) / 2
+        comps.append((area, cx, sl, i))
+    big = max(c[0] for c in comps)
+    for col, key in enumerate(['momo', 'luna', 'coco', 'mimi']):    # 왼쪽부터 국회·예산·법·민원
+        lo, hi = im.width * col / 4, im.width * (col + 1) / 4
+        mine = [c for c in comps if lo <= c[1] < hi and c[0] >= big * 0.06]   # 작은 조각(반짝이)은 제외
+        x0 = min(c[2][1].start for c in mine); x1 = max(c[2][1].stop for c in mine)
+        y0 = min(c[2][0].start for c in mine); y1 = max(c[2][0].stop for c in mine)
+        ic = im.crop((x0, y0, x1, y1))
+        # 잘라 낸 영역 안에서도 반짝이 조각이 걸쳤다면 지워요
+        a2 = np.asarray(ic).copy()
+        keep = np.zeros(a2.shape[:2], bool)
+        for c in mine:
+            sl = c[2]; keep[sl[0].start - y0:sl[0].stop - y0, sl[1].start - x0:sl[1].stop - x0] |= (lab[sl] == c[3])  # 그 조각 자신의 픽셀만
+        a2[~ndi.binary_dilation(keep, iterations=2), 3] = 0
+        ic = trim(Image.fromarray(a2, 'RGBA'))
+        ic = ic.resize((round(ic.width * 96 / ic.height), 96), Image.LANCZOS)
+        save(ic, f'{OUT}/ui/role-{key}.webp', 92)
+
     # 설정 버튼(투명 PNG): 가장 큰 덩어리만 남겨 알파 얼룩을 지우고, 화면에서 쓰는 크기(2배)로 줄여요
     im = Image.open(os.path.join(src, 'settings-button.png')).convert('RGBA')
     al = np.asarray(im)[:, :, 3].astype(np.float32)
