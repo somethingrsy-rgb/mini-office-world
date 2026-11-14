@@ -18,6 +18,8 @@ interface Props {
   /** 지금 남아 있는(끝나지 않은) 일 개수 */
   remaining: number
   dark?: boolean
+  /** 나(관리자)가 말하는 중이면 마감 알림 말풍선을 잠깐 숨겨요 */
+  hush?: boolean
   /** 마감이 2일 이내(오늘·기한 초과 포함)인 일 — 접수대의 내가 번갈아 알려줘요 */
   reminders: { text: string; level: 'soon' | 'urgent' }[]
   selected: AvatarId | null
@@ -28,7 +30,7 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, reminders, selected, onSelect, onRoom, dark = false, hush = false }: Props) {
   const th = themed(dark)
   // 마감이 가까운 일을 4.5초마다 번갈아 알려줘요
   const [ri, setRi] = useState(0)
@@ -37,7 +39,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
     const t = window.setInterval(() => setRi((i) => i + 1), 4500)
     return () => window.clearInterval(t)
   }, [reminders.length])
-  const rem = reminders.length ? reminders[ri % reminders.length] : null
+  const rem = reminders.length && !hush ? reminders[ri % reminders.length] : null
   const remText = rem ? `⏰ ${rem.text}` : ''
   const remW = rem ? tw(remText, 24) + 40 : 0
   const remCx = Math.max(COUNTER.bodyCenterX, remW / 2 + 36) // 집 가장자리에 붙지 않게 안쪽으로
@@ -52,7 +54,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       ))}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
       {AVATARS.filter((a) => a.id === 'user').map((info) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} hideName
+        <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} speech={speech[info.id]} hideName
           delay={1.2} selected={selected === info.id} onSelect={onSelect} />
       ))}
       <image href={th.counter} x={COUNTER.x} y={COUNTER.bottom - COUNTER_IMG.h * COUNTER.w / COUNTER_IMG.w}

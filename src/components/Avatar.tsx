@@ -81,14 +81,16 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
 
   const pose = w.moving ? 'walk' : activity.pose
   const isUser = info.id === 'user'
+  // 정문 밖에 도착한 아바타는 서서히 사라져요
+  const gone = !!activity.leaving && !w.moving
+  // 대화 말풍선은 멈춰 있을 때만 보여요 (걷는 중에는 숨김)
+  const talk = !w.moving && !happy ? speech : null
   let key: SpriteKey = happy ? (isUser ? 'desk-cheer' : 'cheer') : spriteFor(info.id, pose)
-  if (isUser && key === 'desk-idle' && selected) key = 'desk-wave' // 누르면 손을 흔들어 인사해요
+  if (isUser && key === 'desk-idle' && (selected || talk)) key = 'desk-wave' // 누르거나 말할 때 손을 흔들어요
   const m = SPRITES[info.id][key]!
   const W = m.w * U
   const H = m.h * U
   const flip = (key === 'walk' || key === 'stand') && w.face === 'l'
-  // 대화 말풍선은 멈춰 있을 때만 보여요 (걷는 중에는 숨김)
-  const talk = !w.moving && !happy ? speech : null
   const bubbleName = !w.moving && !happy && !talk ? BUBBLE[pose] : undefined
   const bm = bubbleName ? FX[bubbleName] : undefined
   const bw = bm ? bm.w * 0.8 : 0
@@ -98,7 +100,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   return (
     <g
       className="avatar appear"
-      style={{ transform: `translate(${w.x}px, ${w.y}px)`, transition: `transform ${w.dur}s linear` }}
+      style={{ transform: `translate(${w.x}px, ${w.y}px)`, transition: `transform ${w.dur}s linear, opacity .7s ease`, opacity: gone ? 0 : 1, pointerEvents: gone ? 'none' : undefined }}
       onClick={() => onSelect(info.id)}
       role="button"
       aria-label={`${info.name} 선택`}

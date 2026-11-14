@@ -64,28 +64,23 @@ export default function App() {
   const [revealed, setRevealed] = useState(false)
   const [introDone, setIntroDone] = useState(false)
   const [assignFor, setAssignFor] = useState<Staff | null>(null)
-  // 특별 행동: 일을 받으러 접수대로(pickup), 일을 끝내고 완료 칸으로(finish). 끝나는 시각을 기억해 둬요
+  // 특별 행동: 일을 받으러 정문→접수대로(pickup), 일을 끝내고 결과 확인 칸으로(finish), 정문으로 나가기(leave). 끝나는 시각을 기억해 둬요
   const [pickups, setPickups] = useState<Record<string, number>>({})
   const [finishes, setFinishes] = useState<Record<string, number>>({})
+  const [leaves, setLeaves] = useState<Record<string, number>>({})
   const [tick, setTick] = useState(0)
-  // 일을 마치고 라운지에서 대기하는 아바타 (오늘 하루 기억해요. 새 일을 받으면 다시 접수대로 와요)
-  const [resting, setResting] = useState<Record<string, boolean>>(() => {
-    try {
-      const v = JSON.parse(localStorage.getItem('mow-resting') ?? 'null')
-      return v && v.day === todayStr() ? v.ids : {}
-    } catch { return {} }
-  })
-  const updateResting = (fn: (h: Record<string, boolean>) => Record<string, boolean>) =>
-    setResting((h) => {
-      const n = fn(h)
-      try { localStorage.setItem('mow-resting', JSON.stringify({ day: todayStr(), ids: n })) } catch { /* 저장 불가 환경 */ }
-      return n
-    })
-  const startEvent = (kind: 'pickup' | 'finish', ids: string[], ms: number) => {
+  // 나(관리자)가 하는 말 ("수고했어!")
+  const [userSay, setUserSay] = useState<string | null>(null)
+  const startEvent = (kind: 'pickup' | 'finish' | 'leave', ids: string[], ms: number) => {
     const until = Date.now() + ms
-    const set = kind === 'pickup' ? setPickups : setFinishes
+    const set = kind === 'pickup' ? setPickups : kind === 'finish' ? setFinishes : setLeaves
     set((m) => { const n = { ...m }; ids.forEach((id) => (n[id] = until)); return n })
     window.setTimeout(() => setTick((t) => t + 1), ms + 300) // 끝났을 때 원래 행동으로 돌아가게 다시 계산
+  }
+  /** 새 일을 받으면 나가던 중이던 아바타도 다시 접수대로 불러요 */
+  const clearLeaving = (ids: string[]) => {
+    const drop = (m: Record<string, number>) => { const n = { ...m }; ids.forEach((id) => delete n[id]); return n }
+    setLeaves(drop); setFinishes(drop)
   }
   useEffect(() => { preloadAssets() }, [])
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
@@ -141,13 +136,13 @@ export default function App() {
           const anyOf = (m: Record<string, number>) => Object.values(m).some((u) => u > t)
           const event = a.id === 'user'
             ? (anyOf(finishes) ? 'finish' : anyOf(pickups) ? 'pickup' : null)
-            : (finishes[a.id] ?? 0) > t ? 'finish' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
-          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!resting[a.id] || (!!w && w.planned.length > 0), wander)]
+            : (finishes[a.id] ?? 0) > t ? 'finish' : (leaves[a.id] ?? 0) > t ? 'leave' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
+          return [a.id, getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander)]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, resting, wander, tick, real],
+    [now, works, settings, pickups, finishes, leaves, wander, tick, real],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(
@@ -172,11 +167,12 @@ export default function App() {
         return { text: `${who}: 「${i.title.length > 8 ? i.title.slice(0, 8) + '…' : i.title}」 ${d}`, level: (left <= 0 ? 'urgent' : 'soon') as 'soon' | 'urgent' }
       })
   }, [items, real])
-  // 화면에 나오는 직원: 일을 받은(끝내지 않은 일이 있는) 아바타, 일을 마치고 쉬는 아바타, 접수·보고 중인 아바타
+  // 화면에 나오는 직원: 끝내지 않은 일이 있는 아바타, 접수·보고하러 오거나 정문으로 나가는 중인 아바타
+  // 일이 없으면 건물에는 나(관리자)만 있어요
   const shown = useMemo(() => {
     const t = Date.now()
-    return (Object.keys(works) as Staff[]).filter((id) => works[id].items.length > 0 || resting[id] || (pickups[id] ?? 0) > t || (finishes[id] ?? 0) > t)
-  }, [works, resting, pickups, finishes, tick, real])
+    return (Object.keys(works) as Staff[]).filter((id) => works[id].items.length > 0 || (pickups[id] ?? 0) > t || (finishes[id] ?? 0) > t || (leaves[id] ?? 0) > t)
+  }, [works, pickups, finishes, leaves, tick, real])
   // 라운지에 있는 아바타끼리 대화해요
   const talkers = shown.map((id) => ({
     id: id as AvatarId,
@@ -217,7 +213,7 @@ export default function App() {
     const prev = old ? staffOf(old) : new Set<Staff>()
     const fresh = [...staffOf(t)].filter((id) => !prev.has(id))
     if (fresh.length === 0) return
-    updateResting((h) => { const n = { ...h }; fresh.forEach((id) => delete n[id]); return n })
+    clearLeaving(fresh)
     startEvent('pickup', fresh, 18000)
     notify(`🚪 일을 받으러 와요: ${names(fresh)}`)
   }
@@ -247,14 +243,22 @@ export default function App() {
     setSelected(null)
   }
 
-  /** 일을 끝낸 아바타 중 남은 일이 없는 아바타는 완료 칸에서 보고한 뒤 라운지에서 대기해요 */
-  const restIfIdle = (ids: string[], next: Task[]) => {
+  const FINISH_MS = 9000 // 결과 확인 칸에서 보고하는 시간
+  const LEAVE_MS = 6500  // 정문으로 걸어 나가는 시간
+  /** 일을 끝내면: 결과 확인 칸에 갔다가, 남은 일이 없는 아바타는 정문으로 나가서 사라지고 나는 "수고했어!"라고 말해요 */
+  const wrapUp = (ids: string[], next: Task[]) => {
+    const staff = [...new Set(ids)].filter((id) => id !== 'user')
+    if (staff.length === 0) return
+    startEvent('finish', staff, FINISH_MS)
     const left = buildItems(next, undefined, rank)
-    const leaving = [...new Set(ids)].filter((id) => id !== 'user' && !left.some((i) => i.assignee === id))
+    const leaving = staff.filter((id) => !left.some((i) => i.assignee === id))
     if (leaving.length === 0) return
-    startEvent('finish', leaving, 9000)
-    updateResting((h) => { const n = { ...h }; leaving.forEach((id) => (n[id] = true)); return n })
-    notify(`⏳ 일을 마쳤어요! 라운지에서 대기해요: ${names(leaving)}`)
+    startEvent('leave', leaving, FINISH_MS + LEAVE_MS)
+    const plain = leaving.map((id) => AVATARS.find((a) => a.id === id)!.name).join('·')
+    window.setTimeout(() => {
+      setUserSay(`수고했어, ${plain}! 😊`)
+      window.setTimeout(() => setUserSay(null), 4200)
+    }, FINISH_MS)
   }
 
   const saveTask = (t: Task) => {
@@ -268,25 +272,17 @@ export default function App() {
     if (old.status !== 'done' && t.status === 'done') {
       const ids = new Set<string>([taskAssignee(t), ...t.subtasks.map((s) => subAssignee(t, s))])
       const allDone = tasks.every((x) => x.id === t.id || x.status === 'done')
-      if (allDone) {
-        startEvent('finish', ['momo', 'luna', 'coco', 'mimi'], 10000)
-        cheerUp(['momo', 'luna', 'coco', 'mimi', 'user'])
-        notify('🎊 등록된 모든 업무를 끝냈어요! 정말 수고했어요')
-      } else {
-        startEvent('finish', [...ids], 10000)
-        cheerUp([...ids, 'user'])
-        notify(`🎉 「${t.title}」 업무 완료! 완료 칸으로 가요`)
-      }
-      window.setTimeout(() => restIfIdle([...ids], next), 0)
+      cheerUp([...ids, 'user'])
+      notify(allDone ? '🎊 등록된 모든 업무를 끝냈어요! 정말 수고했어요' : `🎉 「${t.title}」 업무 완료! 결과 확인 칸으로 가요`)
+      wrapUp([...ids], next)
       return
     }
     const newly = t.subtasks.filter((s) => s.done && !old.subtasks.find((o) => o.id === s.id)?.done)
     if (newly.length) {
       const ids = newly.map((s) => subAssignee(t, s))
-      startEvent('finish', ids, 10000)
       cheerUp(ids)
-      notify(`✅ 「${newly[0].title}」 완료! 완료 칸으로 가요`)
-      window.setTimeout(() => restIfIdle(ids, next), 0)
+      notify(`✅ 「${newly[0].title}」 완료! 결과 확인 칸으로 가요`)
+      wrapUp(ids, next)
     }
   }
   /** 대기 중인 아바타의 일을 '진행 중'으로: 담당 아바타가 일하는 자리로 가요 (업무 단위) */
@@ -327,7 +323,7 @@ export default function App() {
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
 
       <main className="stage">
-        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={speech} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
+        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} reminders={reminders} hush={!!userSay} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
 

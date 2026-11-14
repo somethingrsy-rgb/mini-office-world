@@ -18,6 +18,8 @@ export interface Activity {
   enter?: Spot
   /** 천천히 걷는 이동(산책·라운지)인지 */
   slow?: boolean
+  /** 일을 마치고 정문으로 나가는 중(도착하면 사라져요) */
+  leaving?: boolean
 }
 
 /** 기본 생활 시간표 (분 단위). 나중에 사용자가 바꿀 수 있게 한곳에 모아 둠 */
@@ -52,6 +54,9 @@ const SOFA: Record<AvatarId, Spot> = {
 }
 /** 정문(아치 앞 길 끝): 새로 일을 받은 아바타는 여기서 들어와 계단 쪽 통로를 지나 접수대로 걸어가요 */
 const gateSpot = (id: AvatarId): Spot => spot(HUB_X + HUB_OFFSET[id], 1246, 'r')
+
+/** 정문 밖: 일을 마친 아바타는 여기까지 걸어가서 사라져요 */
+const exitSpot = (id: AvatarId): Spot => spot(HUB_X + HUB_OFFSET[id], 1264, 'r')
 
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
 // 카운터 '안쪽'(뒤)에 서 있어요. 카운터 그림(counter.webp)이 아바타 아랫부분 앞에 놓여요 (House.tsx)
@@ -110,7 +115,7 @@ export function periodName(m: number, s: ScheduleCfg = DEFAULT_SCHEDULE) {
 export interface Job { title: string }
 
 /** 사용자가 일을 나눠 주거나(pickup) 일을 끝냈을 때(finish) 잠깐 하는 특별한 행동 */
-export type AvatarEvent = 'pickup' | 'finish' | null
+export type AvatarEvent = 'pickup' | 'finish' | 'leave' | null
 
 /** 대기: 일을 받았거나 마친 아바타는 라운지에서 쉬고 대화하다가, 천천히 아래 정원으로 산책도 다녀와요 */
 function lounge(id: AvatarId, slot: number): Pick<Activity, 'spot' | 'pose' | 'label' | 'slow'> {
@@ -154,6 +159,8 @@ export function getActivity(
 
   // 일을 끝냈어요 → 완료 칸으로 가서 보고
   if (event === 'finish') return { spot: DONE[id], pose: 'done', label: '완료 칸에 가서 일을 마쳤다고 보고하고 있어요', period }
+  // 결과 확인을 마쳤어요 → 정문으로 나가요
+  if (event === 'leave') return { spot: exitSpot(id), pose: 'stand', label: '일을 마치고 정문으로 나가요', period, leaving: true }
   // 일을 나눠 줬어요 → 접수대로 와서 일을 받아감
   if (event === 'pickup') return { spot: PICKUP[id], pose: 'receive', label: '접수대에서 새 일을 받고 있어요', period, enter: gateSpot(id) }
 
