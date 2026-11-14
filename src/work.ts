@@ -28,7 +28,8 @@ function compareItems(a: WorkItem, b: WorkItem, today: string) {
   return a.task.createdAt - b.task.createdAt
 }
 
-export function buildItems(tasks: Task[], today = todayStr()): WorkItem[] {
+/** rank: 내가 정한 업무 순서(업무 id → 순번). 정해 둔 순서가 기본 우선순위보다 먼저예요 */
+export function buildItems(tasks: Task[], today = todayStr(), rank?: Map<string, number>): WorkItem[] {
   const out: WorkItem[] = []
   const mk = (task: Task, sub?: SubTask): WorkItem => {
     const due = sub?.due ?? task.due
@@ -48,7 +49,11 @@ export function buildItems(tasks: Task[], today = todayStr()): WorkItem[] {
     if (t.subtasks.length === 0) out.push(mk(t))
     else for (const s of t.subtasks) if (!s.done) out.push(mk(t, s))
   }
-  return out.sort((a, b) => compareItems(a, b, today))
+  return out.sort((a, b) => {
+    const ra = rank?.get(a.task.id) ?? -1 // 순서를 정한 뒤 새로 생긴 업무(-1)는 맨 앞
+    const rb = rank?.get(b.task.id) ?? -1
+    return ra !== rb ? ra - rb : compareItems(a, b, today)
+  })
 }
 
 export interface AvatarWork {

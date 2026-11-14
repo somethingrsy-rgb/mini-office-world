@@ -232,3 +232,21 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .occupant.front { z-index:2; }
 
 .remind { animation:pop .35s ease-out; }
+
+/* 해야 할 일 목록(꾹 눌러 순서 바꾸기) */
+.todohint { margin:0 0 8px; font-size:12px; }
+.todolist { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.todorow { display:flex; align-items:center; gap:10px; padding:11px 12px; border:1.5px solid #eee4ff; border-left-width:6px; border-radius:14px; background:#fff; touch-action:pan-y; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; position:relative; }
+.todorow.lv-soon { border-left-color:#f2b84b; background:#fffaf0; }
+.todorow.lv-urgent, .todorow.lv-overdue { border-left-color:#ff4d6d; background:#fff4f6; }
+.todorow.lv-ok, .todorow.lv-none { border-left-color:#7fd6c2; }
+.todorow.lift { z-index:5; box-shadow:0 10px 26px rgba(120,60,170,.35); border-color:#ff86b6; }
+.rank { flex:none; width:24px; height:24px; border-radius:50%; background:#f1eaff; color:#7a4fd0; font-size:12px; font-weight:800; display:grid; place-items:center; }
+.tmain { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.tmain b { font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tmain small { font-size:11px; opacity:.7; display:flex; align-items:center; gap:4px; }
+.grip { flex:none; opacity:.35; font-size:18px; }
+.todo .btnrow { margin-top:12px; }
+.top3 { margin:4px 0; padding:0; list-style:none; display:flex; flex-direction:column; gap:5px; }
+.top3 li { display:flex; align-items:center; gap:8px; font-size:14px; }
+.top3 li b { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

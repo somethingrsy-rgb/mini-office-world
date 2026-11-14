@@ -18,6 +18,8 @@ import { makeBriefing, overallProgress } from './entries'
 import { subAssignee, taskAssignee } from './assign'
 import AvatarCard from './components/AvatarCard'
 import { buildItems, workByAvatar, type WorkItem } from './work'
+import TodoSheet from './components/TodoSheet'
+import { orderTasks, rankMap } from './order'
 import AssignSheet from './components/AssignSheet'
 import { newId, type Importance, type Staff, type Task } from './types'
 
@@ -65,7 +67,7 @@ export default function App() {
     window.setTimeout(() => setTick((t) => t + 1), ms + 300) // 끝났을 때 원래 행동으로 돌아가게 다시 계산
   }
   useEffect(() => { preloadAssets() }, [])
-  const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings'>(null)
+  const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
   const briefing = useMemo(() => makeBriefing(tasks, todayStr(), addDays(todayStr(), 1)), [tasks, real])
@@ -97,7 +99,9 @@ export default function App() {
 
   const now = sim ?? real
   // 업무 → 담당 아바타별 업무 목록 (now가 바뀌면 날짜 기준도 다시 계산)
-  const items = useMemo(() => buildItems(tasks), [tasks, real])
+  const rank = useMemo(() => rankMap(settings.order), [settings.order])
+  const ordered = useMemo(() => orderTasks(tasks, settings.order), [tasks, settings.order, real])
+  const items = useMemo(() => buildItems(tasks, undefined, rank), [tasks, rank, real])
   const works = useMemo(() => workByAvatar(items), [items])
   const activities = useMemo(
     () => {
@@ -196,7 +200,7 @@ export default function App() {
 
   /** 일을 끝낸 아바타 중 남은 일이 없는 아바타는 완료 칸에서 인사한 뒤 퇴근해요 */
   const sendHomeIfIdle = (ids: string[], next: Task[]) => {
-    const left = buildItems(next)
+    const left = buildItems(next, undefined, rank)
     const leaving = [...new Set(ids)].filter((id) => id !== 'user' && !left.some((i) => i.assignee === id))
     if (leaving.length === 0) return
     startEvent('finish', leaving, 9000)
@@ -250,6 +254,11 @@ export default function App() {
     const allDone = subtasks.every((s) => s.done)
     saveTask(allDone ? { ...it.task, subtasks, status: 'done', completedAt: Date.now() } : { ...it.task, subtasks })
   }
+  /** 직원은 카드를 보여 주고, 접수대의 나를 누르면 해야 할 일 목록을 열어요 */
+  const pickAvatar = (id: AvatarId) => {
+    if (id === 'user') { setSelected(null); setView('todo'); return }
+    setSelected((cur) => (cur === id ? null : id))
+  }
   const info = AVATARS.find((a) => a.id === selected)
   const act = selected ? activities[selected] : null
 
@@ -296,13 +305,13 @@ export default function App() {
 
       <main className="stage">
         <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
-          onSelect={(id) => setSelected((cur) => (cur === id ? null : id))} />
+          onSelect={pickAvatar} />
       </main>
 
       <div className="avbar" role="tablist" aria-label="아바타 선택">
         {AVATARS.map((a) => (
           <button key={a.id} className={`avchip ${selected === a.id ? 'on' : ''} ${activities[a.id].away ? 'away' : ''}`}
-            onClick={() => setSelected((cur) => (cur === a.id ? null : a.id))} aria-label={`${a.name} 선택`}>
+            onClick={() => pickAvatar(a.id)} aria-label={`${a.name} 선택`}>
             <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
             <span>{a.name}</span>
             {activities[a.id].away ? <small>퇴근</small>
@@ -339,8 +348,20 @@ export default function App() {
 
       {view === 'brief' && (
         <Sheet title="💛 오늘의 업무 브리핑" onClose={close}>
-          <BriefingView b={briefing} hasTasks={tasks.length > 0} onClose={close}
+          <BriefingView b={briefing} hasTasks={tasks.length > 0} ordered={ordered} onClose={close} onTodo={() => setView('todo')}
             onGo={() => { tasks.length > 0 ? setView('list') : (setEditing(undefined), setView('form')) }} />
+        </Sheet>
+      )}
+      {view === 'todo' && (
+        <Sheet title="📌 해야 할 일" onClose={close}>
+          <TodoSheet
+            tasks={ordered}
+            manual={settings.order.length > 0}
+            onOrder={(ids) => updateSettings({ ...settings, order: ids })}
+            onReset={() => updateSettings({ ...settings, order: [] })}
+            onBrief={() => setView('brief')}
+            onList={() => setView('list')}
+          />
         </Sheet>
       )}
       {view === 'schedule' && (

@@ -4,9 +4,11 @@ import { DEFAULT_SCHEDULE, type ScheduleCfg } from './schedule'
 export interface Settings {
   schedule: ScheduleCfg
   names: Partial<Record<AvatarId, string>>
+  /** 내가 정한 해야 할 일 순서 (업무 id 목록) */
+  order: string[]
 }
 
-export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {} }
+export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [] }
 
 const KEY = 'mow-settings'
 const BACKUP_KEY = 'mow-last-backup'
@@ -32,7 +34,8 @@ export function sanitizeSettings(raw: unknown): Settings {
       if (typeof v === 'string' && v.trim()) names[id] = v.trim().slice(0, 6)
     }
   }
-  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names } : { schedule, names }
+  const order = Array.isArray(r.order) ? r.order.filter((v): v is string => typeof v === 'string').slice(0, 1000) : []
+  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order } : { schedule, names, order }
 }
 
 /** 시간표가 순서대로인지 검사. 문제가 있으면 안내 문구를 돌려줌 */
