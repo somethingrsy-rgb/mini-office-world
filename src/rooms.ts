@@ -29,3 +29,6 @@ export function roomOf(p: { x: number; y: number }): RoomId | null {
 
 /** 접수대(카운터+우체통) 그림이 하우스 위에 놓이는 자리. 폭 230, 바닥은 y=992 */
 export const COUNTER = { x: 70, w: 230, bottom: 992, bodyCenterX: 207 }
+
+/** 다크 하우스에서 카운터·나를 바닥 쪽으로 내리는 거리(하우스 좌표) */
+export const COUNTER_DARK_DROP = 26

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Avatar from './Avatar'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
-import { COUNTER, ROOMS, type RoomId } from '../rooms'
+import { COUNTER, COUNTER_DARK_DROP, ROOMS, type RoomId } from '../rooms'
 import type { Activity } from '../schedule'
 import type { Staff } from '../types'
 
@@ -53,6 +53,8 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
           onClick={() => onRoom(r.id)} role="button" aria-label={`${r.name} 확대`} />
       ))}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
+      {/* 다크 하우스는 접수실 나무 바닥이 조금 더 아래에서 시작해서, 카운터와 나를 그만큼 내려요 */}
+      <g transform={`translate(0 ${dark ? COUNTER_DARK_DROP : 0})`}>
       {AVATARS.filter((a) => a.id === 'user').map((info) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} speech={speech[info.id]} hideName
           delay={1.2} selected={selected === info.id} onSelect={onSelect} />
@@ -65,6 +67,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         <text x={COUNTER.bodyCenterX} y={COUNTER.bottom - 33} textAnchor="middle" fontSize="25" fontWeight="800" fill="#5b4a78">
           {remaining > 0 ? `남은 일 ${remaining}` : '다 끝! 🎉'}
         </text>
+      </g>
       </g>
       {rem && (
         <g pointerEvents="none" className="remind" key={ri}>
