@@ -22,6 +22,8 @@ export interface Activity {
   leaving?: boolean
   /** 방을 같이 쓰는 경우 두 번째 자리인지 (이름표를 더 높이 띄워서 겹치지 않게) */
   seat?: 0 | 1
+  /** 방을 둘이 같이 쓰는 중 (말풍선 이모지는 생략해서 벽을 넘지 않게) */
+  shared?: boolean
 }
 
 /** 기본 생활 시간표 (분 단위). 나중에 사용자가 바꿀 수 있게 한곳에 모아 둠 */
@@ -84,33 +86,49 @@ const ORDER: AvatarId[] = ['momo', 'luna', 'coco', 'mimi', 'user']
 
 /** 일하는 방은 세 곳: 자료실·문서작성실·중앙 사무실. 한 방에 한 명씩 일하도록 나눠서 배정해요 */
 export type WorkRoom = 'library' | 'writing' | 'office'
-export interface Station { room: WorkRoom; seat: 0 | 1 }
+export interface Station { room: WorkRoom; seat: 0 | 1; /** 방을 둘이 같이 쓰는 중인지 */ shared?: boolean }
 export const WORK_ROOMS: WorkRoom[] = ['library', 'writing', 'office']
 export const WORK_ROOM_NAME: Record<WorkRoom, string> = { library: '자료실', writing: '문서작성실', office: '중앙 사무실' }
 
 /** 각자 가장 잘 맞는 방 (이 방이 비어 있으면 여기서 일해요) */
 export const PREFERRED_ROOM: Record<string, WorkRoom> = { luna: 'library', coco: 'writing', momo: 'office', mimi: 'office' }
 
-/** 방마다 자리 두 개(첫 번째 자리를 먼저 써요). 일하는 사람이 네 명이 되어 방이 모자랄 때만 두 번째 자리를 써요 */
-const SEATS: Record<WorkRoom, Pick<Activity, 'spot' | 'pose' | 'label'>[]> = {
+/** 방마다 가운데 x (방 사이 벽 사이의 한가운데) */
+const ROOM_CENTER: Record<WorkRoom, number> = { library: 300, writing: 750, office: 505 }
+/** 아바타 오른쪽에 말풍선 이모지가 붙어서, 아바타+이모지 덩어리의 중심이 아바타보다 약 30 오른쪽이에요 → 그만큼 왼쪽에 세워야 덩어리가 가운데에 와요 */
+const BUBBLE_SHIFT = 30
+/** 말풍선 이모지가 뜨지 않는 자세(컴퓨터 작업·서 있기)는 아바타만 가운데에 서요 */
+const NO_BUBBLE_POSES = new Set<Pose>(['type', 'stand', 'walk'])
+/** 둘이 같이 쓸 때 두 자리의 가운데에서의 거리 (방 폭에 맞춰 달라요) */
+const PAIR_GAP: Record<WorkRoom, [number, number]> = { library: [-110, 110], writing: [-100, 100], office: [-72, 72] }
+
+const SEAT_INFO: Record<WorkRoom, Pick<Activity, 'pose' | 'label' | 'spot'>[]> = {
   library: [
-    { spot: spot(300, F2), pose: 'read', label: '자료실에서 책을 펴고 자료를 검토하고 있어요' },
-    { spot: spot(190, F2), pose: 'search', label: '자료실 책장에서 자료를 찾고 있어요' },
+    { spot: spot(0, F2), pose: 'read', label: '자료실에서 책을 펴고 자료를 검토하고 있어요' },
+    { spot: spot(0, F2), pose: 'search', label: '자료실 책장에서 자료를 찾고 있어요' },
   ],
   writing: [
-    { spot: spot(770, F2, 'l'), pose: 'type', label: '문서작성실에서 컴퓨터로 문서를 작성하고 있어요' },
-    { spot: spot(650, F2, 'l'), pose: 'sort', label: '문서작성실에서 문서 내용을 적고 있어요' },
+    { spot: spot(0, F2, 'l'), pose: 'type', label: '문서작성실에서 컴퓨터로 문서를 작성하고 있어요' },
+    { spot: spot(0, F2, 'l'), pose: 'sort', label: '문서작성실에서 문서 내용을 적고 있어요' },
   ],
   office: [
-    { spot: spot(420, F1), pose: 'sort', label: '중앙 사무실에서 업무를 정리하고 있어요' },
-    { spot: spot(580, F1), pose: 'cal', label: '중앙 사무실에서 달력을 확인하고 있어요' },
+    { spot: spot(0, F1), pose: 'sort', label: '중앙 사무실에서 업무를 정리하고 있어요' },
+    { spot: spot(0, F1), pose: 'cal', label: '중앙 사무실에서 달력을 확인하고 있어요' },
   ],
+}
+
+/** 자리의 실제 위치: 혼자 쓰면 방 가운데(이모지까지 합쳐서), 둘이 쓰면 양쪽으로 나눠 앉아요 */
+function seatSpot(st: Station): Pick<Activity, 'pose' | 'label' | 'spot'> {
+  const base = SEAT_INFO[st.room][st.seat]
+  const shift = NO_BUBBLE_POSES.has(base.pose) ? 0 : BUBBLE_SHIFT
+  const x = st.shared ? ROOM_CENTER[st.room] + PAIR_GAP[st.room][st.seat] : ROOM_CENTER[st.room] - shift
+  return { ...base, spot: { ...base.spot, x } }
 }
 
 /** 업무 행동: 배정받은 방의 자리에서 일해요 */
 function work(id: AvatarId, station?: Station): Pick<Activity, 'spot' | 'pose' | 'label'> {
   const st = station ?? { room: PREFERRED_ROOM[id] ?? 'office', seat: 0 as const }
-  return SEATS[st.room][st.seat]
+  return seatSpot(st)
 }
 
 export function periodName(m: number, s: ScheduleCfg = DEFAULT_SCHEDULE) {
@@ -182,7 +200,7 @@ export function getActivity(
   // '진행 중'인 일이 있으면 시간표와 상관없이 일하는 자리에서 일함
   if (job) {
     const w = work(id, station)
-    return { ...w, period, task: job.title, seat: station?.seat, label: `「${job.title}」 ${w.label}` }
+    return { ...w, period, task: job.title, seat: station?.seat, shared: station?.shared, label: `「${job.title}」 ${w.label}` }
   }
 
   // 일을 받았거나 마친 아바타는 라운지에서 대기해요 (퇴근하지 않아요)

@@ -37,7 +37,10 @@ export function useStations(workers: { id: string; since: number }[]): Record<st
       const taken = Object.values(cur).some((s) => s.room === room && s.seat === 0)
       cur[w.id] = { room, seat: taken ? 1 : 0 }
     }
-    return { ...cur }
+    // 방을 둘이 같이 쓰는 중이면 표시해서, 둘 다 양쪽으로 나눠 앉게 해요
+    const out: Record<string, Station> = {}
+    for (const id of Object.keys(cur)) out[id] = { ...cur[id], shared: Object.values(cur).filter((x) => x.room === cur[id].room).length > 1 }
+    return out
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
 }
