@@ -286,3 +286,10 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 .wtitle small { font-weight:500; opacity:.6; }
 .wjob .btnrow2 .ghost, .wjob .btnrow2 .primary { padding:14px 0; font-size:16px; }
 .sheet.glass .wjob .ghost { background:rgba(255,255,255,.6); }
+
+/* 화면 위 시계·진행률 줄을 없애고 하우스를 위로 올림 */
+.app { padding-top:max(env(safe-area-inset-top), 0px); }
+.top { padding:4px 0 2px; }
+.top p { margin:2px 0 4px; }
+.gear { z-index:3; }
+.top h1, .top p { pointer-events:none; }

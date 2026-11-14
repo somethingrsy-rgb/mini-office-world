@@ -4,7 +4,7 @@ import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { asset, preloadAssets } from './assets'
 import { ROOMS, type RoomId } from './rooms'
 import RoomView from './components/RoomView'
-import { getActivity, periodName } from './schedule'
+import { getActivity } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
@@ -14,7 +14,7 @@ import { useTasks } from './useTasks'
 import { addDays, daysBetween, dueInfo, todayStr } from './dates'
 import ScheduleView from './components/ScheduleView'
 import BriefingView from './components/BriefingView'
-import { makeBriefing, overallProgress } from './entries'
+import { makeBriefing } from './entries'
 import { subAssignee, taskAssignee } from './assign'
 import AvatarCard from './components/AvatarCard'
 import { buildItems, workByAvatar, type WorkItem } from './work'
@@ -29,14 +29,12 @@ const realMinutes = () => {
   const d = new Date()
   return d.getHours() * 60 + d.getMinutes()
 }
-const fmt = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(Math.floor(m % 60)).padStart(2, '0')}`
 
 export default function App() {
   const [selected, setSelected] = useState<AvatarId | null>(null)
   const [real, setReal] = useState(realMinutes)
   const [sim, setSim] = useState<number | null>(null) // 시험용 시각 (null이면 실제 시각)
   const [playing, setPlaying] = useState(false)
-  const [panel, setPanel] = useState(false)
   const { tasks, ready, storageError, save, remove, replaceAll } = useTasks()
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
   const [backupTick, setBackupTick] = useState(0)
@@ -73,7 +71,6 @@ export default function App() {
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
   const briefing = useMemo(() => makeBriefing(tasks, todayStr(), addDays(todayStr(), 1)), [tasks, real])
-  const prog = overallProgress(tasks)
 
   // 하루 한 번 앱을 열면 미미가 오늘의 업무를 브리핑
   useEffect(() => {
@@ -285,35 +282,7 @@ export default function App() {
         <p>나만의 작은 세상, 아바타들이 일하는 미니 회사</p>
       </header>
 
-      <div className="clock" onClick={() => setPanel((v) => !v)}>
-        🕘 {fmt(now)} · {periodName(Math.floor(now), settings.schedule)} {sim !== null && <em>(시험 시각)</em>}
-      </div>
-      {panel && (
-        <div className="timebox">
-          <input
-            type="range" min={480} max={1110} value={Math.min(Math.max(now, 480), 1110)}
-            onChange={(e) => { setPlaying(false); setSim(Number(e.target.value)) }}
-          />
-          <div className="timebtns">
-            <button onClick={() => setPlaying((p) => !p)}>{playing ? '⏸ 멈춤' : '▶ 빨리감기'}</button>
-            <button onClick={() => { setPlaying(false); setSim(null) }}>실제 시각</button>
-            {[['출근 09:00', 540], ['점심 12:00', 720], ['커피 15:00', 900], ['퇴근 18:00', 1080]].map(([l, v]) => (
-              <button key={l} onClick={() => { setPlaying(false); setSim(v as number) }}>{l}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {toast && <div className="toast" key={toast.key}>{toast.text}</div>}
-
-      {tasks.length > 0 && (
-        <button className="summary" onClick={() => setView('brief')}>
-          <span>📊 진행률 <b>{prog.pct}%</b></span>
-          <span className="bar"><i style={{ width: `${prog.pct}%` }} /></span>
-          <span>⏰ 오늘 {briefing.dueToday.length}</span>
-          {briefing.overdue.length > 0 && <span className="red">⚠️ 초과 {briefing.overdue.length}</span>}
-        </button>
-      )}
 
       <main className="stage">
         <House activities={activities} alerts={alerts} cheers={cheers} labels={labels} remaining={items.length} reminders={reminders} selected={selected} onRoom={setRoom}
@@ -411,6 +380,7 @@ export default function App() {
             settings={settings}
             onSettings={updateSettings}
             onBackedUp={() => setBackupTick((n) => n + 1)}
+            time={{ now, simulated: sim !== null, playing, setSim, setPlaying }}
             onReplace={async (next, st) => { const ok = await replaceAll(next); if (ok) updateSettings(st); return ok }}
           />
         </Sheet>

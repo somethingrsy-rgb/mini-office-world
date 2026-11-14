@@ -20,9 +20,11 @@ interface Props {
   onSettings: (s: Settings) => void
   onReplace: (tasks: Task[], settings: Settings) => Promise<boolean>
   onBackedUp: () => void
+  /** 시험용 시각 조절(화면 위 시계를 없애면서 설정 안으로 옮겼어요) */
+  time: { now: number; simulated: boolean; playing: boolean; setSim: (v: number | null) => void; setPlaying: (v: boolean | ((p: boolean) => boolean)) => void }
 }
 
-export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp }: Props) {
+export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp, time }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [schedErr, setSchedErr] = useState('')
@@ -151,6 +153,20 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
             <input value={settings.names[a.id] ?? a.name} maxLength={6} placeholder={defaultName(a.id)} onChange={(e) => setName(a.id, e.target.value)} />
           </label>
         ))}
+      </section>
+
+      <section>
+        <h3 className="sh">🧪 시험용 시각</h3>
+        <p className="muted">아바타가 출근·점심·퇴근할 때 어떻게 움직이는지 미리 볼 수 있어요. 지금 {toHHMM(Math.floor(time.now))}{time.simulated ? ' (시험 시각)' : ' (실제 시각)'}</p>
+        <input type="range" min={480} max={1110} value={Math.min(Math.max(Math.floor(time.now), 480), 1110)}
+          onChange={(e) => { time.setPlaying(false); time.setSim(Number(e.target.value)) }} />
+        <div className="btnrow">
+          <button className="ghost" onClick={() => time.setPlaying((p) => !p)}>{time.playing ? '⏸ 멈춤' : '▶ 빨리감기'}</button>
+          <button className="ghost" onClick={() => { time.setPlaying(false); time.setSim(null) }}>실제 시각으로</button>
+          {([['출근', 540], ['점심', 720], ['커피', 900], ['퇴근', 1080]] as [string, number][]).map(([l, v]) => (
+            <button key={l} className="ghost" onClick={() => { time.setPlaying(false); time.setSim(v) }}>{l} {toHHMM(v)}</button>
+          ))}
+        </div>
       </section>
 
       <section>
