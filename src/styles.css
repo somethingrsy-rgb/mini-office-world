@@ -214,3 +214,8 @@ input[type=date]::-webkit-date-and-time-value { text-align:left; min-height:1.2e
 
 .startrow { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; margin:6px 0 2px; }
 .startrow input { width:20px; height:20px; min-height:0; padding:0; accent-color:#ff86b6; flex:none; }
+
+.avchip small.wait { background:#ffb454; }
+.waiting { margin:2px 0 4px; font-size:13px; font-weight:800; color:#d68b00; }
+.assignbtn.go { background:linear-gradient(90deg,#ff86b6,#b9a3e8); }
+.card .ghost.assignbtn { margin-top:2px; }

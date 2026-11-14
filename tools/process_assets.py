@@ -7,7 +7,7 @@
 """
 import json, os, sys
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -109,6 +109,29 @@ def crop_rgba(rgba, boxes, pad=4):
     return rgba.crop((x0, y0, x1, y1))
 
 
+# 접수대(카운터) 앞면: 나(관리자)가 카운터 '안쪽'에 서 있는 것처럼 보이게 아바타 위에 덮는 그림.
+# 좌표는 하우스 이미지(폭 1000) 기준이에요.
+COUNTER_BOX = (125, 850, 295, 1012)
+COUNTER_SHAPES = [
+    [(133, 925), (150, 917), (180, 912), (210, 910), (240, 912), (270, 917), (288, 925), (288, 1012), (133, 1012)],  # 카운터 몸통
+    [(154, 919), (152, 913), (158, 905), (163, 899), (169, 894), (172, 892), (176, 894), (181, 899), (186, 905), (190, 913), (188, 919)],  # 종
+    [(243, 899), (266, 899), (270, 908), (268, 917), (262, 919), (247, 919), (242, 912)],  # 꽃병
+    [(228, 880), (235, 872), (242, 868), (248, 858), (255, 856), (262, 858), (268, 862), (275, 868), (280, 878), (274, 886), (266, 890), (268, 899), (243, 899), (244, 893), (236, 890), (228, 884)],  # 튤립
+]
+
+
+def make_counter(house):
+    x0, y0, x1, y1 = COUNTER_BOX
+    mask = Image.new('L', (house.width, house.height), 0)
+    d = ImageDraw.Draw(mask)
+    for poly in COUNTER_SHAPES:
+        d.polygon(poly, fill=255)
+    mask = mask.filter(ImageFilter.GaussianBlur(0.8))
+    layer = house.copy()
+    layer.putalpha(Image.fromarray((np.asarray(mask).astype(np.float32) * (np.asarray(house)[:, :, 3] / 255.0)).astype(np.uint8)))
+    save(layer.crop(COUNTER_BOX), f'{OUT}/counter.webp', 92)
+
+
 def main(src):
     meta = {'avatars': {}}
     # 하우스와 방: 배경색 제거
@@ -117,6 +140,7 @@ def main(src):
     house = house.crop((0, 0, house.width, min(house.height, 1272)))  # 바닥 아래 그림자 잔여물 제거
     save(house, f'{OUT}/house.webp', 90)
     meta['house'] = {'w': house.width, 'h': house.height}
+    make_counter(house)
     for r in ['reception', 'office', 'result', 'library', 'writing', 'cafe', 'garden']:
         im = load(src, r)
         rg = trim(to_rgba(im, color_fg(im, 12)))

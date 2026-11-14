@@ -50,7 +50,8 @@ const SOFA: Record<AvatarId, Spot> = {
   momo: spot(445, AT - 14), luna: spot(560, AT - 14), coco: spot(300, AT), mimi: spot(690, AT), user: spot(500, AT - 14),
 }
 /** 접수대: 나(관리자)는 여기에 계속 있고, 일을 받으러 온 아바타는 그 옆에 서요 */
-const RECEPTION: Spot = spot(215, F1)
+// 카운터 '안쪽'(뒤)에 서 있어요. 카운터 앞면 그림이 아바타 아랫부분을 가려 줘요 (House.tsx)
+const RECEPTION: Spot = spot(210, 956)
 const PICKUP: Record<AvatarId, Spot> = {
   momo: spot(300, F1, 'l'), luna: spot(95, F1), coco: spot(335, F1, 'l'), mimi: spot(130, F1), user: RECEPTION,
 }

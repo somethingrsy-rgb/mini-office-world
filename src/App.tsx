@@ -194,6 +194,8 @@ export default function App() {
       notify(`✅ 「${newly[0].title}」 완료! 완료 칸으로 가요`)
     }
   }
+  /** 대기 중인 아바타의 일을 '진행 중'으로: 담당 아바타가 일하는 자리로 가요 (업무 단위) */
+  const startItem = (it: WorkItem) => saveTask({ ...it.task, status: 'doing' })
   const info = AVATARS.find((a) => a.id === selected)
   const act = selected ? activities[selected] : null
 
@@ -249,7 +251,8 @@ export default function App() {
             onClick={() => setSelected((cur) => (cur === a.id ? null : a.id))} aria-label={`${a.name} 선택`}>
             <img src={asset(`avatars/${a.id}-stand.webp`)} alt="" />
             <span>{a.name}</span>
-            {activities[a.id].away && <small>퇴근</small>}
+            {activities[a.id].away ? <small>퇴근</small>
+              : a.id !== 'user' && works[a.id as Staff].doing.length === 0 && works[a.id as Staff].planned.length > 0 && <small className="wait">대기 {works[a.id as Staff].planned.length}</small>}
           </button>
         ))}
       </div>
@@ -257,7 +260,8 @@ export default function App() {
       <section className="card">
         {info && act ? (
           <AvatarCard info={info} activity={act} work={info.id === 'user' ? undefined : works[info.id as Staff]} totals={totals}
-            onAssign={info.id === 'user' ? undefined : () => setAssignFor(info.id as Staff)} />
+            onAssign={info.id === 'user' ? undefined : () => setAssignFor(info.id as Staff)}
+            onStart={info.id === 'user' ? undefined : startItem} />
         ) : (
           <p className="muted">아바타를 터치하면 정보를, 방을 터치하면 확대한 모습을 볼 수 있어요 ✨</p>
         )}

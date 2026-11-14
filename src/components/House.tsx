@@ -24,7 +24,17 @@ export default function House({ activities, alerts, cheers, labels, selected, on
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"
           onClick={() => onRoom(r.id)} role="button" aria-label={`${r.name} 확대`} />
       ))}
-      {AVATARS.map((info, i) => (
+      {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 앞면 그림이 그 위를 덮어요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 위에 그려요 */}
+      {AVATARS.filter((a) => a.id === 'user').map((info) => (
+        <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} hideName
+          delay={1.2} selected={selected === info.id} onSelect={onSelect} />
+      ))}
+      <image href={asset('counter.webp')} x="125" y="850" width="170" height="162" pointerEvents="none" />
+      <g pointerEvents="none">
+        <rect x="190" y="969" width="40" height="30" rx="15" fill="#fff" fillOpacity=".92" stroke="#ff86b6" strokeWidth="3" />
+        <text x="210" y="991" textAnchor="middle" fontSize="22" fontWeight="800" fill="#5b4a78">나</text>
+      </g>
+      {AVATARS.filter((a) => a.id !== 'user').map((info, i) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
