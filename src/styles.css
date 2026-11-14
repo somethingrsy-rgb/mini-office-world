@@ -470,7 +470,6 @@ html[data-theme="dark"] .glassdiv { background:linear-gradient(90deg,transparent
 html[data-theme="dark"] .timebox, html[data-theme="dark"] .clock, html[data-theme="dark"] .summary, html[data-theme="dark"] .card { background:rgba(28,33,42,.88); color:var(--ink); }
 
 /* 방 확대 화면: 다크 그림이 없어서 라이트 그림을 어둡게 눌러 줘요 */
-html[data-theme="dark"] .roomimg, html[data-theme="dark"] .roomcounter { filter:brightness(.62) saturate(.7) contrast(1.05); }
 html[data-theme="dark"] .occupant span { background:rgba(20,25,33,.85); color:var(--ink); }
 /* 다크 로고는 라이트 로고보다 세로가 길어서, 가로 폭이 비슷하도록 키우고 레이아웃 높이는 그대로 둬요 */
 html[data-theme="dark"] .top h1 img { height:84px; margin:-5px 0; }
