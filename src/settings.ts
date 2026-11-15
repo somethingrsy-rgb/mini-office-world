@@ -14,8 +14,8 @@ export interface Settings {
   backdrop: Backdrop
 }
 
-export type Backdrop = 'cotton' | 'lavender'
-export const BACKDROPS: [Backdrop, string][] = [['cotton', '솜사탕'], ['lavender', '보라솜']]
+export type Backdrop = 'cotton' | 'lavender' | 'peach' | 'rose'
+export const BACKDROPS: [Backdrop, string][] = [['cotton', '솜사탕'], ['lavender', '보라솜'], ['peach', '복숭아솜'], ['rose', '장미솜']]
 
 export type Skin = 'default' | 'wood' | 'sea' | 'wedding'
 export const SKINS: [Skin, string][] = [['default', '기본'], ['wood', '나무'], ['sea', '바다'], ['wedding', '웨딩']]
@@ -51,7 +51,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   const order = Array.isArray(r.order) ? r.order.filter((v): v is string => typeof v === 'string').slice(0, 1000) : []
   const theme: ThemeMode = r.theme === 'light' || r.theme === 'dark' ? r.theme : 'auto'
   const skin: Skin = r.skin === 'wood' || r.skin === 'sea' || r.skin === 'wedding' ? r.skin : 'default'
-  const backdrop: Backdrop = r.backdrop === 'lavender' ? 'lavender' : 'cotton'
+  const backdrop: Backdrop = r.backdrop === 'lavender' || r.backdrop === 'peach' || r.backdrop === 'rose' ? r.backdrop : 'cotton'
   return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme, skin, backdrop } : { schedule, names, order, theme, skin, backdrop }
 }
 

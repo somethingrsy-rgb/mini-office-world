@@ -146,10 +146,10 @@ export default function SettingsView({ tasks, guide, onGuide, settings, onSettin
 
       <section>
         <h3 className="sh">☁️ 배경 (라이트 모드)</h3>
-        <div className="skins two">
+        <div className="skins">
           {BACKDROPS.map(([k, l]) => (
             <button key={k} className={`skin ${settings.backdrop === k ? 'on' : ''}`} onClick={() => onSettings({ ...settings, backdrop: k })} aria-pressed={settings.backdrop === k}>
-              <img src={asset(k === 'lavender' ? 'bg-lavender.webp' : 'bg.webp')} alt="" loading="lazy" style={{ objectFit: 'cover', borderRadius: 10 }} />
+              <img src={asset(k === 'cotton' ? 'bg.webp' : `bg-${k}.webp`)} alt="" loading="lazy" style={{ objectFit: 'cover', borderRadius: 10 }} />
               <span>{l}</span>
             </button>
           ))}
