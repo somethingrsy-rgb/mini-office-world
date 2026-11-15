@@ -34,7 +34,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
   const th = themed(dark, skin)
   return (
     <svg viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
-      <image className="houseimg" href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
+      <image className={`houseimg ${dark && skin !== 'default' ? `nightskin ${skin}` : ''}`} href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
       {/* 방을 누르면 확대해서 볼 수 있게 하는 투명 영역 */}
       {ROOMS.map((r) => (
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"

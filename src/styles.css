@@ -1011,3 +1011,6 @@ html[data-theme="dark"] .quickev { background:rgba(120,180,255,.1); border-color
 .skin.on { border-color:var(--pink); box-shadow:0 0 0 2px rgba(255,134,182,.35); background:rgba(255,255,255,.7); }
 html[data-theme="dark"] .skin { background:rgba(255,255,255,.07); }
 html[data-theme="dark"] .skin.on { border-color:#d9ae5c; box-shadow:0 0 0 2px rgba(217,174,92,.3); }
+/* 다크 모드의 나무·바다 하우스: 밤 분위기로 어둡게 (별도 다크 그림이 없어서 필터로) */
+html[data-theme="dark"] .houseimg.nightskin.wood { filter:brightness(.6) saturate(.9) contrast(1.06) sepia(.12); }
+html[data-theme="dark"] .houseimg.nightskin.sea { filter:brightness(.55) saturate(.95) contrast(1.08) hue-rotate(8deg); }

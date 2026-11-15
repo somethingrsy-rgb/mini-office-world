@@ -143,7 +143,7 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
       </section>
 
       <section>
-        <h3 className="sh">🏠 하우스 그림 (라이트 모드)</h3>
+        <h3 className="sh">🏠 하우스 그림</h3>
         <div className="skins">
           {SKINS.map(([k, l]) => (
             <button key={k} className={`skin ${settings.skin === k ? 'on' : ''}`} onClick={() => onSettings({ ...settings, skin: k })} aria-pressed={settings.skin === k}>
@@ -152,7 +152,7 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
             </button>
           ))}
         </div>
-        <p className="muted">라이트 모드에서만 바뀌어요. 다크 모드는 하나예요. 방을 눌러 크게 볼 때 나오는 방 그림은 아직 기본 그림이에요.</p>
+        <p className="muted">다크 모드에서는 같은 그림이 밤 분위기로 어두워져요. 방을 눌러 크게 볼 때 나오는 방 그림은 아직 기본 그림이에요.</p>
       </section>
 
       <section>
