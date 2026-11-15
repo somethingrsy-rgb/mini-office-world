@@ -32,6 +32,8 @@ import { stampReplace } from './tombs'
 import { useTheme } from './useTheme'
 import { realMinutes, useClock } from './useClock'
 import BottomBar from './components/BottomBar'
+import SidePanel from './components/SidePanel'
+import { useLandscape } from './useLandscape'
 import { usePipPrefs } from './usePipPrefs'
 import { useAvatarEvents } from './useAvatarEvents'
 import ReminderBar from './components/ReminderBar'
@@ -85,6 +87,9 @@ export default function App() {
     }, arrive === 0 ? 700 : arriveLegMs(arrive) + 150)
     return () => window.clearTimeout(t)
   }, [arrive, revealed])
+  const land = useLandscape()
+  // 가로 화면에서 하우스를 확대해서 볼 수 있어요 (1~2.6배)
+  const [zoom, setZoom] = useState(1)
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
@@ -384,10 +389,11 @@ export default function App() {
   })
 
   return (
-    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''}`}>
+    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''}`} style={land ? { ['--zoom' as string]: zoom } : undefined}>
       {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
       <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
+      <div className="leftcol">
       <header className="top">
         {pipSupported() && (
           <button className={`pinbtn ${pip.active ? 'on' : ''}`} onClick={() => (pip.active ? pip.close() : pip.open())} aria-label="항상 위에 띄우기" title="항상 위에 띄우기"><img src={asset('ui/pin.webp')} alt="" /></button>
@@ -401,14 +407,38 @@ export default function App() {
       {undo && <div className="undobar" key={undo.key}><span>{undo.label}했어요</span><button onClick={doUndo}>↩️ 되돌리기</button></div>}
       {toast && <div className="toast" key={toast.key}><RichText text={toast.text} /></div>}
 
+      <div className="stagewrap">
       <main className="stage">
         <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
+      {land && (
+        <div className="zoombar" role="group" aria-label="하우스 확대">
+          <button onClick={() => setZoom((z) => Math.max(1, Math.round((z - 0.4) * 10) / 10))} disabled={zoom <= 1} aria-label="축소">−</button>
+          <button className="zv" onClick={() => setZoom(1)} aria-label="원래 크기">{Math.round(zoom * 100)}%</button>
+          <button onClick={() => setZoom((z) => Math.min(2.6, Math.round((z + 0.4) * 10) / 10))} disabled={zoom >= 2.6} aria-label="확대">+</button>
+        </div>
+      )}
+      </div>
 
       <BottomBar selected={selected} shown={shown} works={works} urgent={urgent} storageError={storageError}
         onPick={pickAvatar} onNew={() => { setEditing(undefined); setView('form') }} onSchedule={() => setView('schedule')} onList={() => setView('list')} />
       <ReminderBar reminders={reminders} hush={!!userSay} />
+      </div>
+      {land && (
+        <aside className="sidecol">
+          <SidePanel title="📌 해야 할 일" grow={0.85} onExpand={() => setView('todo')}>
+            <TodoSheet tasks={ordered} manual={settings.order.length > 0} onOrder={(ids) => updateSettings({ ...settings, order: ids })}
+              onReset={() => updateSettings({ ...settings, order: [] })} onBrief={() => setView('brief')} onList={() => setView('list')} onQuick={quickDistribute} />
+          </SidePanel>
+          <SidePanel title="🗓 월간 달력" grow={1.4} onExpand={() => setView('schedule')}>
+            <ScheduleView tasks={tasks} monthOnly onOpenList={() => setView('list')} />
+          </SidePanel>
+          <SidePanel title="📋 업무 목록" grow={1} onExpand={() => setView('list')}>
+            <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
+          </SidePanel>
+        </aside>
+      )}
 
       {view === 'brief' && (
         <Sheet glass tall title="💛 오늘의 업무 브리핑" onClose={close}>

@@ -26,9 +26,9 @@ function List({ entries, empty }: { entries: Entry[]; empty: string }) {
   return <ul className="elist">{entries.map((e) => <Row key={e.key} e={e} />)}</ul>
 }
 
-export default function ScheduleView({ tasks, onOpenList }: { tasks: Task[]; onOpenList: () => void }) {
+export default function ScheduleView({ tasks, onOpenList, monthOnly }: { tasks: Task[]; onOpenList: () => void; /** 가로 화면 오른쪽 칸용: 월간 달력만 보여요 */ monthOnly?: boolean }) {
   const today = todayStr()
-  const [mode, setMode] = useState<Mode>('day')
+  const [mode, setMode] = useState<Mode>(monthOnly ? 'month' : 'day')
   const [day, setDay] = useState(today)
   const [ym, setYm] = useState(today.slice(0, 7))
   const entries = useMemo(() => buildEntries(tasks, today), [tasks, today])
@@ -50,11 +50,11 @@ export default function ScheduleView({ tasks, onOpenList }: { tasks: Task[]; onO
         <span>전체 진행률 <b>{prog.pct}%</b> · 완료 {prog.done}/{prog.total}건</span>
       </div>
 
-      <div className="tabs seg">
+      {!monthOnly && <div className="tabs seg">
         {([['day', '일간'], ['week', '주간'], ['month', '월간']] as [Mode, string][]).map(([k, l]) => (
           <button key={k} className={mode === k ? 'on' : ''} onClick={() => setMode(k)}>{l}</button>
         ))}
-      </div>
+      </div>}
 
       {mode === 'day' && (
         <>
@@ -146,7 +146,7 @@ export default function ScheduleView({ tasks, onOpenList }: { tasks: Task[]; onO
         </>
       )}
 
-      <button className="ghost wide" onClick={onOpenList}>📋 업무 목록에서 관리하기</button>
+      {!monthOnly && <button className="ghost wide" onClick={onOpenList}>📋 업무 목록에서 관리하기</button>}
     </div>
   )
 }
