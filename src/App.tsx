@@ -98,6 +98,9 @@ export default function App() {
   }, [arrive, revealed])
   const landMode = useLandscape()
   const land = landMode !== null
+  // 바닥 맞춤 안내선 (이 기기에서만, 설정 > 하우스 그림에서 켜요)
+  const [guide, setGuideState] = useState(() => { try { return localStorage.getItem('mow-guide') === '1' } catch { return false } })
+  const setGuide = (v: boolean) => { setGuideState(v); try { localStorage.setItem('mow-guide', v ? '1' : '0') } catch { /* 무시 */ } }
   const phoneLand = landMode === 'phone'
   const [sideTab, setSideTab] = useState<'todo' | 'cal' | 'list'>('todo')
   // 가로 화면에서 하우스를 확대해서 볼 수 있어요 (1~2.6배)
@@ -367,7 +370,7 @@ export default function App() {
         <div className="pipbg" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
         <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
-        <House dark={dark} skin={settings.skin} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
+        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
           remaining={items.length} selected={pipAv}
           onRoom={() => {}} onSelect={(id) => setPipAv((cur) => (id === 'user' || cur === id ? null : id))} />
         {pi && pw && pa ? (
@@ -421,7 +424,7 @@ export default function App() {
 
       <div className="stagewrap">
       <main className="stage">
-        <House dark={dark} skin={settings.skin} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
+        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
       {land && (
@@ -517,6 +520,8 @@ export default function App() {
         <Sheet glass tall title="설정" onClose={close}>
           <SettingsView
             tasks={allTasks}
+            guide={guide}
+            onGuide={setGuide}
             settings={settings}
             onSettings={updateSettings}
             onBackedUp={() => setBackupTick((n) => n + 1)}

@@ -20,6 +20,8 @@ interface Props {
   dark?: boolean
   /** 라이트 모드 하우스 그림 (기본·나무·바다) */
   skin?: Skin
+  /** 바닥 맞춤 안내선 보기 (설정에서 켜요) */
+  guide?: boolean
   /** 접수대에서 일을 받기 시작한 아바타 */
   onReceived?: (id: AvatarId) => void
   selected: AvatarId | null
@@ -30,11 +32,25 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, dark = false, skin = 'default', onReceived }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, dark = false, skin = 'default', guide = false, onReceived }: Props) {
   const th = themed(dark, skin)
   return (
     <svg viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className={`houseimg ${dark && skin !== 'default' ? `nightskin ${skin}` : ''}`} href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
+      {guide && (
+        <g pointerEvents="none" fontSize="19" fontWeight="800">
+          {[408, 690, 1002].map((y0) => (
+            <g key={y0}>
+              {Array.from({ length: 13 }, (_, i) => i - 6).map((k) => (
+                <g key={k}>
+                  <line x1="0" x2="1000" y1={y0 + k * 10} y2={y0 + k * 10} stroke={k === 0 ? '#ff2d55' : k < 0 ? '#2d7dff' : '#16a34a'} strokeWidth={k === 0 ? 3 : 1.2} strokeOpacity={k === 0 ? 0.95 : 0.7} />
+                  {(k % 2 === 0) && <text x="6" y={y0 + k * 10 - 3} fill={k === 0 ? '#ff2d55' : k < 0 ? '#2d7dff' : '#16a34a'} stroke="#fff" strokeWidth="3" paintOrder="stroke">{k === 0 ? '아바타 발' : k < 0 ? `위 ${-k * 10}` : `아래 ${k * 10}`}</text>}
+                </g>
+              ))}
+            </g>
+          ))}
+        </g>
+      )}
       {/* 방을 누르면 확대해서 볼 수 있게 하는 투명 영역 */}
       {ROOMS.map((r) => (
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"

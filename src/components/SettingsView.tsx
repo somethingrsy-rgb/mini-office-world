@@ -21,6 +21,8 @@ const SCHEDULE_FIELDS: [keyof typeof DEFAULT_SCHEDULE, string][] = [
 
 interface Props {
   tasks: Task[]
+  guide: boolean
+  onGuide: (v: boolean) => void
   settings: Settings
   onSettings: (s: Settings) => void
   onReplace: (tasks: Task[], settings: Settings) => Promise<boolean>
@@ -29,7 +31,7 @@ interface Props {
   time: { now: number; simulated: boolean; playing: boolean; setSim: (v: number | null) => void; setPlaying: (v: boolean | ((p: boolean) => boolean)) => void }
 }
 
-export default function SettingsView({ tasks, settings, onSettings, onReplace, onBackedUp, time }: Props) {
+export default function SettingsView({ tasks, guide, onGuide, settings, onSettings, onReplace, onBackedUp, time }: Props) {
   const sound = useSoundPrefs()
   const sync = useSyncStatus()
   const [snaps, setSnaps] = useState(listSnapshots)
@@ -152,6 +154,8 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
             </button>
           ))}
         </div>
+        <button className="ghost" onClick={() => onGuide(!guide)}>{guide ? '📏 바닥 맞춤 선 끄기' : '📏 바닥 맞춤 선 켜기'}</button>
+        <p className="muted">켜면 하우스 위에 층마다 눈금선이 그려져요. 빨간 선이 아바타 발 높이고, 파랑은 위로, 초록은 아래로 10단위씩이에요. 바닥(카펫)이 어느 선에 오면 좋을지 알려주세요.</p>
         <p className="muted">다크 모드에서는 같은 그림이 밤 분위기로 어두워져요. 방을 눌러 크게 볼 때 나오는 방 그림은 아직 기본 그림이에요.</p>
       </section>
 
