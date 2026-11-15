@@ -1,7 +1,7 @@
 import { useEffect, type ReactNode } from 'react'
 import RichText, { stripTokens } from './RichText'
 
-export default function Sheet({ title, onClose, glass, tall, children }: { title: string; onClose: () => void; glass?: boolean; tall?: boolean; children: ReactNode }) {
+export default function Sheet({ title, onClose, glass, tall, passthrough, children }: { title: string; onClose: () => void; glass?: boolean; tall?: boolean; /** 창 바깥(하우스)도 누를 수 있게 해요 */ passthrough?: boolean; children: ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
@@ -9,7 +9,7 @@ export default function Sheet({ title, onClose, glass, tall, children }: { title
   }, [onClose])
 
   return (
-    <div className={`backdrop ${glass ? 'glass' : ''}`} onClick={onClose}>
+    <div className={`backdrop ${glass ? 'glass' : ''} ${passthrough ? 'passthru' : ''}`} onClick={onClose}>
       <div className={`sheet ${glass ? 'glass' : ''} ${tall ? 'tall' : ''}`} role="dialog" aria-label={stripTokens(title)} onClick={(e) => e.stopPropagation()}>
         {glass && <div className="grab" aria-hidden />}
         <div className="sheet-head">

@@ -521,7 +521,7 @@ export default function App() {
         const w = works[info.id as Staff]
         const working = w.doing.length > 0
         return (
-          <Sheet glass title={working ? `${info.emoji} ${info.name} · 일하는 중` : `${info.emoji} ${info.name} · ${info.role}`} onClose={() => setSelected(null)}>
+          <Sheet glass passthrough title={working ? `${info.emoji} ${info.name} · 일하는 중` : `${info.emoji} ${info.name} · ${info.role}`} onClose={() => setSelected(null)}>
             {working && <WorkingPanel info={info} activity={act} doing={w.doing} onWait={waitItem} onComplete={completeItem} />}
             {working && w.planned.length > 0 && <div className="glassdiv" />}
             {(!working || w.planned.length > 0) && (
