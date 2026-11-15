@@ -46,6 +46,8 @@ function cleanTask(raw: unknown): Task | null {
     startedAt: status === 'doing' ? asTime(t.startedAt) ?? Date.now() : null,
     workedMs: Math.max(0, asTime(t.workedMs) ?? 0),
     ...(asTime(t.updatedAt) ? { updatedAt: asTime(t.updatedAt)! } : {}),
+    ...(t.kind === 'event' ? { kind: 'event' as const } : {}),
+    ...(typeof t.time === 'string' && /^\d{2}:\d{2}$/.test(t.time) ? { time: t.time } : {}),
   }
 }
 

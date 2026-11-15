@@ -18,6 +18,11 @@ describe('아침 푸시 문구', () => {
     expect(buildMessages([t('끝', '2026-11-16', 'done')], today)).toEqual([])
     expect(buildMessages([], today)).toEqual([])
   })
+  it('내 일정은 업무 건수에 세지 않고 오늘 일정으로만 알려줘요', () => {
+    const m = buildMessages([t('업무', null), { title: '회의', due: today, status: 'todo', kind: 'event', time: '14:00' }], today)
+    expect(m[0].body).toContain('남은 업무 1건'); expect(m[0].body).toContain('오늘 일정 1건'); expect(m[0].body).toContain('14:00 회의')
+    expect(m.map((x: { tag: string }) => x.tag)).toEqual(['brief'])
+  })
   it('1일 전은 따로 보내지 않아요', () => {
     expect(buildMessages([t('내일', '2026-11-17')], today).map((x: { tag: string }) => x.tag)).toEqual(['brief'])
   })

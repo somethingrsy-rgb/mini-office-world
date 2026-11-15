@@ -988,3 +988,12 @@ html[data-theme="dark"] .sidetabs button.on, html[data-theme="dark"] .sidetabs .
 .app.land.phone.hasrem .stage { height:calc(100dvh - max(env(safe-area-inset-top),6px) - 6px - 62px); }
 .sidetabs .gearbtn { position:relative; background:rgba(120,90,170,.55); font-size:15px; padding:5px 10px; }
 .sidetabs .gearbtn .dotbadge { position:absolute; top:3px; right:5px; }
+
+/* ── 내 일정 ── */
+.d.ev { background:#4aa3ff; border-radius:2px; transform:rotate(45deg); }
+.evrow { cursor:pointer; background:rgba(74,163,255,.13); }
+.evtime { color:#2a78d0; font-weight:800; }
+.addev { margin:0 0 8px; background:rgba(74,163,255,.2); color:#1c5ea8; font-weight:800; }
+html[data-theme="dark"] .evrow { background:rgba(120,180,255,.12); }
+html[data-theme="dark"] .evtime { color:#8cc4ff; }
+html[data-theme="dark"] .addev { background:rgba(120,180,255,.16); color:#a9d3ff; }

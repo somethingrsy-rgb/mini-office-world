@@ -33,6 +33,7 @@ import { useTheme } from './useTheme'
 import { realMinutes, useClock } from './useClock'
 import BottomBar from './components/BottomBar'
 import SidePanel from './components/SidePanel'
+import EventForm from './components/EventForm'
 import { useLandscape } from './useLandscape'
 import { usePipPrefs } from './usePipPrefs'
 import { useAvatarEvents } from './useAvatarEvents'
@@ -54,15 +55,19 @@ export default function App() {
   const { pipFade, setPipFade, pipClear, setPipClear } = usePipPrefs()
   useEffect(() => { initAudio() }, [])
   const { real, sim, setSim, playing, setPlaying, wander, now } = useClock()
-  const { tasks, ready, storageError, save, remove, replaceAll } = useTasks()
+  const { tasks: allTasks, ready, storageError, save, remove, replaceAll } = useTasks()
+  // 아바타에게 나누는 업무와, 달력에만 보이는 내 일정(kind: 'event')을 나눠요
+  const tasks = useMemo(() => allTasks.filter((t) => t.kind !== 'event'), [allTasks])
+  const events = useMemo(() => allTasks.filter((t) => t.kind === 'event'), [allTasks])
+  const [eventEdit, setEventEdit] = useState<{ date: string; event?: Task } | null>(null)
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
   const [backupTick, setBackupTick] = useState(0)
   const dark = useTheme(settings.theme)
   const updateSettings = (s: Settings, fromSync = false) => { applyNames(s.names); saveSettings(s); setSettingsState(s); if (!fromSync) markSettingsDirty() }
   // 자동 백업: 업무가 바뀌면 (30분에 한 번까지) 이 기기에 보관해요
-  useEffect(() => { if (ready) takeSnapshot(tasks, settings, '자동') }, [tasks, settings, ready])
+  useEffect(() => { if (ready) takeSnapshot(allTasks, settings, '자동') }, [allTasks, settings, ready])
   // 기기끼리 동기화 (설정 > 기기 동기화에서 켜요)
-  useSync({ tasks, settings, apply: async (t, s) => { takeSnapshot(tasks, settings, '동기화 받기 전', true); const ok = await replaceAll(t); if (ok && s) updateSettings(s, true); return ok } }, ready)
+  useSync({ tasks: allTasks, settings, apply: async (t, s) => { takeSnapshot(allTasks, settings, '동기화 받기 전', true); const ok = await replaceAll(t); if (ok && s) updateSettings(s, true); return ok } }, ready)
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
   const [room, setRoom] = useState<RoomId | null>(null)
@@ -274,9 +279,9 @@ export default function App() {
 
   /** 업무 목록 전체 리셋: 등록한 업무를 모두 지우고 아바타를 처음 상태(나만 있는 건물)로 되돌려요. 이름·시간표 같은 설정은 그대로예요 */
   const resetTasks = async () => {
-    takeSnapshot(tasks, settings, '전체 리셋 전', true)
+    takeSnapshot(allTasks, settings, '전체 리셋 전', true)
     armUndo('전체 리셋')
-    if (!(await replaceAll(stampReplace(tasks, [])))) { notify('⚠️ 리셋하지 못했어요. 저장 공간을 확인해 주세요'); return }
+    if (!(await replaceAll(stampReplace(allTasks, events)))) { notify('⚠️ 리셋하지 못했어요. 저장 공간을 확인해 주세요'); return }
     updateSettings({ ...settings, order: [] })
     setPickups({}); setFinishes({}); setLeaves({}); setUserSay(null); setSelected(null);
     notify('🔄 모든 업무를 리셋했어요')
@@ -285,12 +290,12 @@ export default function App() {
   const armUndo = (label: string) => setUndo({ label, tasks, order: settings.order, key: Date.now() })
   const doUndo = async () => {
     if (!undo) return
-    if (await replaceAll(stampReplace(tasks, undo.tasks))) { updateSettings({ ...settings, order: undo.order }); notify(`↩️ ${undo.label}을(를) 되돌렸어요`) }
+    if (await replaceAll(stampReplace(allTasks, [...undo.tasks, ...events]))) { updateSettings({ ...settings, order: undo.order }); notify(`↩️ ${undo.label}을(를) 되돌렸어요`) }
     setUndo(null)
   }
   const removeTask = (id: string) => {
     const t = tasks.find((x) => x.id === id)
-    if (t) takeSnapshot(tasks, settings, `삭제 전: ${t.title}`, true)
+    if (t) takeSnapshot(allTasks, settings, `삭제 전: ${t.title}`, true)
     armUndo('삭제'); remove(id)
   }
   const saveTask = (t: Task) => {
@@ -435,7 +440,7 @@ export default function App() {
               onReset={() => updateSettings({ ...settings, order: [] })} onBrief={() => setView('brief')} onList={() => setView('list')} onQuick={quickDistribute} />
           </SidePanel>
           <SidePanel title="🗓 월간 달력" grow={1.4} onExpand={() => setView('schedule')}>
-            <ScheduleView tasks={tasks} monthOnly onOpenList={() => setView('list')} />
+            <ScheduleView tasks={tasks} events={events} monthOnly onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />
           </SidePanel>
           <SidePanel title="📋 업무 목록" grow={1} onExpand={() => setView('list')}>
             <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
@@ -455,7 +460,7 @@ export default function App() {
           <SidePanel title={sideTab === 'todo' ? '📌 해야 할 일' : sideTab === 'cal' ? '🗓 월간 달력' : '📋 업무 목록'} onExpand={() => setView(sideTab === 'todo' ? 'todo' : sideTab === 'cal' ? 'schedule' : 'list')}>
             {sideTab === 'todo' && <TodoSheet tasks={ordered} manual={settings.order.length > 0} onOrder={(ids) => updateSettings({ ...settings, order: ids })}
               onReset={() => updateSettings({ ...settings, order: [] })} onBrief={() => setView('brief')} onList={() => setView('list')} onQuick={quickDistribute} />}
-            {sideTab === 'cal' && <ScheduleView tasks={tasks} monthOnly onOpenList={() => setView('list')} />}
+            {sideTab === 'cal' && <ScheduleView tasks={tasks} events={events} monthOnly onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />}
             {sideTab === 'list' && <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />}
           </SidePanel>
         </aside>
@@ -482,7 +487,7 @@ export default function App() {
       )}
       {view === 'schedule' && (
         <Sheet glass tall title="일정표" onClose={close}>
-          <ScheduleView tasks={tasks} onOpenList={() => setView('list')} />
+          <ScheduleView tasks={tasks} events={events} onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />
         </Sheet>
       )}
       {info && act && info.id !== 'user' && (() => {
@@ -507,12 +512,12 @@ export default function App() {
       {view === 'settings' && (
         <Sheet glass tall title="설정" onClose={close}>
           <SettingsView
-            tasks={tasks}
+            tasks={allTasks}
             settings={settings}
             onSettings={updateSettings}
             onBackedUp={() => setBackupTick((n) => n + 1)}
             time={{ now, simulated: sim !== null, playing, setSim, setPlaying }}
-            onReplace={async (next, st) => { takeSnapshot(tasks, settings, '복원·초기화 전', true); const ok = await replaceAll(stampReplace(tasks, next)); if (ok) updateSettings(st); return ok }}
+            onReplace={async (next, st) => { takeSnapshot(allTasks, settings, '복원·초기화 전', true); const ok = await replaceAll(stampReplace(allTasks, next)); if (ok) updateSettings(st); return ok }}
           />
         </Sheet>
       )}
@@ -528,6 +533,13 @@ export default function App() {
       {view === 'list' && (
         <Sheet glass tall title="업무 목록" onClose={close}>
           <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
+        </Sheet>
+      )}
+      {eventEdit && (
+        <Sheet glass tall title={eventEdit.event ? '일정 수정' : '내 일정 추가'} onClose={() => setEventEdit(null)}>
+          <EventForm initial={eventEdit.event} date={eventEdit.date} onCancel={() => setEventEdit(null)}
+            onSave={(e) => { save(e); setEventEdit(null); notify(`🗓 일정을 저장했어요: ${e.title}`) }}
+            onDelete={eventEdit.event ? () => { remove(eventEdit.event!.id); setEventEdit(null); notify('일정을 삭제했어요') } : undefined} />
         </Sheet>
       )}
     </div>
