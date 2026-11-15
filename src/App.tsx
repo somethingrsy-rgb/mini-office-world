@@ -4,7 +4,7 @@ import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { asset, preloadAssets, themed } from './assets'
 import { ROOMS, type RoomId } from './rooms'
 import RoomView from './components/RoomView'
-import { ARRIVE_PATH, arriveLegMs, getActivity, spreadSpots } from './schedule'
+import { ARRIVE_PATH, arriveLegMs, FLOOR_Y, getActivity, spreadSpots } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
 import TaskList from './components/TaskList'
@@ -98,6 +98,10 @@ export default function App() {
   }, [arrive, revealed])
   const landMode = useLandscape()
   const land = landMode !== null
+  // 아바타를 고르고 바닥을 누르면 그 자리로 걸어가 3초 머물러요. 그다음엔 다시 자유롭게 움직여요
+  const HOLD_MS = 3000
+  const [manual, setManual] = useState<Record<string, { spot: { x: number; y: number; face: 'l' | 'r' }; until: number; from: number }>>({})
+  const [, setManualTick] = useState(0)
   // 바닥 맞춤 안내선 (이 기기에서만, 설정 > 하우스 그림에서 켜요)
   const [guide, setGuideState] = useState(() => { try { return localStorage.getItem('mow-guide') === '1' } catch { return false } })
   const setGuide = (v: boolean) => { setGuideState(v); try { localStorage.setItem('mow-guide', v ? '1' : '0') } catch { /* 무시 */ } }
@@ -147,12 +151,14 @@ export default function App() {
             : (finishes[a.id] ?? 0) > t ? 'finish' : (leaves[a.id] ?? 0) > t ? 'leave' : (pickups[a.id] ?? 0) > t ? 'pickup' : null
           const act = getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander, stations[a.id])
           if (a.id === 'user' && arrive >= 0) return [a.id, { ...act, spot: ARRIVE_PATH[arrive], pose: 'stand' as const, outdoors: arrive < 3, slow: arrive > 0, label: '출근하는 중이에요' }]
+          const mv = manual[a.id]
+          if (mv && a.id !== 'user' && mv.until > t) return [a.id, { ...act, spot: mv.spot, pose: 'stand' as const, task: undefined, slow: false, manual: true, label: '눌러 준 자리로 걸어왔어요' }]
           return [a.id, act]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real, arrive],
+    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real, arrive, manual],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(
@@ -355,6 +361,20 @@ export default function App() {
     if (id === 'user') { setSelected(null); setView('todo'); return }
     setSelected((cur) => (cur === id ? null : id))
   }
+  /** 고른 아바타를 누른 바닥 자리로 보내요 (층 바닥 높이에 맞춰 놓아요) */
+  const moveSelected = (x: number, y: number) => {
+    if (!selected || selected === 'user') return
+    const fy = y < 550 ? FLOOR_Y.attic : y < 850 ? FLOOR_Y.f2 : y < 1100 ? FLOOR_Y.f1 : FLOOR_Y.out
+    const fx = Math.max(110, Math.min(890, x))
+    const id = selected
+    // 도착할 때까지는 오래 기다려 주고, 도착하면(onManualArrived) 그때부터 3초만 머물러요
+    setManual((m) => ({ ...m, [id]: { spot: { x: fx, y: fy, face: 'r' as const }, until: Date.now() + 60000, from: Date.now() } }))
+  }
+  const manualArrived = (id: string) => {
+    const until = Date.now() + HOLD_MS
+    setManual((m) => (m[id] && m[id].until - Date.now() > HOLD_MS + 500 ? { ...m, [id]: { ...m[id], until } } : m))
+    window.setTimeout(() => setManualTick((n) => n + 1), HOLD_MS + 200)
+  }
   const info = AVATARS.find((a) => a.id === selected)
   const act = selected ? activities[selected] : null
 
@@ -424,7 +444,7 @@ export default function App() {
 
       <div className="stagewrap">
       <main className="stage">
-        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
+        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && selected !== 'user' && shown.includes(selected) ? moveSelected : undefined} onManualArrived={manualArrived}
           onSelect={pickAvatar} />
       </main>
       {land && (

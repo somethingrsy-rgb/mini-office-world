@@ -23,6 +23,8 @@ interface Props {
   dark?: boolean
   /** 접수대 앞에 도착해서 일을 받기 시작할 때(한 번) */
   onReceived?: (id: AvatarInfo['id']) => void
+  /** 눌러 준 자리에 도착했을 때(한 번) */
+  onManualArrived?: (id: AvatarInfo['id']) => void
   onSelect: (id: AvatarInfo['id']) => void
 }
 
@@ -63,7 +65,7 @@ const textWidth = (t: string, size: number) => [...t].reduce((n, c) => n + (c.ch
 const LABEL_LIFT: Record<string, number> = { momo: 0, luna: 44, coco: 0, mimi: 44, user: 0 }
 const clip = (t: string, max = 16) => ([...t].length > max ? [...t].slice(0, max).join('') + '…' : t)
 
-export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, speech, delay = 0, hideName, dark = false, onReceived, onSelect }: Props) {
+export default function Avatar({ info, activity, selected, alert, cheer = 0, taskLabel, speech, delay = 0, hideName, dark = false, onReceived, onManualArrived, onSelect }: Props) {
   const w = useWalker(info.id, activity.spot, !!activity.slow, activity.enter)
   // 환호는 이동을 시작한 뒤 목적지에 도착하면 시작하고, 3초쯤 뒤 끝나요
   const [wantCheer, setWantCheer] = useState(false)
@@ -88,6 +90,8 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
   const atSpot = Math.abs(w.x - activity.spot.x) < 2 && Math.abs(w.y - activity.spot.y) < 2 // 실제로 그 자리에 도착했을 때만
   const receiving = !w.moving && atSpot && activity.pose === 'receive' && info.id !== 'user'
   useEffect(() => { if (receiving) onReceived?.(info.id) }, [receiving])
+  const manualHere = !!activity.manual && !w.moving && atSpot
+  useEffect(() => { if (manualHere) onManualArrived?.(info.id) }, [manualHere])
 
   const pose = w.moving ? 'walk' : activity.pose
   const isUser = info.id === 'user'

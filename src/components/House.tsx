@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import Avatar from './Avatar'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
@@ -27,15 +28,28 @@ interface Props {
   selected: AvatarId | null
   onSelect: (id: AvatarId) => void
   onRoom: (id: RoomId) => void
+  /** 아바타를 고른 상태에서 하우스 바닥을 누르면 그 자리(하우스 좌표)로 보내요 */
+  onMove?: (x: number, y: number) => void
+  onManualArrived?: (id: AvatarId) => void
 }
 
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, dark = false, skin = 'default', guide = false, onReceived }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, onReceived }: Props) {
   const th = themed(dark, skin)
+  const svgRef = useRef<SVGSVGElement>(null)
+  /** 화면 좌표 → 하우스 좌표 */
+  const toHouse = (e: React.MouseEvent) => {
+    const svg = svgRef.current
+    const m = svg?.getScreenCTM()
+    if (!svg || !m) return null
+    const pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY
+    const q = pt.matrixTransform(m.inverse())
+    return { x: q.x, y: q.y }
+  }
   return (
-    <svg viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
+    <svg ref={svgRef} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className={`houseimg ${dark && skin !== 'default' ? `nightskin ${skin}` : ''}`} href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
       {guide && (
         <g pointerEvents="none" fontSize="19" fontWeight="800">
@@ -54,7 +68,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       {/* 방을 누르면 확대해서 볼 수 있게 하는 투명 영역 */}
       {ROOMS.map((r) => (
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"
-          onClick={() => onRoom(r.id)} role="button" aria-label={`${r.name} 확대`} />
+          onClick={(e) => { if (onMove) { const q = toHouse(e); if (q) return onMove(q.x, q.y) } onRoom(r.id) }} role="button" aria-label={`${r.name} 확대`} />
       ))}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
       {/* 다크 하우스는 접수실 나무 바닥이 조금 더 아래에서 시작해서, 카운터와 나를 그만큼 내려요 */}
@@ -74,7 +88,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       </g>
       </g>
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} dark={dark}
+        <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} onManualArrived={onManualArrived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
     </svg>

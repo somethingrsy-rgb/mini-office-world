@@ -24,6 +24,8 @@ export interface Activity {
   seat?: 0 | 1
   /** 건물 밖(정원길)에서 전신으로 서 있는 중 — 아침 출근 모습용 */
   outdoors?: boolean
+  /** 사용자가 바닥을 눌러 보낸 자리 (도착하면 3초 머물러요) */
+  manual?: boolean
   /** 방을 둘이 같이 쓰는 중 (말풍선 이모지는 생략해서 벽을 넘지 않게) */
   shared?: boolean
 }
