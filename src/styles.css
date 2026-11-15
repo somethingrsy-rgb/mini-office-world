@@ -1014,3 +1014,6 @@ html[data-theme="dark"] .skin.on { border-color:#d9ae5c; box-shadow:0 0 0 2px rg
 /* 다크 모드의 나무·바다 하우스: 밤 분위기로 어둡게 (별도 다크 그림이 없어서 필터로) */
 html[data-theme="dark"] .houseimg.nightskin.wood { filter:brightness(.6) saturate(.9) contrast(1.06) sepia(.12); }
 html[data-theme="dark"] .houseimg.nightskin.sea { filter:brightness(.55) saturate(.95) contrast(1.08) hue-rotate(8deg); }
+html[data-theme="dark"] .houseimg.nightskin.wedding { filter:brightness(.55) saturate(.9) contrast(1.08) hue-rotate(-6deg); }
+.skins { grid-template-columns:repeat(2,1fr) !important; }
+@media (min-width:380px) { .skins { grid-template-columns:repeat(4,1fr) !important; } }

@@ -21,7 +21,7 @@ export const BOX = ASSET_META.box as { w: number; h: number }
 export const BOX_DARK = ASSET_META.boxDark as { w: number; h: number }
 
 /** 라이트·다크에 따라 달라지는 그림 */
-export const themed = (dark: boolean, skin: 'default' | 'wood' | 'sea' = 'default') => ({
+export const themed = (dark: boolean, skin: 'default' | 'wood' | 'sea' | 'wedding' = 'default') => ({
   bg: asset(dark ? 'bg-dark.webp' : 'bg.webp'),
   // 나무·바다는 다크 모드에서도 같은 그림을 어둡게 해서 써요 (House.tsx의 밤 필터)
   house: asset(skin !== 'default' ? `house-${skin}.webp` : dark ? 'house-dark.webp' : 'house.webp'),

@@ -12,8 +12,8 @@ export interface Settings {
   skin: Skin
 }
 
-export type Skin = 'default' | 'wood' | 'sea'
-export const SKINS: [Skin, string][] = [['default', '기본'], ['wood', '나무'], ['sea', '바다']]
+export type Skin = 'default' | 'wood' | 'sea' | 'wedding'
+export const SKINS: [Skin, string][] = [['default', '기본'], ['wood', '나무'], ['sea', '바다'], ['wedding', '웨딩']]
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
 
@@ -45,7 +45,7 @@ export function sanitizeSettings(raw: unknown): Settings {
   }
   const order = Array.isArray(r.order) ? r.order.filter((v): v is string => typeof v === 'string').slice(0, 1000) : []
   const theme: ThemeMode = r.theme === 'light' || r.theme === 'dark' ? r.theme : 'auto'
-  const skin: Skin = r.skin === 'wood' || r.skin === 'sea' ? r.skin : 'default'
+  const skin: Skin = r.skin === 'wood' || r.skin === 'sea' || r.skin === 'wedding' ? r.skin : 'default'
   return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme, skin } : { schedule, names, order, theme, skin }
 }
 

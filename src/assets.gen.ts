@@ -263,6 +263,10 @@ export const ASSET_META = {
    "w": 1000,
    "h": 1272
   },
+  "wedding": {
+   "w": 1000,
+   "h": 1272
+  },
   "sea": {
    "w": 1000,
    "h": 1272
