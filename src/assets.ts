@@ -28,7 +28,7 @@ export const themed = (dark: boolean, skin: 'default' | 'wood' | 'sea' | 'weddin
   houseDim: skin !== 'default' ? HOUSE_SKINS[skin] : dark ? HOUSE_DARK : HOUSE,
   // 나무·바다 하우스에는 크림색 접수대가 더 잘 어울려요
   counter: asset(dark || skin !== 'default' ? 'counter-dark.webp' : 'counter.webp'),
-  logo: asset(dark ? 'ui/logo-dark.webp' : 'ui/logo.webp'),
+  logo: asset('ui/logo-dark.webp'), // 라이트·다크 모두 같은 로고
   box: asset(dark ? 'ui/box-dark.webp' : 'ui/box.webp'),
   boxDim: dark ? BOX_DARK : BOX,
 })
