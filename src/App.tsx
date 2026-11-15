@@ -101,7 +101,7 @@ export default function App() {
   // 아바타를 고르고 바닥을 누르면 그 자리로 걸어가 3초 머물러요. 그다음엔 다시 자유롭게 움직여요
   const HOLD_MS = 3000
   const [manual, setManual] = useState<Record<string, { spot: { x: number; y: number; face: 'l' | 'r' }; until: number; from: number }>>({})
-  const [, setManualTick] = useState(0)
+  const [manualTick, setManualTick] = useState(0)
   // 바닥 맞춤 안내선 (이 기기에서만, 설정 > 하우스 그림에서 켜요)
   const [guide, setGuideState] = useState(() => { try { return localStorage.getItem('mow-guide') === '1' } catch { return false } })
   const setGuide = (v: boolean) => { setGuideState(v); try { localStorage.setItem('mow-guide', v ? '1' : '0') } catch { /* 무시 */ } }
@@ -152,13 +152,13 @@ export default function App() {
           const act = getActivity(a.id, now, job, settings.schedule, event, !!w && w.planned.length > 0, wander, stations[a.id])
           if (a.id === 'user' && arrive >= 0) return [a.id, { ...act, spot: ARRIVE_PATH[arrive], pose: 'stand' as const, outdoors: arrive < 3, slow: arrive > 0, label: '출근하는 중이에요' }]
           const mv = manual[a.id]
-          if (mv && a.id !== 'user' && mv.until > t) return [a.id, { ...act, spot: mv.spot, pose: 'stand' as const, task: undefined, slow: false, manual: true, label: '눌러 준 자리로 걸어왔어요' }]
+          if (mv && mv.until > t) return [a.id, { ...act, spot: mv.spot, pose: 'stand' as const, task: undefined, slow: false, manual: true, outdoors: a.id === 'user' ? true : undefined, label: '눌러 준 자리로 걸어왔어요' }]
           return [a.id, act]
         }),
       ) as Record<AvatarId, ReturnType<typeof getActivity>>)
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real, arrive, manual],
+    [now, works, settings, pickups, finishes, leaves, wander, stations, tick, real, arrive, manual, manualTick],
   )
   // 머리 위에 띄울 일 이름: 진행 중인 일을 먼저, 없으면 가장 급한 일
   const labels = useMemo(
@@ -357,13 +357,17 @@ export default function App() {
     saveTask(allDone ? { ...it.task, subtasks, status: 'done', completedAt: Date.now() } : { ...it.task, subtasks })
   }
   /** 직원은 카드를 보여 주고, 접수대의 나를 누르면 해야 할 일 목록을 열어요 */
-  const pickAvatar = (id: AvatarId) => {
-    if (id === 'user') { setSelected(null); setView('todo'); return }
+  const pickAvatar = (id: AvatarId, fromHouse = false) => {
+    if (id === 'user') {
+      // 하우스에서 나를 누르면 먼저 '움직일 나'로 골라요 (바닥을 누르면 걸어가요). 한 번 더 누르거나 아래 칸의 나를 누르면 해야 할 일이 열려요
+      if (fromHouse && selected !== 'user') { setSelected('user'); notify('움직일 자리를 눌러 주세요 (나를 한 번 더 누르면 해야 할 일)'); return }
+      setSelected(null); setView('todo'); return
+    }
     setSelected((cur) => (cur === id ? null : id))
   }
   /** 고른 아바타를 누른 바닥 자리로 보내요 (층 바닥 높이에 맞춰 놓아요) */
   const moveSelected = (x: number, y: number) => {
-    if (!selected || selected === 'user') return
+    if (!selected) return
     const fy = y < 550 ? FLOOR_Y.attic : y < 850 ? FLOOR_Y.f2 : y < 1100 ? FLOOR_Y.f1 : FLOOR_Y.out
     const fx = Math.max(110, Math.min(890, x))
     const id = selected
@@ -444,8 +448,8 @@ export default function App() {
 
       <div className="stagewrap">
       <main className="stage">
-        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && selected !== 'user' && shown.includes(selected) ? moveSelected : undefined} onManualArrived={manualArrived}
-          onSelect={pickAvatar} />
+        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
+          onSelect={(id) => pickAvatar(id, true)} />
       </main>
       {land && (
         <div className="zoombar" role="group" aria-label="하우스 확대">

@@ -74,7 +74,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       {/* 다크 하우스는 접수실 나무 바닥이 조금 더 아래에서 시작해서, 카운터와 나를 그만큼 내려요 */}
       <g transform={`translate(0 ${dark ? COUNTER_DARK_DROP : 0})`}>
       {AVATARS.filter((a) => a.id === 'user').map((info) => (
-        <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} speech={speech[info.id]} hideName
+        <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} speech={speech[info.id]} hideName onManualArrived={onManualArrived}
           delay={1.2} selected={selected === info.id} onSelect={onSelect} />
       ))}
       <image href={th.counter} x={COUNTER.x} y={COUNTER.bottom - COUNTER_IMG.h * COUNTER.w / COUNTER_IMG.w}
