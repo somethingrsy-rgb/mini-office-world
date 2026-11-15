@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { parseDue, parseQuick, parseQuickLine } from '../quick'
+import { parseDue, parseEventLine, parseQuick, parseQuickLine, parseTime } from '../quick'
 import { daysBetween, dueInfo, addDays, startOfWeek } from '../dates'
 import { makeBackup, parseBackup } from '../backup'
 import { DEFAULT_SETTINGS } from '../settings'
@@ -32,6 +32,21 @@ describe('날짜', () => {
     expect(dueInfo({ due: '2026-11-01', status: 'todo' }, '2026-11-03').level).toBe('overdue')
     expect(dueInfo({ due: '2026-11-01', status: 'done' }, '2026-11-03').level).toBe('done')
   })
+})
+
+describe('빠른 일정 입력', () => {
+  it('시간을 여러 형식으로 읽어요', () => {
+    expect(parseTime('14:00')).toBe('14:00'); expect(parseTime('9:30')).toBe('09:30'); expect(parseTime('14시')).toBe('14:00')
+    expect(parseTime('오후 2시')).toBe('14:00'); expect(parseTime('오전 9시 30분')).toBe('09:30'); expect(parseTime('오후 12시')).toBe('12:00'); expect(parseTime('오전 12시')).toBe('00:00')
+    expect(parseTime('25:00')).toBeNull(); expect(parseTime('11.25')).toBeNull()
+  })
+  it('일정내용/시간/날짜를 읽어요', () => {
+    expect(parseEventLine('부서 회의/14:00/11.25', '2026-11-15', '2026-11-01')).toEqual({ title: '부서 회의', date: '2026-11-25', time: '14:00' })
+    expect(parseEventLine('점심 약속/오후 12시', '2026-11-15', '2026-11-01')).toEqual({ title: '점심 약속', date: '2026-11-15', time: '12:00' })
+    expect(parseEventLine('치과/11.25/오후 3시', '2026-11-15', '2026-11-01')).toEqual({ title: '치과', date: '2026-11-25', time: '15:00' })
+    expect(parseEventLine('  ', '2026-11-15')).toBeNull()
+  })
+  it('읽지 못한 칸은 제목에 남겨요', () => { expect(parseEventLine('자료/https:/a.com//11.25', '2026-11-15', '2026-11-01')?.title).toContain('a.com') })
 })
 
 describe('주간 시작', () => {

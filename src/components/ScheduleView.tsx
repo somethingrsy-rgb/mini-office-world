@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import RichText from './RichText'
 import { AVATARS } from '../avatars'
 import { addDays, addMonths, DOW, dowOf, fmtLong, monthCells, startOfWeek, todayStr } from '../dates'
-import { parseDue } from '../quick'
+import { parseEventLine } from '../quick'
 import { buildEntries, completedOn, overallProgress, type Entry } from '../entries'
 import type { Task } from '../types'
 
@@ -28,21 +28,19 @@ function List({ entries, empty }: { entries: Entry[]; empty: string }) {
 }
 
 /** 빠른 일정 입력칸. 화면 안에서 만들면 시계·동기화로 화면이 다시 그려질 때마다 입력이 지워져서, 바깥에 따로 둬요 */
-function QuickAdd({ d, noFocus, onSubmit, onClose }: { d: string; noFocus?: boolean; onSubmit: (title: string, date: string) => void; onClose: () => void }) {
+function QuickAdd({ d, noFocus, onSubmit, onClose }: { d: string; noFocus?: boolean; onSubmit: (title: string, date: string, time: string | null) => void; onClose: () => void }) {
   const [text, setText] = useState('')
   const [qd, setQd] = useState(d)
   const submit = () => {
-    let title = text.trim(), date = qd
-    // "제목/11.25" 처럼 쓰면 뒤의 날짜를 읽어요
-    const i = title.lastIndexOf('/')
-    if (i > 0) { const dd = parseDue(title.slice(i + 1)); if (dd) { date = dd; title = title.slice(0, i).trim() } }
-    if (!title) return
-    onSubmit(title, date); setText(''); onClose()
+    // "일정내용/시간/날짜" 로 쓰면 시간과 날짜를 읽어요 (예: 회의/14:00/11.25)
+    const r = parseEventLine(text, qd)
+    if (!r) return
+    onSubmit(r.title, r.date, r.time); setText(''); onClose()
   }
   return (
     <form className="quickev" onSubmit={(e) => { e.preventDefault(); submit() }}>
       <input type="date" value={qd} onChange={(e) => setQd(e.target.value)} aria-label="일정 날짜" />
-      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="일정 제목 입력 후 엔터 (제목/11.25 도 돼요)" maxLength={80} autoFocus={!noFocus} aria-label="일정 제목" autoCapitalize="off" />
+      <input value={text} onChange={(e) => setText(e.target.value)} placeholder="일정내용/시간/날짜  예) 회의/14:00/11.25" maxLength={80} autoFocus={!noFocus} aria-label="일정 제목" autoCapitalize="off" />
       <button type="submit" className="primary sm" disabled={!text.trim()}>등록</button>
       {!noFocus && <button type="button" className="x" onClick={onClose} aria-label="닫기">✕</button>}
     </form>
@@ -57,7 +55,7 @@ interface Props {
   onAddEvent?: (date: string) => void
   onEditEvent?: (e: Task) => void
   /** 날짜를 누르면 뜨는 빠른 입력: 제목을 쓰고 엔터를 치면 바로 등록해요 */
-  onQuickEvent?: (title: string, date: string) => void
+  onQuickEvent?: (title: string, date: string, time: string | null) => void
   /** 가로 화면 오른쪽 칸용: 월간 달력만 보여요 */
   monthOnly?: boolean
 }

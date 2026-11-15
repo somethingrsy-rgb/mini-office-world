@@ -59,9 +59,9 @@ export default function App() {
   // 아바타에게 나누는 업무와, 달력에만 보이는 내 일정(kind: 'event')을 나눠요
   const tasks = useMemo(() => allTasks.filter((t) => t.kind !== 'event'), [allTasks])
   const events = useMemo(() => allTasks.filter((t) => t.kind === 'event'), [allTasks])
-  const quickEvent = (title: string, date: string) => {
-    save({ id: newId(), kind: 'event', title, desc: '', due: date, importance: 'normal', status: 'todo', assignee: null, subtasks: [], createdAt: Date.now(), completedAt: null })
-    notify(`🗓 일정을 등록했어요: ${title}`)
+  const quickEvent = (title: string, date: string, time: string | null) => {
+    save({ id: newId(), kind: 'event', title, desc: '', due: date, ...(time ? { time } : {}), importance: 'normal', status: 'todo', assignee: null, subtasks: [], createdAt: Date.now(), completedAt: null })
+    notify(`🗓 일정을 등록했어요: ${title}${time ? ` ${time}` : ''} (${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}.)`)
   }
   const [eventEdit, setEventEdit] = useState<{ date: string; event?: Task } | null>(null)
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })

@@ -125,3 +125,33 @@ export function parseQuickLine(line: string, today = todayStr()): QuickEntry {
 export function parseQuick(text: string, today = todayStr()): QuickEntry[] {
   return text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => parseQuickLine(l, today))
 }
+
+/** 시간 읽기: 14:00 · 14시 · 2시 · 오후 2시 · 오전 9:30 · 오후 2시 30분 → "HH:MM". 못 읽으면 null */
+export function parseTime(raw: string): string | null {
+  const s = raw.trim().replace(/\s+/g, '')
+  const m = s.match(/^(오전|오후)?(\d{1,2})(?::(\d{2})|시(?:(\d{1,2})분?)?)$/)
+  if (!m) return null
+  let h = +m[2]
+  const min = +(m[3] ?? m[4] ?? 0)
+  if (min > 59) return null
+  if (m[1] === '오후' && h < 12) h += 12
+  if (m[1] === '오전' && h === 12) h = 0
+  if (h > 23) return null
+  return `${pad(h)}:${pad(min)}`
+}
+
+/** 빠른 일정 입력 한 줄: "일정내용/시간/날짜" (시간·날짜는 순서 상관없이 있으면 읽어요). 예) 부서 회의/14:00/11.25 */
+export function parseEventLine(line: string, defaultDate: string, today = todayStr()): { title: string; date: string; time: string | null } | null {
+  const parts = line.split('/').map((p) => p.trim())
+  const title: string[] = [parts[0]]
+  let date = defaultDate, time: string | null = null
+  for (const p of parts.slice(1)) {
+    const tm: string | null = time === null ? parseTime(p) : null
+    const dt: string | null = tm === null ? parseDue(p, today) : null
+    if (tm) time = tm
+    else if (dt) date = dt
+    else if (p) title.push(p) // 읽지 못한 칸은 제목의 일부로 남겨요 (주소 등)
+  }
+  const joined = title.join('/').trim()
+  return joined ? { title: joined, date, time } : null
+}
