@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import RichText from './RichText'
 import { AVATARS } from '../avatars'
 import { addDays, addMonths, DOW, dowOf, fmtLong, monthCells, startOfWeek, todayStr } from '../dates'
+import { parseDue } from '../quick'
 import { buildEntries, completedOn, overallProgress, type Entry } from '../entries'
 import type { Task } from '../types'
 
@@ -33,19 +34,43 @@ interface Props {
   onOpenList: () => void
   onAddEvent?: (date: string) => void
   onEditEvent?: (e: Task) => void
+  /** 날짜를 누르면 뜨는 빠른 입력: 제목을 쓰고 엔터를 치면 바로 등록해요 */
+  onQuickEvent?: (title: string, date: string) => void
   /** 가로 화면 오른쪽 칸용: 월간 달력만 보여요 */
   monthOnly?: boolean
 }
 
-export default function ScheduleView({ tasks, events = [], onOpenList, onAddEvent, onEditEvent, monthOnly }: Props) {
+export default function ScheduleView({ tasks, events = [], onOpenList, onAddEvent, onEditEvent, onQuickEvent, monthOnly }: Props) {
   const today = todayStr()
   const [mode, setMode] = useState<Mode>(monthOnly ? 'month' : 'day')
   const [day, setDay] = useState(today)
   const [ym, setYm] = useState(today.slice(0, 7))
+  // 날짜를 누르면 그 날짜로 빠른 입력칸이 떠요
+  const [quick, setQuick] = useState<string | null>(null)
+  const QuickAdd = ({ d }: { d: string }) => {
+    const [text, setText] = useState('')
+    const [qd, setQd] = useState(d)
+    const submit = () => {
+      let title = text.trim(), date = qd
+      // "제목/11.25" 처럼 쓰면 뒤의 날짜를 읽어요
+      const i = title.lastIndexOf('/')
+      if (i > 0) { const dd = parseDue(title.slice(i + 1)); if (dd) { date = dd; title = title.slice(0, i).trim() } }
+      if (!title) return
+      onQuickEvent?.(title, date); setText(''); setQuick(null)
+    }
+    return (
+      <form className="quickev" onSubmit={(e) => { e.preventDefault(); submit() }}>
+        <input type="date" value={qd} onChange={(e) => setQd(e.target.value)} aria-label="일정 날짜" />
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="일정 제목 입력 후 엔터 (제목/11.25 도 돼요)" maxLength={80} autoFocus aria-label="일정 제목" autoCapitalize="off" />
+        <button type="submit" className="primary sm" disabled={!text.trim()}>등록</button>
+        <button type="button" className="x" onClick={() => setQuick(null)} aria-label="닫기">✕</button>
+      </form>
+    )
+  }
   const entries = useMemo(() => buildEntries(tasks, today), [tasks, today])
   const byDay = (d: string) => entries.filter((e) => e.date === d)
   const evOn = (d: string) => events.filter((e) => e.due === d).sort((a, b) => (a.time ?? '99').localeCompare(b.time ?? '99'))
-  const EvList = ({ d }: { d: string }) => { const l = evOn(d); return l.length === 0 ? null : <ul className="elist">{l.map((e) => <li key={e.id} className="erow evrow" onClick={() => onEditEvent?.(e)}><span className="chk">🗓</span><span className="et">{e.time && <b className="evtime">{e.time} </b>}{e.title}{e.desc && <small> · {e.desc}</small>}</span></li>)}</ul> }
+  const EvList = ({ d }: { d: string }) => { const l = evOn(d); return l.length === 0 ? null : <ul className="elist">{l.map((e) => <li key={e.id} className="erow evrow" onClick={(ev) => { ev.stopPropagation(); onEditEvent?.(e) }}><span className="chk">🗓</span><span className="et">{e.time && <b className="evtime">{e.time} </b>}{e.title}{e.desc && <small> · {e.desc}</small>}</span></li>)}</ul> }
   const prog = overallProgress(tasks)
 
   const weekStart = startOfWeek(day)
@@ -122,11 +147,14 @@ export default function ScheduleView({ tasks, events = [], onOpenList, onAddEven
             <div className="bar"><i style={{ width: `${weekEntries.length ? (weekDone / weekEntries.length) * 100 : 0}%` }} /></div>
           </div>
           {weekDays.map((d) => (
-            <div key={d} className={`wday ${d === today ? 'today' : ''}`}>
+            <div key={d}>
+            <div className={`wday ${d === today ? 'today' : ''}`} onClick={() => setQuick(d)}>
               <div className="wd"><b>{dowOf(d)}</b><span>{Number(d.slice(8))}</span></div>
               <div className="wl">
                 {byDay(d).length === 0 && evOn(d).length === 0 ? <p className="muted">-</p> : <><EvList d={d} />{byDay(d).length > 0 && <ul className="elist">{byDay(d).map((e) => <Row key={e.key} e={e} />)}</ul>}</>}
               </div>
+            </div>
+            {onQuickEvent && quick === d && <QuickAdd key={d} d={d} />}
             </div>
           ))}
         </>
@@ -147,7 +175,7 @@ export default function ScheduleView({ tasks, events = [], onOpenList, onAddEven
               const es = byDay(d)
               const ne = evOn(d).length
               return (
-                <button key={d} className={`cell ${d === today ? 'today' : ''} ${d === day ? 'sel' : ''}`} onClick={() => setDay(d)}>
+                <button key={d} className={`cell ${d === today ? 'today' : ''} ${d === day ? 'sel' : ''}`} onClick={() => { setDay(d); setQuick(d) }}>
                   <span>{Number(d.slice(8))}</span>
                   <span className="dots">
                     {ne > 0 && <i className="d ev" />}
@@ -158,6 +186,7 @@ export default function ScheduleView({ tasks, events = [], onOpenList, onAddEven
               )
             })}
           </div>
+          {onQuickEvent && quick && <QuickAdd key={quick} d={quick} />}
           <h3 className="sh">{fmtLong(day)}</h3>
           <EvList d={day} />
           <List entries={byDay(day)} empty={evOn(day).length ? '이날 마감인 업무는 없어요.' : '이날은 마감이 없어요.'} />

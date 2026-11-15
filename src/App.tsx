@@ -59,6 +59,10 @@ export default function App() {
   // 아바타에게 나누는 업무와, 달력에만 보이는 내 일정(kind: 'event')을 나눠요
   const tasks = useMemo(() => allTasks.filter((t) => t.kind !== 'event'), [allTasks])
   const events = useMemo(() => allTasks.filter((t) => t.kind === 'event'), [allTasks])
+  const quickEvent = (title: string, date: string) => {
+    save({ id: newId(), kind: 'event', title, desc: '', due: date, importance: 'normal', status: 'todo', assignee: null, subtasks: [], createdAt: Date.now(), completedAt: null })
+    notify(`🗓 일정을 등록했어요: ${title}`)
+  }
   const [eventEdit, setEventEdit] = useState<{ date: string; event?: Task } | null>(null)
   const [settings, setSettingsState] = useState<Settings>(() => { const s = loadSettings(); applyNames(s.names); return s })
   const [backupTick, setBackupTick] = useState(0)
@@ -440,7 +444,7 @@ export default function App() {
               onReset={() => updateSettings({ ...settings, order: [] })} onBrief={() => setView('brief')} onList={() => setView('list')} onQuick={quickDistribute} />
           </SidePanel>
           <SidePanel title="🗓 월간 달력" grow={1.4} onExpand={() => setView('schedule')}>
-            <ScheduleView tasks={tasks} events={events} monthOnly onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />
+            <ScheduleView tasks={tasks} events={events} monthOnly onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onQuickEvent={quickEvent} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />
           </SidePanel>
           <SidePanel title="📋 업무 목록" grow={1} onExpand={() => setView('list')}>
             <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
@@ -460,7 +464,7 @@ export default function App() {
           <SidePanel title={sideTab === 'todo' ? '📌 해야 할 일' : sideTab === 'cal' ? '🗓 월간 달력' : '📋 업무 목록'} onExpand={() => setView(sideTab === 'todo' ? 'todo' : sideTab === 'cal' ? 'schedule' : 'list')}>
             {sideTab === 'todo' && <TodoSheet tasks={ordered} manual={settings.order.length > 0} onOrder={(ids) => updateSettings({ ...settings, order: ids })}
               onReset={() => updateSettings({ ...settings, order: [] })} onBrief={() => setView('brief')} onList={() => setView('list')} onQuick={quickDistribute} />}
-            {sideTab === 'cal' && <ScheduleView tasks={tasks} events={events} monthOnly onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />}
+            {sideTab === 'cal' && <ScheduleView tasks={tasks} events={events} monthOnly onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onQuickEvent={quickEvent} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />}
             {sideTab === 'list' && <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />}
           </SidePanel>
         </aside>
@@ -487,7 +491,7 @@ export default function App() {
       )}
       {view === 'schedule' && (
         <Sheet glass tall title="일정표" onClose={close}>
-          <ScheduleView tasks={tasks} events={events} onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />
+          <ScheduleView tasks={tasks} events={events} onOpenList={() => setView('list')} onAddEvent={(d) => setEventEdit({ date: d })} onQuickEvent={quickEvent} onEditEvent={(e) => setEventEdit({ date: e.due ?? todayStr(), event: e })} />
         </Sheet>
       )}
       {info && act && info.id !== 'user' && (() => {

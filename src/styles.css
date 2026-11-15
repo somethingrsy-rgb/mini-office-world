@@ -997,3 +997,9 @@ html[data-theme="dark"] .sidetabs button.on, html[data-theme="dark"] .sidetabs .
 html[data-theme="dark"] .evrow { background:rgba(120,180,255,.12); }
 html[data-theme="dark"] .evtime { color:#8cc4ff; }
 html[data-theme="dark"] .addev { background:rgba(120,180,255,.16); color:#a9d3ff; }
+.quickev { display:flex; align-items:center; gap:6px; margin:8px 0; padding:8px; border-radius:14px; background:rgba(74,163,255,.14); border:1px solid rgba(74,163,255,.35); flex-wrap:wrap; }
+.quickev input[type=date] { flex:0 0 auto; width:140px; min-height:38px; padding:6px 8px; }
+.quickev input:not([type=date]) { flex:1 1 140px; min-height:38px; padding:6px 10px; }
+.quickev .primary.sm { margin:0; }
+.wday { cursor:pointer; }
+html[data-theme="dark"] .quickev { background:rgba(120,180,255,.1); border-color:rgba(120,180,255,.3); }
