@@ -3,7 +3,7 @@ import { AVATARS, defaultName, type AvatarId } from '../avatars'
 import { asset } from '../assets'
 import { backupFileName, makeBackup, parseBackup } from '../backup'
 import { DEFAULT_SCHEDULE } from '../schedule'
-import { DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
+import { SKINS, DEFAULT_SETTINGS, getLastBackup, markBackup, validateSchedule, type Settings } from '../settings'
 import type { Task } from '../types'
 import { CURRENT_BUILD, fetchLatestBuild, updateApp } from '../update'
 import { listSnapshots, takeSnapshot } from '../autobackup'
@@ -140,6 +140,19 @@ export default function SettingsView({ tasks, settings, onSettings, onReplace, o
           <button className={`chip sm ${sound.sfx ? 'on imp-normal' : ''}`} onClick={() => setSoundPrefs({ ...sound, sfx: !sound.sfx })}>🔔 효과음 {sound.sfx ? '켜짐' : '꺼짐'}</button>
         </div>
         <p className="muted">아침 6시~저녁 6시에는 낮 음악, 저녁 6시~아침에는 밤 음악이 나와요. 업무를 분배하거나 완료·대기할 때 효과음이 울려요. 이 설정은 이 기기에만 저장돼요.</p>
+      </section>
+
+      <section>
+        <h3 className="sh">🏠 하우스 그림 (라이트 모드)</h3>
+        <div className="skins">
+          {SKINS.map(([k, l]) => (
+            <button key={k} className={`skin ${settings.skin === k ? 'on' : ''}`} onClick={() => onSettings({ ...settings, skin: k })} aria-pressed={settings.skin === k}>
+              <img src={asset(k === 'default' ? 'house.webp' : `house-${k}.webp`)} alt="" loading="lazy" />
+              <span>{l}</span>
+            </button>
+          ))}
+        </div>
+        <p className="muted">라이트 모드에서만 바뀌어요. 다크 모드는 하나예요. 방을 눌러 크게 볼 때 나오는 방 그림은 아직 기본 그림이에요.</p>
       </section>
 
       <section>

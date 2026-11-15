@@ -16,6 +16,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'kiki': 'avatar-kiki', 'user': 'avatar-user',
+    'housewood': 'house-wood', 'housesea': 'house-sea',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
     'pinbtn': 'pin-button', 'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
@@ -153,6 +154,30 @@ def align_floors(img, shifts, out_h):
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
 
 
+# 라이트 하우스 바꿔 입기(나무·바다): 층 바닥 높이를 기본 라이트 하우스(바닥 y 408/690/1002/1212, 높이 1272)와 똑같이 맞춰요
+# (출력 y, 원본 y를 1000폭 기준으로 잰 값의 차이) — 그림마다 층 높이가 달라서 따로 둬요
+SKIN_FLOOR_SHIFT = {
+    'wood': [(0, 0), (408, 9), (690, 14), (1002, -17), (1212, -62), (1272, -22)],
+    'sea': [(0, 0), (408, -11), (690, -8), (1002, -17), (1212, -62), (1272, -22)],
+}
+
+
+def skin_house(src, key):
+    """투명 PNG 하우스: 흐릿한 가장자리(옛 배경색이 섞인 부분)를 2px 깎아 깨끗하게 하고 1000폭으로 줄여요"""
+    im = Image.open(os.path.join(src, f'{SOURCES["house" + key]}.png')).convert('RGBA')
+    a = np.asarray(im)[:, :, 3]
+    hard = a > 200
+    lab, n = ndi.label(hard)
+    sizes = ndi.sum(hard, lab, range(1, n + 1))
+    keep = ndi.binary_fill_holes(lab == (int(np.argmax(sizes)) + 1))
+    core = ndi.binary_erosion(keep, iterations=3)
+    al = np.clip((ndi.gaussian_filter(core.astype(np.float32), 1.0) - 0.15) / 0.7, 0, 1)
+    rgba = Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], (al * 255).astype(np.uint8)]), 'RGBA')
+    rgba = trim(rgba)
+    rgba = rgba.resize((1000, round(rgba.height * 1000 / rgba.width)), Image.LANCZOS)
+    return align_floors(rgba, SKIN_FLOOR_SHIFT[key], 1272)
+
+
 def main(src):
     meta = {'avatars': {}}
     # 하우스와 방: 배경색 제거
@@ -222,6 +247,11 @@ def main(src):
     hd = align_floors(hd, DARK_FLOOR_SHIFT, 1272)  # 층 바닥 높이를 라이트 하우스와 똑같이 맞춰요
     save(hd, f'{OUT}/house-dark.webp', 90)
     meta['houseDark'] = {'w': hd.width, 'h': hd.height}
+    meta['houseSkins'] = {}
+    for key in ('wood', 'sea'):
+        hs = skin_house(src, key)
+        save(hs, f'{OUT}/house-{key}.webp', 90)
+        meta['houseSkins'][key] = {'w': hs.width, 'h': hs.height}
     _, bd = load_alpha(src, 'boxdark')
     bd = trim(bd); bd = bd.resize((720, round(bd.height * 720 / bd.width)), Image.LANCZOS)
     save(bd, f'{OUT}/ui/box-dark.webp', 92)

@@ -367,7 +367,7 @@ export default function App() {
         <div className="pipbg" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
         <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
-        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
+        <House dark={dark} skin={settings.skin} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
           remaining={items.length} selected={pipAv}
           onRoom={() => {}} onSelect={(id) => setPipAv((cur) => (id === 'user' || cur === id ? null : id))} />
         {pi && pw && pa ? (
@@ -402,7 +402,7 @@ export default function App() {
 
   return (
     <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''} ${phoneLand ? 'phone' : ''}`} style={land ? { ['--zoom' as string]: zoom } : undefined}>
-      {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
+      {!introDone && <Intro dark={dark} skin={settings.skin} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
       <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
       <div className="leftcol">
@@ -421,7 +421,7 @@ export default function App() {
 
       <div className="stagewrap">
       <main className="stage">
-        <House dark={dark} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
+        <House dark={dark} skin={settings.skin} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom}
           onSelect={pickAvatar} />
       </main>
       {land && (

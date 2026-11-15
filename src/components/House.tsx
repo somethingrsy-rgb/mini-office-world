@@ -4,6 +4,7 @@ import { COUNTER_IMG, themed } from '../assets'
 import { COUNTER, COUNTER_DARK_DROP, ROOMS, type RoomId } from '../rooms'
 import type { Activity } from '../schedule'
 import type { Staff } from '../types'
+import type { Skin } from '../settings'
 
 interface Props {
   activities: Record<AvatarId, Activity>
@@ -17,6 +18,8 @@ interface Props {
   /** 지금 남아 있는(끝나지 않은) 일 개수 */
   remaining: number
   dark?: boolean
+  /** 라이트 모드 하우스 그림 (기본·나무·바다) */
+  skin?: Skin
   /** 접수대에서 일을 받기 시작한 아바타 */
   onReceived?: (id: AvatarId) => void
   selected: AvatarId | null
@@ -27,8 +30,8 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, dark = false, onReceived }: Props) {
-  const th = themed(dark)
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, dark = false, skin = 'default', onReceived }: Props) {
+  const th = themed(dark, skin)
   return (
     <svg viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className="houseimg" href={th.house} width={th.houseDim.w} height={th.houseDim.h} />

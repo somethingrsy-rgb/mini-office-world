@@ -8,11 +8,16 @@ export interface Settings {
   order: string[]
   /** 화면 모드: auto=휴대폰 설정을 따라가요 */
   theme: ThemeMode
+  /** 라이트 모드 하우스 그림: 기본·나무·바다 */
+  skin: Skin
 }
+
+export type Skin = 'default' | 'wood' | 'sea'
+export const SKINS: [Skin, string][] = [['default', '기본'], ['wood', '나무'], ['sea', '바다']]
 
 export type ThemeMode = 'auto' | 'light' | 'dark'
 
-export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [], theme: 'auto' }
+export const DEFAULT_SETTINGS: Settings = { schedule: { ...DEFAULT_SCHEDULE }, names: {}, order: [], theme: 'auto', skin: 'default' }
 
 const KEY = 'mow-settings'
 const BACKUP_KEY = 'mow-last-backup'
@@ -40,7 +45,8 @@ export function sanitizeSettings(raw: unknown): Settings {
   }
   const order = Array.isArray(r.order) ? r.order.filter((v): v is string => typeof v === 'string').slice(0, 1000) : []
   const theme: ThemeMode = r.theme === 'light' || r.theme === 'dark' ? r.theme : 'auto'
-  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme } : { schedule, names, order, theme }
+  const skin: Skin = r.skin === 'wood' || r.skin === 'sea' ? r.skin : 'default'
+  return validateSchedule(schedule) ? { ...DEFAULT_SETTINGS, names, order, theme, skin } : { schedule, names, order, theme, skin }
 }
 
 /** 시간표가 순서대로인지 검사. 문제가 있으면 안내 문구를 돌려줌 */

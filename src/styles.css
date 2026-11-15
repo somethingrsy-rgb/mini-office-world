@@ -1003,3 +1003,11 @@ html[data-theme="dark"] .addev { background:rgba(120,180,255,.16); color:#a9d3ff
 .quickev .primary.sm { margin:0; }
 .wday { cursor:pointer; }
 html[data-theme="dark"] .quickev { background:rgba(120,180,255,.1); border-color:rgba(120,180,255,.3); }
+
+/* 하우스 그림 고르기 */
+.skins { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:6px; }
+.skin { display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px 6px 8px; border-radius:16px; border:2px solid transparent; background:rgba(255,255,255,.42); color:var(--ink); font-weight:800; font-size:13px; }
+.skin img { width:100%; height:110px; object-fit:contain; filter:drop-shadow(0 3px 5px rgba(60,30,100,.25)); }
+.skin.on { border-color:var(--pink); box-shadow:0 0 0 2px rgba(255,134,182,.35); background:rgba(255,255,255,.7); }
+html[data-theme="dark"] .skin { background:rgba(255,255,255,.07); }
+html[data-theme="dark"] .skin.on { border-color:#d9ae5c; box-shadow:0 0 0 2px rgba(217,174,92,.3); }

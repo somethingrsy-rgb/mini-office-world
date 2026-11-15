@@ -16,15 +16,18 @@ export const ROOM_IMG = ASSET_META.rooms as unknown as Record<string, Dim>
 export const ROOM_DARK_IMG = (ASSET_META as unknown as { roomsDark: Record<string, Dim> }).roomsDark
 export const HOUSE = ASSET_META.house as { w: number; h: number }
 export const HOUSE_DARK = ASSET_META.houseDark as { w: number; h: number }
+export const HOUSE_SKINS = (ASSET_META as unknown as { houseSkins: Record<string, { w: number; h: number }> }).houseSkins
 export const BOX = ASSET_META.box as { w: number; h: number }
 export const BOX_DARK = ASSET_META.boxDark as { w: number; h: number }
 
 /** 라이트·다크에 따라 달라지는 그림 */
-export const themed = (dark: boolean) => ({
+export const themed = (dark: boolean, skin: 'default' | 'wood' | 'sea' = 'default') => ({
   bg: asset(dark ? 'bg-dark.webp' : 'bg.webp'),
-  house: asset(dark ? 'house-dark.webp' : 'house.webp'),
-  houseDim: dark ? HOUSE_DARK : HOUSE,
-  counter: asset(dark ? 'counter-dark.webp' : 'counter.webp'),
+  // 라이트 모드에서만 하우스 그림을 고를 수 있어요 (다크는 하나)
+  house: asset(dark ? 'house-dark.webp' : skin === 'default' ? 'house.webp' : `house-${skin}.webp`),
+  houseDim: dark ? HOUSE_DARK : skin === 'default' ? HOUSE : HOUSE_SKINS[skin],
+  // 나무·바다 하우스에는 크림색 접수대가 더 잘 어울려요
+  counter: asset(dark || skin !== 'default' ? 'counter-dark.webp' : 'counter.webp'),
   logo: asset(dark ? 'ui/logo-dark.webp' : 'ui/logo.webp'),
   box: asset(dark ? 'ui/box-dark.webp' : 'ui/box.webp'),
   boxDim: dark ? BOX_DARK : BOX,

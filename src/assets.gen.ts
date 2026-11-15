@@ -258,6 +258,16 @@ export const ASSET_META = {
   "w": 1000,
   "h": 1272
  },
+ "houseSkins": {
+  "wood": {
+   "w": 1000,
+   "h": 1272
+  },
+  "sea": {
+   "w": 1000,
+   "h": 1272
+  }
+ },
  "boxDark": {
   "w": 720,
   "h": 926
