@@ -956,3 +956,35 @@ html[data-theme="dark"] .zoombar { background:rgba(30,26,20,.6); border-color:rg
 .sidepanel .seg { margin-bottom:6px; }
 .sidepanel .seg button { padding:6px 0; }
 .sidepanel .resetall { display:none; }
+
+/* ═══ 아이폰 가로 화면: 왼쪽 하우스 + 아바타 칸, 오른쪽 탭 한 칸 ═══ */
+.app.land.phone { grid-template-columns:minmax(0,1fr) clamp(300px,44vw,400px); column-gap:8px; padding:0 max(env(safe-area-inset-right),10px) 0 0; --appw:100vw; }
+.app.land.phone .leftcol { padding:max(env(safe-area-inset-top),6px) 6px 6px max(env(safe-area-inset-left),10px); }
+.app.land.phone .top { display:none; }
+.app.land.phone .stage { height:calc(100dvh - max(env(safe-area-inset-top),6px) - 6px - 62px); }
+.app.land.phone .dock { display:none; }
+.app.land.phone .avbar { margin-top:4px; gap:4px; }
+.app.land.phone .avchip { border-radius:14px; padding:2px 1px 3px; }
+.app.land.phone .avchip img { height:30px; }
+.app.land.phone .avchip span { font-size:10.5px; }
+.app.land.phone .avchip small { font-size:8px; top:1px; right:1px; padding:0 3px; }
+.app.land.phone .warn { display:none; }
+.app.land.phone .zoombar { bottom:2px; right:2px; }
+.app.land.phone .zoombar button { min-width:32px; height:32px; font-size:17px; }
+.app.land.phone .zoombar button.zv { min-width:46px; font-size:12px; }
+/* 설정·핀 버튼은 로고 줄이 없어서 하우스 위에 작게 */
+.app.land.phone .leftcol::before { content:none; }
+.phonecol { padding:max(env(safe-area-inset-top),6px) 0 max(env(safe-area-inset-bottom),6px); gap:6px; }
+.sidetabs { flex:none; display:flex; gap:4px; }
+.sidetabs button { flex:1; border:0; border-radius:12px; padding:7px 0; font-size:12px; font-weight:800; background:rgba(255,255,255,.4); color:var(--ink); }
+.sidetabs button.on { background:var(--pink); color:#fff; }
+.sidetabs .addbtn { flex:none; padding:7px 10px; background:#9b7be0; color:#fff; }
+html[data-theme="dark"] .sidetabs button { background:rgba(255,255,255,.08); }
+html[data-theme="dark"] .sidetabs button.on, html[data-theme="dark"] .sidetabs .addbtn { background:#d9ae5c; color:#241b08; }
+.phonecol .remindbar.inline { flex:none; margin-top:0; height:26px; font-size:12px; }
+.phonecol .sidepanel .sheet-head { padding:6px 12px 2px; }
+.phonecol .sidepanel .sheet-body { padding:2px 12px 10px; }
+.app.land.phone.hasrem .leftcol { padding-bottom:6px; }
+.app.land.phone.hasrem .stage { height:calc(100dvh - max(env(safe-area-inset-top),6px) - 6px - 62px); }
+.sidetabs .gearbtn { position:relative; background:rgba(120,90,170,.55); font-size:15px; padding:5px 10px; }
+.sidetabs .gearbtn .dotbadge { position:absolute; top:3px; right:5px; }

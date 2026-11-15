@@ -87,7 +87,10 @@ export default function App() {
     }, arrive === 0 ? 700 : arriveLegMs(arrive) + 150)
     return () => window.clearTimeout(t)
   }, [arrive, revealed])
-  const land = useLandscape()
+  const landMode = useLandscape()
+  const land = landMode !== null
+  const phoneLand = landMode === 'phone'
+  const [sideTab, setSideTab] = useState<'todo' | 'cal' | 'list'>('todo')
   // 가로 화면에서 하우스를 확대해서 볼 수 있어요 (1~2.6배)
   const [zoom, setZoom] = useState(1)
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
@@ -389,7 +392,7 @@ export default function App() {
   })
 
   return (
-    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''}`} style={land ? { ['--zoom' as string]: zoom } : undefined}>
+    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''} ${phoneLand ? 'phone' : ''}`} style={land ? { ['--zoom' as string]: zoom } : undefined}>
       {!introDone && <Intro dark={dark} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
       <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
@@ -423,9 +426,9 @@ export default function App() {
 
       <BottomBar selected={selected} shown={shown} works={works} urgent={urgent} storageError={storageError}
         onPick={pickAvatar} onNew={() => { setEditing(undefined); setView('form') }} onSchedule={() => setView('schedule')} onList={() => setView('list')} />
-      <ReminderBar reminders={reminders} hush={!!userSay} />
+      {!phoneLand && <ReminderBar reminders={reminders} hush={!!userSay} />}
       </div>
-      {land && (
+      {landMode === 'tablet' && (
         <aside className="sidecol">
           <SidePanel title="📌 해야 할 일" grow={0.85} onExpand={() => setView('todo')}>
             <TodoSheet tasks={ordered} manual={settings.order.length > 0} onOrder={(ids) => updateSettings({ ...settings, order: ids })}
@@ -436,6 +439,24 @@ export default function App() {
           </SidePanel>
           <SidePanel title="📋 업무 목록" grow={1} onExpand={() => setView('list')}>
             <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />
+          </SidePanel>
+        </aside>
+      )}
+      {phoneLand && (
+        <aside className="sidecol phonecol">
+          <ReminderBar reminders={reminders} hush={!!userSay} inline />
+          <div className="sidetabs" role="tablist" aria-label="보기 선택">
+            {([['todo', '해야 할 일'], ['cal', '월간 달력'], ['list', '업무 목록']] as ['todo' | 'cal' | 'list', string][]).map(([k, l]) => (
+              <button key={k} role="tab" aria-selected={sideTab === k} className={sideTab === k ? 'on' : ''} onClick={() => setSideTab(k)}>{l}</button>
+            ))}
+            <button className="addbtn" onClick={() => { setEditing(undefined); setView('form') }} aria-label="업무 등록">＋ 등록</button>
+            <button className="addbtn gearbtn" onClick={() => setView('settings')} aria-label="설정">⚙{needBackup && <span className="dotbadge" />}</button>
+          </div>
+          <SidePanel title={sideTab === 'todo' ? '📌 해야 할 일' : sideTab === 'cal' ? '🗓 월간 달력' : '📋 업무 목록'} onExpand={() => setView(sideTab === 'todo' ? 'todo' : sideTab === 'cal' ? 'schedule' : 'list')}>
+            {sideTab === 'todo' && <TodoSheet tasks={ordered} manual={settings.order.length > 0} onOrder={(ids) => updateSettings({ ...settings, order: ids })}
+              onReset={() => updateSettings({ ...settings, order: [] })} onBrief={() => setView('brief')} onList={() => setView('list')} onQuick={quickDistribute} />}
+            {sideTab === 'cal' && <ScheduleView tasks={tasks} monthOnly onOpenList={() => setView('list')} />}
+            {sideTab === 'list' && <TaskList tasks={tasks} onSave={saveTask} onDelete={removeTask} onResetAll={resetTasks} onEdit={(t) => { setEditing(t); setView('form') }} />}
           </SidePanel>
         </aside>
       )}
