@@ -154,12 +154,32 @@ def align_floors(img, shifts, out_h):
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), 'RGBA')
 
 
-# 라이트 하우스 바꿔 입기(나무·바다): 층 바닥 높이를 기본 라이트 하우스(바닥 y 408/690/1002/1212, 높이 1272)와 똑같이 맞춰요
-# (출력 y, 원본 y를 1000폭 기준으로 잰 값의 차이) — 그림마다 층 높이가 달라서 따로 둬요
-SKIN_FLOOR_SHIFT = {
+# 라이트 하우스 바꿔 입기(나무·바다): 카펫(아바타가 서는 바닥)의 아래쪽 끝이 기본 하우스와 같은 높이에 오게 늘이고 줄여요.
+# 기본 하우스의 카펫 아래 끝: 다락 418 · 2층 718 · 1층 1037 (1000폭, 높이 1272 기준)
+_RUG_Y = (418, 718, 1037)
+# 처음 맞춤(층 바닥 높이)과, 그 결과에서 카펫 끝을 기본 하우스에 맞추려고 더 움직여야 하는 만큼 (출력에서 결과 그림 y까지의 차이)
+_OLD_SHIFT = {
     'wood': [(0, 0), (408, 9), (690, 14), (1002, -17), (1212, -62), (1272, -22)],
     'sea': [(0, 0), (408, -11), (690, -8), (1002, -17), (1212, -62), (1272, -22)],
 }
+_RUG_MOVE = {'wood': (-21, -28, -17), 'sea': (-16, -21, -27)}
+
+
+def _skin_shift(key):
+    old = _OLD_SHIFT[key]
+    oy = [p[0] for p in old]; os_ = [p[1] for p in old]
+    pts = [(0, 0)] + list(zip(_RUG_Y, _RUG_MOVE[key])) + [(1272, 0)]
+    xs = [p[0] for p in pts]; ds = [p[1] for p in pts]
+    out = []
+    for y in range(0, 1273, 24):
+        cur = y + float(np.interp(y, xs, ds))
+        out.append((y, round(cur + float(np.interp(cur, oy, os_)) - y, 1)))
+    if out[-1][0] != 1272:
+        out.append((1272, out[-1][1]))
+    return out
+
+
+SKIN_FLOOR_SHIFT = {k: _skin_shift(k) for k in ('wood', 'sea')}
 
 
 def skin_house(src, key):
