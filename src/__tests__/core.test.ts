@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { parseDue, parseQuick, parseQuickLine } from '../quick'
-import { daysBetween, dueInfo, addDays } from '../dates'
+import { daysBetween, dueInfo, addDays, startOfWeek } from '../dates'
 import { makeBackup, parseBackup } from '../backup'
 import { DEFAULT_SETTINGS } from '../settings'
 import { route, spreadSpots, getActivity } from '../schedule'
@@ -31,6 +31,15 @@ describe('날짜', () => {
     expect(addDays('2026-11-30', 1)).toBe('2026-12-01')
     expect(dueInfo({ due: '2026-11-01', status: 'todo' }, '2026-11-03').level).toBe('overdue')
     expect(dueInfo({ due: '2026-11-01', status: 'done' }, '2026-11-03').level).toBe('done')
+  })
+})
+
+describe('주간 시작', () => {
+  it('주는 일요일에 시작해요', () => {
+    expect(startOfWeek('2026-11-15')).toBe('2026-11-15') // 일요일
+    expect(startOfWeek('2026-11-18')).toBe('2026-11-15') // 수요일
+    expect(startOfWeek('2026-11-21')).toBe('2026-11-15') // 토요일
+    expect(startOfWeek('2026-11-22')).toBe('2026-11-22')
   })
 })
 

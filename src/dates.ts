@@ -55,10 +55,9 @@ export function addDays(s: string, n: number) {
   return toStr(d)
 }
 
-/** 그 주 월요일 */
+/** 그 주 일요일 (월간 달력도 일요일 시작이라 맞춰요) */
 export function startOfWeek(s: string) {
-  const d = fromStr(s)
-  return addDays(s, -((d.getDay() + 6) % 7))
+  return addDays(s, -fromStr(s).getDay())
 }
 
 export const dowOf = (s: string) => DOW[fromStr(s).getDay()]
