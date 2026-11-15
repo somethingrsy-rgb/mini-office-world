@@ -47,7 +47,7 @@ export default function ScheduleView({ tasks, events = [], onOpenList, onAddEven
   const [ym, setYm] = useState(today.slice(0, 7))
   // 날짜를 누르면 그 날짜로 빠른 입력칸이 떠요
   const [quick, setQuick] = useState<string | null>(null)
-  const QuickAdd = ({ d }: { d: string }) => {
+  const QuickAdd = ({ d, noFocus }: { d: string; noFocus?: boolean }) => {
     const [text, setText] = useState('')
     const [qd, setQd] = useState(d)
     const submit = () => {
@@ -61,9 +61,9 @@ export default function ScheduleView({ tasks, events = [], onOpenList, onAddEven
     return (
       <form className="quickev" onSubmit={(e) => { e.preventDefault(); submit() }}>
         <input type="date" value={qd} onChange={(e) => setQd(e.target.value)} aria-label="일정 날짜" />
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="일정 제목 입력 후 엔터 (제목/11.25 도 돼요)" maxLength={80} autoFocus aria-label="일정 제목" autoCapitalize="off" />
+        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="일정 제목 입력 후 엔터 (제목/11.25 도 돼요)" maxLength={80} autoFocus={!noFocus} aria-label="일정 제목" autoCapitalize="off" />
         <button type="submit" className="primary sm" disabled={!text.trim()}>등록</button>
-        <button type="button" className="x" onClick={() => setQuick(null)} aria-label="닫기">✕</button>
+        {!noFocus && <button type="button" className="x" onClick={() => setQuick(null)} aria-label="닫기">✕</button>}
       </form>
     )
   }
@@ -103,6 +103,7 @@ export default function ScheduleView({ tasks, events = [], onOpenList, onAddEven
             <button onClick={() => setDay(addDays(day, 1))} aria-label="다음날">›</button>
           </div>
           {day !== today && <button className="ghost sm" onClick={() => setDay(today)}>오늘로</button>}
+          {onQuickEvent && <QuickAdd key={day} d={day} noFocus />}
           {evOn(day).length > 0 && (<><h3 className="sh">🗓 내 일정</h3><EvList d={day} /></>)}
           {day <= today && day === today && (
             <>
