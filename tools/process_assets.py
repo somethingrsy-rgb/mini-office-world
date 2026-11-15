@@ -195,11 +195,11 @@ def skin_house(src, key):
     rgba = Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], (al * 255).astype(np.uint8)]), 'RGBA')
     rgba = trim(rgba)
     rgba = rgba.resize((1000, round(rgba.height * 1000 / rgba.width)), Image.LANCZOS)
-    if key in ('wedding', 'wood'):
+    if key in ('wedding', 'wood', 'sea'):
         # 그림이 더 길어서 위에서 아래로 전체를 1272에 맞춰 넣어요. 카펫 중앙이 아바타 발 아래 20쯤 (428·710·1022)에 오게
         # (원본 1000폭 기준 카펫 중앙: 다락 453 · 2층 765 · 1층 1090)
         H = rgba.height
-        src_rug = {'wedding': (453, 765, 1090), 'wood': (405, 685, 945)}[key]  # 원본(1000폭)에서 층 카펫 중앙의 높이
+        src_rug = {'wedding': (462, 768, 1095), 'wood': (405, 685, 945), 'sea': (383, 668, 967)}[key]  # 원본(1000폭)에서 층 카펫 중앙의 높이
         pts = [(0, 0), (428, src_rug[0] - 428), (710, src_rug[1] - 710), (1022, src_rug[2] - 1022), (1272, H - 1272)]
         return align_floors(rgba.crop((0, 0, 1000, H)).resize((1000, H)), pts, 1272)
     return align_floors(rgba, SKIN_FLOOR_SHIFT[key], 1272)
