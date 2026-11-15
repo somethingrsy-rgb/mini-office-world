@@ -231,6 +231,9 @@ def main(src):
         save(rg, f'{OUT}/rooms/{r}-dark.webp', 86)
         meta['roomsDark'][r] = {'w': rg.width, 'h': rg.height}
     # 배경: 그대로 (불투명)
+    if os.path.exists(os.path.join(src, 'bg-lavender.png')):
+        bl = Image.open(os.path.join(src, 'bg-lavender.png')).convert('RGB'); bl = bl.resize((900, round(bl.height * 900 / bl.width)), Image.LANCZOS)
+        save(bl, f'{OUT}/bg-lavender.webp', 82)
     bg = load(src, 'bg'); bg = bg.resize((900, round(bg.height * 900 / bg.width)), Image.LANCZOS)
     save(bg, f'{OUT}/bg.webp', 82)
 

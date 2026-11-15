@@ -367,7 +367,7 @@ export default function App() {
     const done = () => setPipAv(null) // 진행·대기·완료를 누르면 패널을 닫아서 아바타가 움직이는 모습을 바로 볼 수 있어요
     return (
       <div className={`pipapp ${pipClear ? 'pclear' : ''}`} style={{ ['--pf' as string]: pipFade }}>
-        <div className="pipbg" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
+        <div className="pipbg" style={{ backgroundImage: `url(${themed(dark, 'default', settings.backdrop).bg})` }} />
         <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
         <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
@@ -407,7 +407,7 @@ export default function App() {
     <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''} ${phoneLand ? 'phone' : ''}`} style={land ? { ['--zoom' as string]: zoom } : undefined}>
       {!introDone && <Intro dark={dark} skin={settings.skin} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
-      <div className="sky" style={{ backgroundImage: `url(${themed(dark).bg})` }} />
+      <div className="sky" style={{ backgroundImage: `url(${themed(dark, 'default', settings.backdrop).bg})` }} />
       <div className="leftcol">
       <header className="top">
         {pipSupported() && (

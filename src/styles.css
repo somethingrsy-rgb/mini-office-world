@@ -1017,3 +1017,4 @@ html[data-theme="dark"] .houseimg.nightskin.sea { filter:brightness(.55) saturat
 html[data-theme="dark"] .houseimg.nightskin.wedding { filter:brightness(.55) saturate(.9) contrast(1.08) hue-rotate(-6deg); }
 .skins { grid-template-columns:repeat(2,1fr) !important; }
 @media (min-width:380px) { .skins { grid-template-columns:repeat(4,1fr) !important; } }
+.skins.two { grid-template-columns:repeat(2,1fr) !important; }
