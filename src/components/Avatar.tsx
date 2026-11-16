@@ -182,7 +182,7 @@ export default function Avatar({ info, activity, selected, alert, cheer = 0, tas
           </g>
         )
       })()}
-      {!hideName && (
+      {false && !hideName && (
         <text x="0" y="38" textAnchor="middle" fontSize="26" fontWeight="800" fill="#5b4a78" className="nametag">
           {info.name}
         </text>
