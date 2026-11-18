@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import Avatar from './Avatar'
+import Cat from './Cat'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
 import { COUNTER, COUNTER_DARK_DROP, ROOMS, type RoomId } from '../rooms'
@@ -23,6 +24,8 @@ interface Props {
   skin?: Skin
   /** 바닥 맞춤 안내선 보기 (설정에서 켜요) */
   guide?: boolean
+  /** 돌아다니는 아기 고양이 보이기 */
+  cats?: boolean
   /** 접수대에서 일을 받기 시작한 아바타 */
   onReceived?: (id: AvatarId) => void
   selected: AvatarId | null
@@ -36,7 +39,7 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, onReceived }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
   /** 화면 좌표 → 하우스 좌표 */
@@ -70,6 +73,12 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"
           onClick={(e) => { if (onMove) { const q = toHouse(e); if (q) return onMove(q.x, q.y) } onRoom(r.id) }} role="button" aria-label={`${r.name} 확대`} />
       ))}
+      {cats && (
+        <g>
+          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} />
+          <Cat id="cat2" start={{ x: 330, y: 690 }} offset={10} tint="hue-rotate(-14deg) saturate(1.12) brightness(1.06)" />
+        </g>
+      )}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
       {/* 다크 하우스는 접수실 나무 바닥이 조금 더 아래에서 시작해서, 카운터와 나를 그만큼 내려요 */}
       <g transform={`translate(0 ${dark ? COUNTER_DARK_DROP : 0})`}>

@@ -22,6 +22,8 @@ const SCHEDULE_FIELDS: [keyof typeof DEFAULT_SCHEDULE, string][] = [
 interface Props {
   tasks: Task[]
   guide: boolean
+  cats: boolean
+  onCats: (v: boolean) => void
   onGuide: (v: boolean) => void
   settings: Settings
   onSettings: (s: Settings) => void
@@ -31,7 +33,7 @@ interface Props {
   time: { now: number; simulated: boolean; playing: boolean; setSim: (v: number | null) => void; setPlaying: (v: boolean | ((p: boolean) => boolean)) => void }
 }
 
-export default function SettingsView({ tasks, guide, onGuide, settings, onSettings, onReplace, onBackedUp, time }: Props) {
+export default function SettingsView({ tasks, guide, onGuide, cats, onCats, settings, onSettings, onReplace, onBackedUp, time }: Props) {
   const sound = useSoundPrefs()
   const sync = useSyncStatus()
   const [snaps, setSnaps] = useState(listSnapshots)
@@ -142,6 +144,12 @@ export default function SettingsView({ tasks, guide, onGuide, settings, onSettin
           <button className={`chip sm ${sound.sfx ? 'on imp-normal' : ''}`} onClick={() => setSoundPrefs({ ...sound, sfx: !sound.sfx })}>🔔 효과음 {sound.sfx ? '켜짐' : '꺼짐'}</button>
         </div>
         <p className="muted">아침 6시~저녁 6시에는 낮 음악, 저녁 6시~아침에는 밤 음악이 나와요. 업무를 분배하거나 완료·대기할 때 효과음이 울려요. 이 설정은 이 기기에만 저장돼요.</p>
+      </section>
+
+      <section>
+        <h3 className="sh">🐱 아기 고양이</h3>
+        <button className="ghost" onClick={() => onCats(!cats)}>{cats ? '🐱 고양이 숨기기' : '🐱 고양이 보이기'}</button>
+        <p className="muted">하우스 안을 돌아다녀요. 고양이를 누르면 애교를 부려요. 이 기기에서만 적용돼요.</p>
       </section>
 
       <section>

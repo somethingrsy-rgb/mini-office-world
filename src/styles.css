@@ -1024,3 +1024,9 @@ html[data-theme="dark"] .houseimg.nightskin.wedding { filter:brightness(.55) sat
 .backdrop.passthru .sheet { pointer-events:auto; }
 html[data-theme="dark"] .houseimg.nightskin.park { filter:brightness(.58) saturate(.95) contrast(1.08); }
 @media (min-width:380px) { .skins { grid-template-columns:repeat(5,1fr) !important; } }
+
+/* 아기 고양이 */
+.catwalk { animation:catbob .26s ease-in-out infinite; }
+.catbounce { animation:catbob .5s ease-in-out infinite; }
+@keyframes catbob { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-3px) } }
+@media (prefers-reduced-motion: reduce) { .catwalk, .catbounce { animation:none } }

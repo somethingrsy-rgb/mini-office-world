@@ -102,6 +102,9 @@ export default function App() {
   const HOLD_MS = 3000
   const [manual, setManual] = useState<Record<string, { spot: { x: number; y: number; face: 'l' | 'r' }; until: number; from: number }>>({})
   const [manualTick, setManualTick] = useState(0)
+  // 돌아다니는 아기 고양이 (이 기기에서만, 설정에서 켜고 꺼요)
+  const [catsOn, setCatsState] = useState(() => { try { return localStorage.getItem('mow-cats') !== '0' } catch { return true } })
+  const setCats = (v: boolean) => { setCatsState(v); try { localStorage.setItem('mow-cats', v ? '1' : '0') } catch { /* 무시 */ } }
   // 바닥 맞춤 안내선 (이 기기에서만, 설정 > 하우스 그림에서 켜요)
   const [guide, setGuideState] = useState(() => { try { return localStorage.getItem('mow-guide') === '1' } catch { return false } })
   const setGuide = (v: boolean) => { setGuideState(v); try { localStorage.setItem('mow-guide', v ? '1' : '0') } catch { /* 무시 */ } }
@@ -394,7 +397,7 @@ export default function App() {
         <div className="pipbg" style={{ backgroundImage: `url(${themed(dark, 'default', settings.backdrop).bg})` }} />
         <div className="pipcontent">
         <img className="piplogo" src={themed(dark).logo} alt="MINI OFFICE WORLD" />
-        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
+        <House dark={dark} skin={settings.skin} guide={guide} cats={catsOn} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }}
           remaining={items.length} selected={pipAv}
           onRoom={() => {}} onSelect={(id) => setPipAv((cur) => (id === 'user' || cur === id ? null : id))} />
         {pi && pw && pa ? (
@@ -448,7 +451,7 @@ export default function App() {
 
       <div className="stagewrap">
       <main className="stage">
-        <House dark={dark} skin={settings.skin} guide={guide} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
+        <House dark={dark} skin={settings.skin} guide={guide} cats={catsOn} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
           onSelect={(id) => pickAvatar(id, true)} />
       </main>
       {land && (
@@ -545,6 +548,8 @@ export default function App() {
           <SettingsView
             tasks={allTasks}
             guide={guide}
+            cats={catsOn}
+            onCats={setCats}
             onGuide={setGuide}
             settings={settings}
             onSettings={updateSettings}
