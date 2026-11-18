@@ -257,36 +257,100 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "h": 120
  },
  "wh_walkR0": {
-  "w": 165,
-  "h": 138
+  "w": 159,
+  "h": 130
  },
  "wh_walkR1": {
-  "w": 165,
-  "h": 138
+  "w": 159,
+  "h": 130
  },
  "wh_walkR2": {
-  "w": 165,
-  "h": 138
+  "w": 159,
+  "h": 130
  },
  "wh_walkR3": {
-  "w": 165,
-  "h": 138
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR4": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR5": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR6": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR7": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR8": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR9": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR10": {
+  "w": 159,
+  "h": 130
+ },
+ "wh_walkR11": {
+  "w": 159,
+  "h": 130
  },
  "wh_walkL0": {
-  "w": 167,
-  "h": 138
+  "w": 161,
+  "h": 130
  },
  "wh_walkL1": {
-  "w": 167,
-  "h": 138
+  "w": 161,
+  "h": 130
  },
  "wh_walkL2": {
-  "w": 167,
-  "h": 138
+  "w": 161,
+  "h": 130
  },
  "wh_walkL3": {
-  "w": 167,
-  "h": 138
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL4": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL5": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL6": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL7": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL8": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL9": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL10": {
+  "w": 161,
+  "h": 130
+ },
+ "wh_walkL11": {
+  "w": 161,
+  "h": 130
  },
  "wh_up0": {
   "w": 174,
@@ -437,4 +501,4 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "h": 126
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 4, "wh_walkL": 4, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 12, "wh_walkL": 12, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
