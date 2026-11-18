@@ -97,7 +97,7 @@ wj = extract(os.path.join(ROOT, 'tools/src_art/whiteJump.png'))
 wp = extract(os.path.join(ROOT, 'tools/src_art/whitePounce.png'))
 wr = extract_rest(os.path.join(ROOT, 'tools/src_art/whiteRest.png'), 200)
 ww = extract(os.path.join(ROOT, 'tools/src_art/whiteWalk.png'))   # 걷기 12장 (오른쪽을 보고 걷는 모습)
-wr_ref = [wr[0], wr[1], wr[2]]
+wr_ref = [wr[0]]   # 서 있는 모습 한 장만 크기 기준으로 써요 (쉬는 그림의 걷는 장면은 쓰지 않아요)
 white_groups = {
     'walkR': ww,
     'walkL': [ImageOps.mirror(i) for i in ww],
