@@ -107,17 +107,17 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </text>
       </g>
       </g>
-      {cats && (
-        <g transform={`translate(0 ${catDrop})`}>
-          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
-        </g>
-      )}
       <g transform={`translate(0 ${drop})`}>
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} onManualArrived={onManualArrived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
       </g>
+      {cats && (
+        <g transform={`translate(0 ${catDrop})`}>
+          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
+        </g>
+      )}
     </svg>
   )
 }
