@@ -1034,3 +1034,5 @@ html[data-theme="dark"] .houseimg.nightskin.park { filter:brightness(.58) satura
 @keyframes catarc { 0% { transform:translateY(0) } 45% { transform:translateY(-46px) } 100% { transform:translateY(0) } }
 @media (prefers-reduced-motion: reduce) { .cat g { animation:none !important } }
 @keyframes catbounce2 { 0%,100% { transform:translateY(0) scale(1) } 50% { transform:translateY(-6px) scale(1.04) } }
+/* 방을 눌러 확대하는 기능은 없앴어요 */
+.hot { cursor:default; }

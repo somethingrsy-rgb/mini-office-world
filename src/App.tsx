@@ -3,7 +3,6 @@ import House from './components/House'
 import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { asset, preloadAssets, themed } from './assets'
 import { ROOMS, type RoomId } from './rooms'
-import RoomView from './components/RoomView'
 import { ARRIVE_PATH, arriveLegMs, FLOOR_Y, getActivity, spreadSpots } from './schedule'
 import Sheet from './components/Sheet'
 import TaskForm from './components/TaskForm'
@@ -75,7 +74,6 @@ export default function App() {
   useSync({ tasks: allTasks, settings, apply: async (t, s) => { takeSnapshot(allTasks, settings, '동기화 받기 전', true); const ok = await replaceAll(t); if (ok && s) updateSettings(s, true); return ok } }, ready)
   const lastBackup = getLastBackup() // backupTick이 바뀌면 다시 읽음
   const needBackup = tasks.length > 0 && (!lastBackup || Date.now() - lastBackup > 14 * 86400000) && backupTick >= 0
-  const [room, setRoom] = useState<RoomId | null>(null)
   // 앱을 열 때 상자가 열리는 인트로: revealed가 true가 되면 뒤 화면이 서서히 나타나요
   const [revealed, setRevealed] = useState(false)
   const [introDone, setIntroDone] = useState(false)
@@ -453,7 +451,7 @@ export default function App() {
 
       <div className="stagewrap">
       <main className="stage" ref={stageRef} style={stageStyle}>
-        <House houseStyle={houseStyle} dark={dark} skin={settings.skin} guide={guide} cats={catsOn} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
+        <House houseStyle={houseStyle} dark={dark} skin={settings.skin} guide={guide} cats={catsOn} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={() => {}} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
           onSelect={(id) => pickAvatar(id, true)} />
       </main>
       {(land || zoom > 1) && (
@@ -540,11 +538,6 @@ export default function App() {
           </Sheet>
         )
       })()}
-      {room && (
-        <Sheet glass tall title={`${ROOMS.find((r) => r.id === room)!.icon} ${ROOMS.find((r) => r.id === room)!.name}`} onClose={() => setRoom(null)}>
-          <RoomView room={room} activities={activities} shown={shown} dark={dark} />
-        </Sheet>
-      )}
       {view === 'settings' && (
         <Sheet glass tall title="설정" onClose={close}>
           <SettingsView
