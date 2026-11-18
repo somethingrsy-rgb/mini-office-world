@@ -100,7 +100,7 @@ wr_ref = [wr[0], wr[1], wr[2]]
 white_groups = {
     'walkR': [wr[1], wr[0], wr[2], wr[0]],
     'walkL': [ImageOps.mirror(i) for i in [wr[1], wr[0], wr[2], wr[0]]],
-    'up': wj, 'down': wj, 'pounce': wp,
+    'up': wj, 'down': [wj[i] for i in (0, 1, 2, 6, 7, 8, 9, 10, 11)], 'pounce': wp,   # 아래로 뛸 때는 위로 솟구치는 장면(3~5번)을 빼고 웅크림→수평으로 뻗기→착지만 써요
     'sit': [wr[3]], 'sleep': [wr[4]], 'groom': [wr[5]], 'aegyo': [wr[7]],
 }
 white_f = {g: (tgt / float(np.mean([area(i) for i in (wr_ref if g in ('walkR', 'walkL', 'sit', 'sleep', 'groom', 'aegyo') else imgs)]))) ** 0.5 for g, imgs in white_groups.items()}

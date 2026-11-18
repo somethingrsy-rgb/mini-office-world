@@ -131,7 +131,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       {cats && (
         <g transform={`translate(0 ${catDrop})`}>
           <Cat id="cat1" name="루비" start={{ x: 640, y: 408 }} offset={-10} avoid={avoidFor('cat1')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
-          <Cat id="cat2" pre="wh_" name="눈이" side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
+          <Cat id="cat2" pre="wh_" name="크리스탈" side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
         </g>
       )}
     </svg>

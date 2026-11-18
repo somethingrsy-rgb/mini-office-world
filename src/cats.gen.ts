@@ -337,52 +337,40 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "h": 153
  },
  "wh_down0": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down1": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down2": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down3": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down4": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down5": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down6": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down7": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_down8": {
-  "w": 174,
-  "h": 153
- },
- "wh_down9": {
-  "w": 174,
-  "h": 153
- },
- "wh_down10": {
-  "w": 174,
-  "h": 153
- },
- "wh_down11": {
-  "w": 174,
-  "h": 153
+  "w": 173,
+  "h": 131
  },
  "wh_pounce0": {
   "w": 173,
@@ -449,4 +437,4 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "h": 126
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 4, "wh_walkL": 4, "wh_up": 12, "wh_down": 12, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 4, "wh_walkL": 4, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
