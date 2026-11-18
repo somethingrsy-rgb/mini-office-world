@@ -79,11 +79,6 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         <rect key={r.id} className="hot" x={r.rect.x} y={r.rect.y} width={r.rect.w} height={r.rect.h} fill="#fff" fillOpacity="0"
           onClick={(e) => { if (onMove) { const q = toHouse(e); if (q) return onMove(q.x, q.y) } onRoom(r.id) }} role="button" aria-label={`${r.name} 확대`} />
       ))}
-      {cats && (
-        <g>
-          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} />
-        </g>
-      )}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
       {/* 다크 하우스는 접수실 나무 바닥이 조금 더 아래에서 시작해서, 카운터와 나를 그만큼 내려요 */}
       <g transform={`translate(0 ${dark ? COUNTER_DARK_DROP : 0})`}>
@@ -101,6 +96,11 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </text>
       </g>
       </g>
+      {cats && (
+        <g>
+          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} />
+        </g>
+      )}
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} onManualArrived={onManualArrived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />

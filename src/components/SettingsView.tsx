@@ -147,9 +147,9 @@ export default function SettingsView({ tasks, guide, onGuide, cats, onCats, sett
       </section>
 
       <section>
-        <h3 className="sh">🐱 아기 고양이</h3>
-        <button className="ghost" onClick={() => onCats(!cats)}>{cats ? '🐱 고양이 숨기기' : '🐱 고양이 보이기'}</button>
-        <p className="muted">하우스 안을 돌아다녀요. 고양이를 누르면 애교를 부려요. 이 기기에서만 적용돼요.</p>
+        <h3 className="sh">🐱 아기 고양이 루비</h3>
+        <button className="ghost" onClick={() => onCats(!cats)}>{cats ? '🐱 루비 숨기기' : '🐱 루비 보이기'}</button>
+        <p className="muted">하우스 안을 돌아다녀요. 루비를 누르면 애교를 부려요. 이 기기에서만 적용돼요.</p>
       </section>
 
       <section>

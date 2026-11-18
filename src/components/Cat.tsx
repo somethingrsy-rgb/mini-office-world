@@ -119,13 +119,19 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   const W = d.w * SCALE, H = d.h * SCALE
   const flip = st.face === 'l' && !aegyo
   return (
-    <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label="고양이 쓰다듬기" cursor="pointer">
+    <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label="루비(고양이) 쓰다듬기" cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
       <g className={aegyo ? 'catbounce' : ''}>
         <g transform={flip ? 'scale(-1 1)' : undefined}>
           <image href={asset(`cats/${key}.webp`)} x={-W / 2} y={-H} width={W} height={H} style={tint ? { filter: tint } : undefined} />
         </g>
       </g>
+      {aegyo && (
+        <g pointerEvents="none" className="tasktag">
+          <rect x="-50" y={-H - 52} width="100" height="40" rx="20" fill="#fff" fillOpacity=".96" stroke="#ff86b6" strokeWidth="4" />
+          <text x="0" y={-H - 24} textAnchor="middle" fontSize="26" fontWeight="800" fill="#5b4a78">루비</text>
+        </g>
+      )}
       {aegyo && (
         <g pointerEvents="none" key={hearts}>
           {([[-26, -92, 0], [0, -108, 0.15], [26, -90, 0.3]] as [number, number, number][]).map(([dx, dy, dl], i) => (

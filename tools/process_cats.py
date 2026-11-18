@@ -40,17 +40,32 @@ for names, row in zip(ROWS, rows):
         imgs[name] = sp.crop(sp.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox())
 
 scale = STAND_PX / imgs['walk0'].height
+GROUPS = ['walk', 'sit', 'stretch', 'sleep', 'groom', 'aegyo']
+# 같은 동작의 그림끼리는 몸 크기(면적)를 맞추고, 같은 크기의 빈 캔버스에 발 높이·가운데를 맞춰 담아요.
+# (그림마다 따로 잘라 쓰면 걸을 때마다 고양이가 커졌다 작아졌다 해 보여요)
+def area(img):
+    return float((np.asarray(img.getchannel('A')) > 128).sum())
 out = os.path.join(ROOT, 'public/assets/cats')
 os.makedirs(out, exist_ok=True)
 for f in os.listdir(out): os.remove(os.path.join(out, f))
 meta = {}
-for name, img in imgs.items():
-    sp = img.resize((max(1, round(img.width * scale)), max(1, round(img.height * scale))), Image.LANCZOS)
-    sp.save(os.path.join(out, f'{name}.webp'), 'WEBP', quality=90, method=6)
-    meta[name] = {'w': sp.width, 'h': sp.height}
+for g in GROUPS:
+    names = [n for n in imgs if n.startswith(g)]
+    mean_a = np.mean([area(imgs[n]) for n in names])
+    scaled = {}
+    for n in names:
+        f = scale * (mean_a / area(imgs[n])) ** 0.5
+        im2 = imgs[n]
+        scaled[n] = im2.resize((max(1, round(im2.width * f)), max(1, round(im2.height * f))), Image.LANCZOS)
+    cw = max(v.width for v in scaled.values()); ch = max(v.height for v in scaled.values())
+    for n, v in scaled.items():
+        canvas = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
+        canvas.alpha_composite(v, ((cw - v.width) // 2, ch - v.height))
+        canvas.save(os.path.join(out, f'{n}.webp'), 'WEBP', quality=90, method=6)
+        meta[n] = {'w': cw, 'h': ch}
 with open(os.path.join(ROOT, 'src/cats.gen.ts'), 'w') as f:
     f.write('// tools/process_cats.py 가 만든 파일이에요. 직접 고치지 마세요.\nexport const CAT_DIM: Record<string, { w: number; h: number }> = ' + json.dumps(meta, indent=1) + '\n')
 mp = os.path.join(ROOT, 'public/assets/manifest.json')
 m = [x for x in json.load(open(mp)) if not x.startswith('cats/')] + [f'cats/{n}.webp' for n in imgs]
 json.dump(sorted(m), open(mp, 'w'))
-print(len(imgs), 'cats')
+print(len(imgs), 'cats', {g: meta[[n for n in meta if n.startswith(g)][0]] for g in GROUPS})
