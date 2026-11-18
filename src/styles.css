@@ -1022,3 +1022,5 @@ html[data-theme="dark"] .houseimg.nightskin.wedding { filter:brightness(.55) sat
 /* 아바타 카드: 창 바깥의 하우스를 눌러 아바타를 움직일 수 있게 */
 .backdrop.passthru { pointer-events:none; background:transparent; }
 .backdrop.passthru .sheet { pointer-events:auto; }
+html[data-theme="dark"] .houseimg.nightskin.park { filter:brightness(.58) saturate(.95) contrast(1.08); }
+@media (min-width:380px) { .skins { grid-template-columns:repeat(5,1fr) !important; } }

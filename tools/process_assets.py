@@ -16,7 +16,7 @@ OUT = os.path.join(ROOT, 'public', 'assets')
 SOURCES = {  # 이름 -> 원본 파일명(확장자 제외)
     'house': 'house', 'bg': 'bg', 'icon': 'icon', 'props': 'props', 'effects': 'effects',
     'momo': 'avatar-momo', 'luna': 'avatar-luna', 'coco': 'avatar-coco', 'mimi': 'avatar-mimi', 'kiki': 'avatar-kiki', 'user': 'avatar-user',
-    'housewood': 'house-wood', 'housesea': 'house-sea', 'housewedding': 'house-wedding',
+    'housewood': 'house-wood', 'housesea': 'house-sea', 'housewedding': 'house-wedding', 'housepark': 'house-park',
     'bgdark': 'bg-dark', 'housedark': 'house-dark', 'boxdark': 'intro-box-dark',
     'pinbtn': 'pin-button', 'listicon': 'list-icon', 'logo': 'logo', 'logodark': 'logo-dark', 'box': 'intro-box', 'settings': 'settings-button', 'counter': 'reception-counter', 'userdesk': 'avatar-user-desk',
     'reception': 'room-reception', 'office': 'room-office', 'result': 'room-result',
@@ -195,11 +195,11 @@ def skin_house(src, key):
     rgba = Image.fromarray(np.dstack([np.asarray(im)[:, :, :3], (al * 255).astype(np.uint8)]), 'RGBA')
     rgba = trim(rgba)
     rgba = rgba.resize((1000, round(rgba.height * 1000 / rgba.width)), Image.LANCZOS)
-    if key in ('wedding', 'wood'):
+    if key in ('wedding', 'wood', 'park'):
         # 그림이 더 길어서 위에서 아래로 전체를 1272에 맞춰 넣어요. 카펫 중앙이 아바타 발 아래 10쯤 (418·700·1012)에 오게
         # (원본 1000폭 기준 카펫 중앙: 다락 453 · 2층 765 · 1층 1090)
         H = rgba.height
-        src_rug = {'wedding': (453, 765, 1090), 'wood': (405, 685, 945)}[key]  # 원본(1000폭)에서 층 카펫 중앙의 높이
+        src_rug = {'wedding': (453, 765, 1090), 'wood': (405, 685, 945), 'park': (395, 676, 940)}[key]  # 원본(1000폭)에서 층 카펫 중앙의 높이
         pts = [(0, 0), (418, src_rug[0] - 418), (700, src_rug[1] - 700), (1012, src_rug[2] - 1012), (1272, H - 1272)]
         return align_floors(rgba.crop((0, 0, 1000, H)).resize((1000, H)), pts, 1272)
     return align_floors(rgba, SKIN_FLOOR_SHIFT[key], 1272)
@@ -279,7 +279,7 @@ def main(src):
     save(hd, f'{OUT}/house-dark.webp', 90)
     meta['houseDark'] = {'w': hd.width, 'h': hd.height}
     meta['houseSkins'] = {}
-    for key in ('wood', 'sea', 'wedding'):
+    for key in ('wood', 'sea', 'wedding', 'park'):
         hs = skin_house(src, key)
         save(hs, f'{OUT}/house-{key}.webp', 90)
         meta['houseSkins'][key] = {'w': hs.width, 'h': hs.height}

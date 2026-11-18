@@ -259,6 +259,10 @@ export const ASSET_META = {
   "h": 1272
  },
  "houseSkins": {
+  "park": {
+   "w": 1000,
+   "h": 1272
+  },
   "wood": {
    "w": 1000,
    "h": 1272
