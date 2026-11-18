@@ -29,6 +29,8 @@ const SPOTS: Spot[] = [
   { x: 120, y: 1046 }, { x: 255, y: 1052 }, // 접수대(주인인 소영이 있는 곳) 앞
   { x: 430, y: FLOOR_Y.f1 }, { x: 560, y: FLOOR_Y.f1 }, { x: 760, y: FLOOR_Y.f1 }, { x: 880, y: FLOOR_Y.f1 },
 ]
+/** 바닥 양 끝(벽 쪽)에는 가지 않아요: 길이 끝났는데 계속 걷는 것처럼 보이지 않게 안쪽 자리만 써요 */
+const INSET = (list: Spot[]): Spot[] => list.map((p) => ({ ...p, x: Math.min(Math.max(p.x, 150), 820) }))
 const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
@@ -45,6 +47,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
   const [target, setTarget] = useState<Spot>({ ...start })
   const aegyoStart = useRef(0)
   const targetRef = useRef<Spot>({ ...start })
+  const moveEnd = useRef(0) // 지금 걸음이 끝나야 하는 시각 (이 시각이 지났는데도 걷는 모습이면 멈춰 세워요)
   const [pounceUntil, setPounceUntil] = useState(0)
   const [pounceDir, setPounceDir] = useState<'l' | 'r'>('r')
   const pounceCool = useRef(0)
@@ -54,7 +57,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
   // 몇 초에 한 번 새 자리와 쉬는 자세를 골라요 (아바타가 서 있는 자리는 피해요)
   const pickNew = () => {
     const floorOf = (y: number) => (y < 550 ? 0 : y < 850 ? 1 : 2)
-    const free = SPOTS.filter((p) => (Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y) && !crowded(p))
+    const free = INSET(SPOTS).filter((p) => (Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y) && !crowded(p))
     // 층은 되도록 옮기지 않아요: 같은 층의 자리를 먼저 고르고, 층을 바꾸는 건 아주 가끔(10%)만 해요
     const same = free.filter((p) => floorOf(p.y) === floorOf(cur.current.y))
     const other = free.filter((p) => floorOf(p.y) !== floorOf(cur.current.y))
@@ -87,6 +90,17 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // 안전장치: 걸음이 끝났는데도 걷는 모습이 남아 있으면 멈추고 쉬어요
+  const stMoving = useRef(false)
+  stMoving.current = st.moving
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      if (stMoving.current && Date.now() > moveEnd.current + 600) { setSt((s) => ({ ...s, dur: 0, moving: false, jump: false })); scheduleNext(REST_MS) }
+    }, 400)
+    return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // 아바타와 같은 길(route)로 걸어가요
   useEffect(() => {
     const pts = route(cur.current, target, offset)
@@ -99,6 +113,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
       const jump = Math.abs(dx) < 6 && Math.abs(dy) > 40
       const dur = jump ? 1.5 : Math.max(0.2, Math.hypot(dx, dy) / WALK_SPEED)
       cur.current = { x: p.x, y: p.y }
+      moveEnd.current = Date.now() + dur * 1000
       setSt((s) => ({ x: p.x, y: p.y, dur, moving: true, jump, up: dy < 0, leg: s.leg + 1, face: Math.abs(dx) < 5 ? s.face : dx > 0 ? 'r' : 'l' }))
       timer = window.setTimeout(step, dur * 1000)
     }
