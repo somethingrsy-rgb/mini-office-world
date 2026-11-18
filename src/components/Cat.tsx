@@ -47,26 +47,37 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   const crowded = (p: Spot) => (avoid?.() ?? []).some((q) => Math.abs(q.y - p.y) < 45 && Math.abs(q.x - p.x) < 120)
   // 몇 초에 한 번 새 자리와 쉬는 자세를 골라요 (아바타가 서 있는 자리는 피해요)
   const pickNew = () => {
-    const ok = SPOTS.filter((p) => (Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y) && !crowded(p))
+    const floorOf = (y: number) => (y < 550 ? 0 : y < 850 ? 1 : 2)
+    const free = SPOTS.filter((p) => (Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y) && !crowded(p))
+    // 층은 되도록 옮기지 않아요: 같은 층의 자리를 먼저 고르고, 층을 바꾸는 건 아주 가끔(10%)만 해요
+    const same = free.filter((p) => floorOf(p.y) === floorOf(cur.current.y))
+    const other = free.filter((p) => floorOf(p.y) !== floorOf(cur.current.y))
+    const ok = same.length > 0 && !(other.length > 0 && Math.random() < 0.1) ? same : other.length > 0 ? other : same
     if (ok.length === 0) return false
     const nt = { ...rnd(ok) }
     targetRef.current = nt; setTarget(nt); setRest(rnd(REST)); setVariant(Math.floor(Math.random() * 3))
     return true
   }
+  const REST_MS = 10000 // 도착해서 쉬는 시간
+  const pickRef = useRef(pickNew)
+  pickRef.current = pickNew
+  const nextTimer = useRef(0)
+  // 도착하면 10초 쉬고 다음 자리를 골라요 (애교 중이면 끝난 뒤에)
+  const scheduleNext = (ms: number) => {
+    window.clearTimeout(nextTimer.current)
+    nextTimer.current = window.setTimeout(() => {
+      if (Date.now() < holdUntil.current) return scheduleNext(1500)
+      if (!pickRef.current()) scheduleNext(3000)
+    }, ms)
+  }
   useEffect(() => {
-    let t = 0
-    const pick = () => {
-      if (Date.now() < holdUntil.current) { t = window.setTimeout(pick, 1500); return }
-      pickNew()
-      t = window.setTimeout(pick, 20000 + Math.random() * 20000)
-    }
-    t = window.setTimeout(pick, 1500 + Math.random() * 3000)
+    scheduleNext(1500 + Math.random() * 2000)
     // 아바타가 고양이 쪽으로 와서 겹치면 비켜 줘요 (애교 중에는 그대로)
     const watch = window.setInterval(() => {
       if (Date.now() < holdUntil.current) return
-      if (crowded(cur.current) || crowded(targetRef.current)) pickNew()
+      if (crowded(cur.current) || crowded(targetRef.current)) pickRef.current()
     }, 2000)
-    return () => { window.clearTimeout(t); window.clearInterval(watch) }
+    return () => { window.clearTimeout(nextTimer.current); window.clearInterval(watch) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -75,7 +86,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
     const pts = route(cur.current, target, offset)
     let i = 0, timer = 0
     const step = () => {
-      if (i >= pts.length) { setSt((s) => ({ ...s, dur: 0, moving: false, jump: false })); return }
+      if (i >= pts.length) { setSt((s) => ({ ...s, dur: 0, moving: false, jump: false })); scheduleNext(REST_MS); return }
       const p = pts[i++]
       const dx = p.x - cur.current.x, dy = p.y - cur.current.y
       // 층과 층 사이(계단 쪽 벽을 오르내리는 길)는 걷지 않고 폴짝 뛰어요
