@@ -3,7 +3,7 @@ import { asset } from '../assets'
 import { CAT_DIM } from '../cats.gen'
 import { FLOOR_Y, route } from '../schedule'
 
-const WALK_SPEED = 95 // 하우스 좌표/초 (아바타보다 느리게, 걸음 그림 속도에 맞춰요)
+const WALK_SPEED = 48 // 하우스 좌표/초: 우아하게 천천히 (걸음 그림 속도에 맞춰요)
 const SCALE = 1.05      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 137)
 /** 자세마다 번갈아 보여 줄 그림들 */
 const FRAMES = {
@@ -58,7 +58,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
     const pick = () => {
       if (Date.now() < holdUntil.current) { t = window.setTimeout(pick, 1500); return }
       pickNew()
-      t = window.setTimeout(pick, 14000 + Math.random() * 16000)
+      t = window.setTimeout(pick, 20000 + Math.random() * 20000)
     }
     t = window.setTimeout(pick, 1500 + Math.random() * 3000)
     // 아바타가 고양이 쪽으로 와서 겹치면 비켜 줘요 (애교 중에는 그대로)
@@ -80,7 +80,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
       const dx = p.x - cur.current.x, dy = p.y - cur.current.y
       // 층과 층 사이(계단 쪽 벽을 오르내리는 길)는 걷지 않고 폴짝 뛰어요
       const jump = Math.abs(dx) < 6 && Math.abs(dy) > 40
-      const dur = jump ? 1.05 : Math.max(0.2, Math.hypot(dx, dy) / WALK_SPEED)
+      const dur = jump ? 1.2 : Math.max(0.2, Math.hypot(dx, dy) / WALK_SPEED)
       cur.current = { x: p.x, y: p.y }
       setSt((s) => ({ x: p.x, y: p.y, dur, moving: true, jump, leg: s.leg + 1, face: Math.abs(dx) < 5 ? s.face : dx > 0 ? 'r' : 'l' }))
       timer = window.setTimeout(step, dur * 1000)
@@ -94,7 +94,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   // 그림 바꾸는 속도: 걸을 때는 빠르게(한 걸음씩), 애교는 1.4초, 쉴 때는 천천히(눈 깜빡임·숨쉬기처럼)
   useEffect(() => {
     // 움직이는 동안(걷기·뛰기·애교)만 그림을 바꿔요. 멈춰서 쉬는 모습은 그림 하나로 가만히 있어요
-    const ms = pose === 'walk' ? 105 : pose === 'jump' ? 85 : pose === 'aegyo' ? 1400 : 0
+    const ms = pose === 'walk' ? 190 : pose === 'jump' ? 100 : pose === 'aegyo' ? 1400 : 0
     if (!ms) return
     const t = window.setInterval(() => setFrame((f) => f + 1), ms)
     return () => window.clearInterval(t)
