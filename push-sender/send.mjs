@@ -26,7 +26,7 @@ const dead = new Set()
 for (const m of msgs) {
   await Promise.all(subs.map(async (s) => {
     try { await webpush.sendNotification(s.sub, JSON.stringify(m), { TTL: 6 * 3600 }) }
-    catch (e) { if (e.statusCode === 404 || e.statusCode === 410) dead.add(s.sub.endpoint); else console.error('전송 실패', e.statusCode) }
+    catch (e) { if ([400, 401, 403, 404, 410].includes(e.statusCode)) dead.add(s.sub.endpoint); else console.error('전송 실패', e.statusCode) }
   }))
 }
 if (dead.size && subsFile) {

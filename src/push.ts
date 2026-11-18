@@ -1,7 +1,7 @@
 import { getSyncCreds } from './sync'
 
 /** 푸시 알림 (iPhone: 홈 화면에 추가한 앱에서만 돼요). 알림 받을 기기 정보는 동기화 저장소의 mini-office-push.json 에 저장돼요 */
-export const VAPID_PUBLIC = 'BGoUV-STR9RaPgd3ZslUzyl4sXLXqbJkF1scyeRUy5eaEkq0tz42fGdgeY0JMmLissLTFZ779jmzw_eucqeg7yE'
+export const VAPID_PUBLIC = 'BFqv_s8ENzep_mp3emOLG4a7afTz-qCNygB07ZBnhxjcKP8he3GhW1iZcb8T5slTmecfcuuBqSlfbbtUy6UIwGw'
 const FILE = 'mini-office-push.json'
 
 export const isStandalone = () => (navigator as unknown as { standalone?: boolean }).standalone === true || window.matchMedia?.('(display-mode: standalone)').matches
@@ -39,7 +39,14 @@ export async function enablePush(): Promise<void> {
   const perm = await Notification.requestPermission()
   if (perm !== 'granted') throw new Error('알림이 허용되지 않았어요. 아이폰 설정 → 알림에서 이 앱을 허용해 주세요.')
   const reg = await navigator.serviceWorker.ready
-  const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID_PUBLIC) }))
+  // 예전 키로 만든 알림 등록이 있으면 지우고 새 키로 다시 등록해요 (키를 바꾼 뒤에는 꼭 필요해요)
+  let sub = await reg.pushManager.getSubscription()
+  if (sub) {
+    const cur = sub.options?.applicationServerKey ? new Uint8Array(sub.options.applicationServerKey as ArrayBuffer) : null
+    const want = key(VAPID_PUBLIC)
+    if (!cur || cur.length !== want.length || cur.some((v, i) => v !== want[i])) { await sub.unsubscribe(); sub = null }
+  }
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key(VAPID_PUBLIC) })
   const json = sub.toJSON() as PushSubscriptionJSON & { endpoint: string }
   await mutateSubs((subs) => [...subs.filter((s) => s.sub.endpoint !== json.endpoint), { sub: json, at: Date.now(), device: deviceName() }])
 }
