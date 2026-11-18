@@ -76,7 +76,6 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       {cats && (
         <g>
           <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} />
-          <Cat id="cat2" start={{ x: 330, y: 690 }} offset={10} tint="hue-rotate(-14deg) saturate(1.12) brightness(1.06)" />
         </g>
       )}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}

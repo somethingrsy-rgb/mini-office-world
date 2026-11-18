@@ -3,9 +3,19 @@ import { asset } from '../assets'
 import { CAT_DIM } from '../cats.gen'
 import { FLOOR_Y, route } from '../schedule'
 
-const WALK_SPEED = 120 // 하우스 좌표/초 (아바타보다 조금 느리게 종종걸음)
-const SCALE = 0.72     // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 94)
-type Pose = keyof typeof CAT_DIM
+const WALK_SPEED = 95 // 하우스 좌표/초 (아바타보다 느리게, 걸음 그림 속도에 맞춰요)
+const SCALE = 0.7      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 90)
+/** 자세마다 번갈아 보여 줄 그림들 */
+const FRAMES = {
+  stand: ['walk0'],
+  walk: ['walk0', 'walk1', 'walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7'],
+  sit: ['sit0', 'sit1', 'sit2'],
+  sleep: ['sleep0', 'sleep1'],
+  groom: ['groom0', 'groom1'],
+  stretch: ['stretch0', 'stretch1', 'stretch2'],
+  aegyo: ['aegyo0', 'aegyo1', 'aegyo2'],
+} as const
+type Pose = keyof typeof FRAMES
 type Spot = { x: number; y: number }
 
 /** 고양이가 쉬러 가는 자리들: 아바타와 같은 층 바닥·같은 길(계단 벽)을 따라가요. 접수대 앞(왼쪽 아래)은 피해요 */
@@ -14,7 +24,7 @@ const SPOTS: Spot[] = [
   { x: 180, y: FLOOR_Y.f2 }, { x: 330, y: FLOOR_Y.f2 }, { x: 700, y: FLOOR_Y.f2 }, { x: 860, y: FLOOR_Y.f2 },
   { x: 430, y: FLOOR_Y.f1 }, { x: 560, y: FLOOR_Y.f1 }, { x: 760, y: FLOOR_Y.f1 }, { x: 880, y: FLOOR_Y.f1 },
 ]
-const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
+const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom', 'stretch']
 
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
@@ -24,10 +34,10 @@ export default function Cat({ id, start, offset, tint, onNear }: { id: string; s
   const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: 'r' as 'l' | 'r', moving: false })
   const [rest, setRest] = useState<Pose>('stand')
   const [aegyoUntil, setAegyoUntil] = useState(0)
-  const [aegyoPose, setAegyoPose] = useState<Pose>('aegyo1')
   const [hearts, setHearts] = useState(0)
-  const [frame, setFrame] = useState(0)
+  const [frame, setFrame] = useState(0) // 걷기는 8장을 차례로, 쉴 때는 몇 초마다 한 번씩 그림을 바꿔요
   const [target, setTarget] = useState<Spot>({ ...start })
+  const aegyoStart = useRef(0)
   const holdUntil = useRef(0) // 애교 중에는 새 자리로 떠나지 않아요
 
   // 몇 초에 한 번 새 자리와 쉬는 자세를 골라요
@@ -60,41 +70,44 @@ export default function Cat({ id, start, offset, tint, onNear }: { id: string; s
     return () => window.clearTimeout(timer)
   }, [target.x, target.y])
 
-  // 걷는 동안 두 걸음 그림을 번갈아 보여요
-  useEffect(() => {
-    if (!st.moving) return
-    const t = window.setInterval(() => setFrame((f) => (f % 2 === 0 ? f + 1 : f - 1)), 260)
-    return () => window.clearInterval(t)
-  }, [st.moving])
-
   const aegyo = Date.now() < aegyoUntil
-  const pose: Pose = aegyo ? aegyoPose : st.moving ? (frame % 2 ? 'walkB' : 'walkA') : rest
-  // 애교 중이 끝나면 다시 그리도록
+  const pose: Pose = aegyo ? 'aegyo' : st.moving ? 'walk' : rest
+  // 그림 바꾸는 속도: 걸을 때는 빠르게(한 걸음씩), 애교는 1.4초, 쉴 때는 천천히(눈 깜빡임·숨쉬기처럼)
+  useEffect(() => {
+    const ms = pose === 'walk' ? 105 : pose === 'aegyo' ? 1400 : pose === 'sleep' ? 1800 : pose === 'groom' ? 650 : pose === 'stretch' ? 1300 : pose === 'sit' ? 2600 : 0
+    if (!ms) return
+    const t = window.setInterval(() => setFrame((f) => f + 1), ms)
+    return () => window.clearInterval(t)
+  }, [pose])
+  // 애교가 끝나는 때 다시 그리도록
   useEffect(() => {
     if (!aegyoUntil) return
-    const t = window.setTimeout(() => setFrame((f) => f + 2), Math.max(0, aegyoUntil - Date.now()) + 50)
+    const t = window.setTimeout(() => setFrame((f) => f + 1), Math.max(0, aegyoUntil - Date.now()) + 60)
     return () => window.clearTimeout(t)
   }, [aegyoUntil])
+  useEffect(() => { setFrame(0) }, [pose])
+  const list = FRAMES[pose]
+  const key = pose === 'sit' ? list[[0, 1, 0, 2][frame % 4]] : pose === 'aegyo' ? list[(frame + aegyoStart.current) % list.length] : list[frame % list.length]
 
   const pet = (e: React.MouseEvent) => {
     e.stopPropagation()
     holdUntil.current = Date.now() + 6500
+    aegyoStart.current = Math.floor(Math.random() * 3)
     setTarget({ x: cur.current.x, y: cur.current.y }) // 걷던 걸음을 마치고 멈춰요
-    setAegyoPose((p) => (p === 'aegyo1' ? 'aegyo2' : 'aegyo1'))
     setAegyoUntil(Date.now() + 4500)
     setHearts((h) => h + 1)
     onNear?.(cur.current.x, cur.current.y)
   }
 
-  const d = CAT_DIM[pose]
+  const d = CAT_DIM[key]
   const W = d.w * SCALE, H = d.h * SCALE
-  const flip = st.face === 'l' && !aegyo && pose !== 'sleep'
+  const flip = st.face === 'l' && !aegyo
   return (
     <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label="고양이 쓰다듬기" cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
-      <g className={st.moving ? 'catwalk' : aegyo ? 'catbounce' : ''}>
+      <g className={aegyo ? 'catbounce' : ''}>
         <g transform={flip ? 'scale(-1 1)' : undefined}>
-          <image href={asset(`cats/${pose}.webp`)} x={-W / 2} y={-H} width={W} height={H} style={tint ? { filter: tint } : undefined} />
+          <image href={asset(`cats/${key}.webp`)} x={-W / 2} y={-H} width={W} height={H} style={tint ? { filter: tint } : undefined} />
         </g>
       </g>
       {aegyo && (
