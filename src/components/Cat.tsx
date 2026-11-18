@@ -4,7 +4,7 @@ import { CAT_DIM } from '../cats.gen'
 import { FLOOR_Y, route } from '../schedule'
 
 const WALK_SPEED = 48 // 하우스 좌표/초: 우아하게 천천히 (걸음 그림 속도에 맞춰요)
-const SCALE = 1.05      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 137)
+const SCALE = 0.84     // 그림 1px이 하우스 좌표에서 차지하는 크기 (원래 0.7의 1.2배)
 /** 자세마다 번갈아 보여 줄 그림들 */
 const FRAMES = {
   stand: ['walk0'],
