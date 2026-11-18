@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import Avatar from './Avatar'
 import Cat from './Cat'
 import { AVATARS, type AvatarId } from '../avatars'
@@ -48,6 +48,17 @@ const FOOT_DROP = 10
 export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, houseStyle, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
+  // 빈 바닥을 두 번 톡 누르면 고양이가 그쪽으로 와서 옆에 앉아요
+  const [callSpot, setCallSpot] = useState<{ x: number; y: number; n: number } | null>(null)
+  const lastTap = useRef<{ x: number; y: number; t: number } | null>(null)
+  const tapForCat = (e: React.MouseEvent) => {
+    if (onMove || (e.target as Element).closest('g.avatar, g.cat')) return   // 아바타를 고른 상태나 아바타·고양이를 누른 건 제외
+    const q = toHouse(e)
+    if (!q) return
+    const now = Date.now(), p = lastTap.current
+    if (p && now - p.t < 450 && Math.hypot(p.x - q.x, p.y - q.y) < 70) { lastTap.current = null; setCallSpot((c) => ({ x: q.x, y: q.y - catDrop, n: (c?.n ?? 0) + 1 })) }
+    else lastTap.current = { x: q.x, y: q.y, t: now }
+  }
   // 마우스·손가락이 하우스 위 어디에 있는지 (고양이가 잡으려고 해요)
   const pointerRef = useRef<{ x: number; y: number } | null>(null)
   // 하우스 그림(나무·바다·웨딩·놀이동산)에서는 아바타·고양이·접수대를 바닥 쪽으로 30 내려요 (안내선 '아래 30')
@@ -69,7 +80,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
     return { x: q.x, y: q.y }
   }
   return (
-    <svg ref={svgRef} style={houseStyle} onPointerMove={(e) => { const q = toHouse(e as unknown as React.MouseEvent); pointerRef.current = q }} onPointerLeave={() => { pointerRef.current = null }} onPointerCancel={() => { pointerRef.current = null }} onPointerUp={(e) => { if (e.pointerType !== 'mouse') pointerRef.current = null }} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
+    <svg ref={svgRef} style={houseStyle} onClick={tapForCat} onPointerMove={(e) => { const q = toHouse(e as unknown as React.MouseEvent); pointerRef.current = q }} onPointerLeave={() => { pointerRef.current = null }} onPointerCancel={() => { pointerRef.current = null }} onPointerUp={(e) => { if (e.pointerType !== 'mouse') pointerRef.current = null }} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className={`houseimg ${dark && skin !== 'default' ? `nightskin ${skin}` : ''}`} href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
       {guide && (
         <g pointerEvents="none" fontSize="19" fontWeight="800">
@@ -115,7 +126,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       </g>
       {cats && (
         <g transform={`translate(0 ${catDrop})`}>
-          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
+          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
         </g>
       )}
     </svg>

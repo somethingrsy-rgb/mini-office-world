@@ -36,7 +36,7 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
   const cur = useRef<Spot>({ ...start })
   const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: 'r' as 'l' | 'r', moving: false, jump: false, leg: 0, up: false })
   const [variant, setVariant] = useState(0) // 쉴 때 보여 줄 그림 번호 (쉬는 동안은 그림을 바꾸지 않아요)
@@ -47,6 +47,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
   const [target, setTarget] = useState<Spot>({ ...start })
   const aegyoStart = useRef(0)
   const targetRef = useRef<Spot>({ ...start })
+  const callActive = useRef(false) // 부름을 받고 걸어오는 중에는 다른 자리를 고르지 않아요
   const moveEnd = useRef(0) // 지금 걸음이 끝나야 하는 시각 (이 시각이 지났는데도 걷는 모습이면 멈춰 세워요)
   const [pounceUntil, setPounceUntil] = useState(0)
   const [pounceDir, setPounceDir] = useState<'l' | 'r'>('r')
@@ -83,12 +84,26 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
     scheduleNext(1500 + Math.random() * 2000)
     // 아바타가 고양이 쪽으로 와서 겹치면 비켜 줘요 (애교 중에는 그대로)
     const watch = window.setInterval(() => {
-      if (Date.now() < holdUntil.current) return
+      if (Date.now() < holdUntil.current || callActive.current) return
       if (crowded(cur.current) || crowded(targetRef.current)) pickRef.current()
     }, 2000)
     return () => { window.clearTimeout(nextTimer.current); window.clearInterval(watch) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 바닥을 두 번 톡 누르면 그쪽으로 걸어와 옆에 앉아요
+  useEffect(() => {
+    if (!call) return
+    const floorY = call.y < 550 ? FLOOR_Y.attic : call.y < 850 ? FLOOR_Y.f2 : FLOOR_Y.f1
+    const sideX = call.x > 500 ? call.x - 75 : call.x + 75           // 누른 자리 바로 옆
+    const nt = { x: Math.min(Math.max(sideX, 140), 840), y: floorY }
+    window.clearTimeout(nextTimer.current)
+    callActive.current = true
+    holdUntil.current = 0
+    targetRef.current = nt; setTarget(nt); setRest('sit'); setVariant(0)
+    setSt((q) => ({ ...q, face: nt.x < cur.current.x ? 'l' : 'r' }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [call?.n])
 
   // 안전장치: 걸음이 끝났는데도 걷는 모습이 남아 있으면 멈추고 쉬어요
   const stMoving = useRef(false)
@@ -106,7 +121,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }:
     const pts = route(cur.current, target, offset)
     let i = 0, timer = 0
     const step = () => {
-      if (i >= pts.length) { setSt((s) => ({ ...s, dur: 0, moving: false, jump: false })); scheduleNext(REST_MS); return }
+      if (i >= pts.length) { setSt((s) => ({ ...s, dur: 0, moving: false, jump: false })); scheduleNext(callActive.current ? 25000 : REST_MS); callActive.current = false; return }
       const p = pts[i++]
       const dx = p.x - cur.current.x, dy = p.y - cur.current.y
       // 층과 층 사이(계단 쪽 벽을 오르내리는 길)는 걷지 않고 폴짝 뛰어요
