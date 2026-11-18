@@ -255,6 +255,198 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
  "aegyo0": {
   "w": 164,
   "h": 120
+ },
+ "wh_walkR0": {
+  "w": 165,
+  "h": 138
+ },
+ "wh_walkR1": {
+  "w": 165,
+  "h": 138
+ },
+ "wh_walkR2": {
+  "w": 165,
+  "h": 138
+ },
+ "wh_walkR3": {
+  "w": 165,
+  "h": 138
+ },
+ "wh_walkL0": {
+  "w": 167,
+  "h": 138
+ },
+ "wh_walkL1": {
+  "w": 167,
+  "h": 138
+ },
+ "wh_walkL2": {
+  "w": 167,
+  "h": 138
+ },
+ "wh_walkL3": {
+  "w": 167,
+  "h": 138
+ },
+ "wh_up0": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up1": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up2": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up3": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up4": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up5": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up6": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up7": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up8": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up9": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up10": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_up11": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down0": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down1": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down2": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down3": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down4": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down5": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down6": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down7": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down8": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down9": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down10": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_down11": {
+  "w": 174,
+  "h": 153
+ },
+ "wh_pounce0": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce1": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce2": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce3": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce4": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce5": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce6": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce7": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce8": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce9": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce10": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_pounce11": {
+  "w": 173,
+  "h": 131
+ },
+ "wh_sit0": {
+  "w": 123,
+  "h": 148
+ },
+ "wh_sleep0": {
+  "w": 158,
+  "h": 108
+ },
+ "wh_groom0": {
+  "w": 138,
+  "h": 149
+ },
+ "wh_aegyo0": {
+  "w": 167,
+  "h": 126
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 4, "wh_walkL": 4, "wh_up": 12, "wh_down": 12, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}

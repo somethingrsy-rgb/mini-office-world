@@ -40,12 +40,12 @@ cx = lambda v: float((np.asarray(v.getchannel('A')).astype(np.float64).sum(axis=
 raw = {k: extract(os.path.join(ROOT, f'tools/src_art/{f}.png')) for k, f in SHEETS.items()}
 
 
-def extract_rest(path):
+def extract_rest(path, thr=120):
     """4x2 격자 그림에서 칸마다 고양이를 한 마리씩 잘라요 (왼쪽→오른쪽, 위→아래)"""
     im = Image.open(path).convert('RGBA')
     rgb = np.asarray(im)[:, :, :3]; a = np.asarray(im)[:, :, 3]
-    lab, n = ndi.label(a > 120)
-    objs = ndi.find_objects(lab); sizes = ndi.sum(a > 120, lab, range(1, n + 1))
+    lab, n = ndi.label(a > thr)
+    objs = ndi.find_objects(lab); sizes = ndi.sum(a > thr, lab, range(1, n + 1))
     cs = [(i, sl, (sl[0].start + sl[0].stop) // 2, (sl[1].start + sl[1].stop) // 2) for i, (sl, s) in enumerate(zip(objs, sizes), start=1) if s > 20000]
     rows = [[], []]
     for c in cs: rows[min(1, c[2] * 2 // im.height)].append(c)
@@ -89,9 +89,37 @@ for g, imgs in list(raw.items()) + list(raw_rest.items()):
         canvas.alpha_composite(v, (int(round(cw / 2 - c)), ch - v.height))   # 발은 아래, 몸 무게중심은 가운데
         canvas.save(os.path.join(out, f'{g}{k}.webp'), 'WEBP', quality=90, method=6)
         meta[f'{g}{k}'] = {'w': cw, 'h': ch}; names.append(f'{g}{k}')
+
+# ── 두 번째 고양이(흰 고양이): 루비와 같은 이름 규칙으로 앞에 wh_ 를 붙여요 ──
+# 걷는 그림이 따로 없어서 쉬는 동작 그림의 걷기 두 장(+서 있기)으로 걷고, 왼쪽 걷기는 좌우로 뒤집은 그림이에요. 위·아래 점프는 같은 점프 그림을 써요.
+from PIL import ImageOps
+wj = extract(os.path.join(ROOT, 'tools/src_art/whiteJump.png'))
+wp = extract(os.path.join(ROOT, 'tools/src_art/whitePounce.png'))
+wr = extract_rest(os.path.join(ROOT, 'tools/src_art/whiteRest.png'), 200)
+wr_ref = [wr[0], wr[1], wr[2]]
+white_groups = {
+    'walkR': [wr[1], wr[0], wr[2], wr[0]],
+    'walkL': [ImageOps.mirror(i) for i in [wr[1], wr[0], wr[2], wr[0]]],
+    'up': wj, 'down': wj, 'pounce': wp,
+    'sit': [wr[3]], 'sleep': [wr[4]], 'groom': [wr[5]], 'aegyo': [wr[7]],
+}
+white_f = {g: (tgt / float(np.mean([area(i) for i in (wr_ref if g in ('walkR', 'walkL', 'sit', 'sleep', 'groom', 'aegyo') else imgs)]))) ** 0.5 for g, imgs in white_groups.items()}
+for g, imgs in white_groups.items():
+    f = white_f[g]
+    scaled = [i.resize((max(1, round(i.width * f)), max(1, round(i.height * f))), Image.LANCZOS) for i in imgs]
+    cxs = [cx(v) for v in scaled]
+    half = max(max(c, v.width - c) for c, v in zip(cxs, scaled))
+    cw = int(np.ceil(half * 2)) + 2; ch = max(v.height for v in scaled)
+    for k, (v, c) in enumerate(zip(scaled, cxs)):
+        canvas = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
+        canvas.alpha_composite(v, (int(round(cw / 2 - c)), ch - v.height))
+        canvas.save(os.path.join(out, f'wh_{g}{k}.webp'), 'WEBP', quality=90, method=6)
+        meta[f'wh_{g}{k}'] = {'w': cw, 'h': ch}; names.append(f'wh_{g}{k}')
+counts = {g: len(i) for g, i in list(raw.items()) + list(raw_rest.items())}
+counts.update({f'wh_{g}': len(i) for g, i in white_groups.items()})
 with open(os.path.join(ROOT, 'src/cats.gen.ts'), 'w') as fh:
     fh.write('// tools/process_cats.py 가 만든 파일이에요. 직접 고치지 마세요.\nexport const CAT_DIM: Record<string, { w: number; h: number }> = ' + json.dumps(meta, indent=1) + '\n'
-             + 'export const CAT_COUNT: Record<string, number> = ' + json.dumps({g: len(i) for g, i in list(raw.items()) + list(raw_rest.items())}) + '\n')
+             + 'export const CAT_COUNT: Record<string, number> = ' + json.dumps(counts) + '\n')
 mp = os.path.join(ROOT, 'public/assets/manifest.json')
 m = [x for x in json.load(open(mp)) if not x.startswith('cats/')] + [f'cats/{n}.webp' for n in names]
 json.dump(sorted(m), open(mp, 'w'))

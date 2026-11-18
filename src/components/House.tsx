@@ -69,6 +69,10 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
   actRef.current = activities
   const shownRef = useRef(shown)
   shownRef.current = shown
+  // 두 고양이의 자리를 서로에게 알려요
+  const catPos = useRef<Record<string, { x: number; y: number }>>({})
+  const reportCat = (id: string, p: { x: number; y: number }) => { catPos.current[id] = p }
+  const avoidFor = (id: string) => () => [...avatarSpots(), ...Object.entries(catPos.current).filter(([k]) => k !== id).map(([, v]) => v)]
   const avatarSpots = () => AVATARS.filter((a) => a.id === 'user' || shownRef.current.includes(a.id)).map((a) => actRef.current[a.id].spot)
   /** 화면 좌표 → 하우스 좌표 */
   const toHouse = (e: React.MouseEvent) => {
@@ -126,7 +130,8 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       </g>
       {cats && (
         <g transform={`translate(0 ${catDrop})`}>
-          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
+          <Cat id="cat1" name="루비" start={{ x: 640, y: 408 }} offset={-10} avoid={avoidFor('cat1')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
+          <Cat id="cat2" pre="wh_" name="눈이" side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
         </g>
       )}
     </svg>

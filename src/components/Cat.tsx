@@ -7,18 +7,24 @@ const WALK_SPEED = 48 // 하우스 좌표/초: 우아하게 천천히 (걸음 �
 const SCALE = 0.84     // 그림 1px이 하우스 좌표에서 차지하는 크기 (1.2배)
 /** 그림 묶음 (tools/process_cats.py 가 만든 12프레임씩): 걷기(오른쪽·왼쪽), 위층으로 뛰기, 아래층으로 뛰기 */
 const seq = (g: string) => Array.from({ length: CAT_COUNT[g] }, (_, i) => `${g}${i}`)
-const FRAMES = {
-  stand: ['up0'],            // 서 있기
-  sit: ['sit0'],
-  sleep: ['sleep0'],
-  groom: ['groom0'],
-  aegyo: ['aegyo0'],         // 쓰다듬으면 배를 보이며 구르는 애교
-  walk: seq('walkR'),
-  walkL: seq('walkL'),
-  jumpUp: seq('up'),
-  jumpDown: seq('down'),
-  pounce: seq('pounce'),     // 손가락·마우스 커서를 잡으려는 동작 (12장)
+const makeFrames = (pre: string) => {
+  const q = (g: string) => seq(pre + g)
+  return {
+    stand: [`${pre}up0`],      // 서 있기
+    sit: [`${pre}sit0`],
+    sleep: [`${pre}sleep0`],
+    groom: [`${pre}groom0`],
+    aegyo: [`${pre}aegyo0`],   // 쓰다듬으면 배를 보이며 구르는 애교
+    walk: q('walkR'),
+    walkL: q('walkL'),
+    jumpUp: q('up'),
+    jumpDown: q('down'),
+    pounce: q('pounce'),       // 손가락·마우스 커서를 잡으려는 동작
+  }
 }
+// 고양이 종류: '' = 루비(시암 고양이), 'wh_' = 흰 고양이 (그림 이름 앞에 wh_ 가 붙어요)
+const FRAME_SETS: Record<string, ReturnType<typeof makeFrames>> = { '': makeFrames(''), wh_: makeFrames('wh_') }
+const FRAMES = FRAME_SETS['']
 type Pose = keyof typeof FRAMES
 type Spot = { x: number; y: number }
 
@@ -36,7 +42,8 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report }: { id: string; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
+  const FR = FRAME_SETS[pre] ?? FRAMES
   const cur = useRef<Spot>({ ...start })
   const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: 'r' as 'l' | 'r', moving: false, jump: false, leg: 0, up: false })
   const [variant, setVariant] = useState(0) // 쉴 때 보여 줄 그림 번호 (쉬는 동안은 그림을 바꾸지 않아요)
@@ -95,7 +102,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
   useEffect(() => {
     if (!call) return
     const floorY = call.y < 550 ? FLOOR_Y.attic : call.y < 850 ? FLOOR_Y.f2 : FLOOR_Y.f1
-    const sideX = call.x > 500 ? call.x - 75 : call.x + 75           // 누른 자리 바로 옆
+    const sideX = call.x > 500 ? call.x - side : call.x + side           // 누른 자리 바로 옆
     const nt = { x: Math.min(Math.max(sideX, 140), 840), y: floorY }
     window.clearTimeout(nextTimer.current)
     callActive.current = true
@@ -104,6 +111,13 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     setSt((q) => ({ ...q, face: nt.x < cur.current.x ? 'l' : 'r' }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [call?.n])
+
+  // 지금 자리를 다른 고양이에게 알려 줘요 (서로 겹치지 않게)
+  useEffect(() => {
+    const t = window.setInterval(() => report?.(id, { x: cur.current.x, y: cur.current.y }), 500)
+    return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 안전장치: 걸음이 끝났는데도 걷는 모습이 남아 있으면 멈추고 쉬어요
   const stMoving = useRef(false)
@@ -180,7 +194,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     return () => window.clearTimeout(t)
   }, [aegyoUntil])
   useEffect(() => { setFrame(0) }, [pose, st.leg])
-  const list = FRAMES[pose]
+  const list = FR[pose]
   const key = pose === 'jumpUp' || pose === 'jumpDown' || pose === 'pounce' ? list[Math.min(frame, list.length - 1)] : list.length > 1 ? list[frame % list.length] : list[0]
 
   const pet = (e: React.MouseEvent) => {
@@ -198,7 +212,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
   const W = d.w * SCALE, H = d.h * SCALE
   const flip = (pose === 'pounce' ? pounceDir === 'l' : st.face === 'l') && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
   return (
-    <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label="루비(고양이) 쓰다듬기" cursor="pointer">
+    <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label={`${name}(고양이) 쓰다듬기`} cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
       <g key={st.jump ? st.leg : aegyo ? 'a' + hearts : 'x'} style={st.jump ? { animation: `catarc ${st.dur}s ease-in-out` } : undefined}>
         <g transform={flip ? 'scale(-1 1)' : undefined}>
@@ -208,7 +222,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
       {aegyo && (
         <g pointerEvents="none" className="tasktag">
           <rect x="-50" y={-H - 52} width="100" height="40" rx="20" fill="#fff" fillOpacity=".96" stroke="#ff86b6" strokeWidth="4" />
-          <text x="0" y={-H - 24} textAnchor="middle" fontSize="26" fontWeight="800" fill="#5b4a78">루비</text>
+          <text x="0" y={-H - 24} textAnchor="middle" fontSize="26" fontWeight="800" fill="#5b4a78">{name}</text>
         </g>
       )}
       {aegyo && (
