@@ -39,9 +39,9 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-/** 안내선 '아래 N'만큼 발을 내려요: 고양이 루비는 30, 아바타·접수대는 20 */
+/** 안내선 '아래 N'만큼 발을 내려요: 고양이 루비는 30, 아바타·접수대는 10 */
 const CAT_DROP = 30
-const FOOT_DROP = 20
+const FOOT_DROP = 10
 
 export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
