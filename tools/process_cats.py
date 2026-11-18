@@ -101,10 +101,12 @@ wr_ref = [wr[0]]   # 서 있는 모습 한 장만 크기 기준으로 써요 (�
 white_groups = {
     'walkR': ww,
     'walkL': [ImageOps.mirror(i) for i in ww],
+    'stand': [ww[5]],   # 서 있는 모습도 걷기 그림(발을 모은 장면)을 써서 꼬리 모양·크기가 걷기와 똑같아요
     'up': wj, 'down': [wj[i] for i in (0, 1, 2, 6, 7, 8, 9, 10, 11)], 'pounce': wp,   # 아래로 뛸 때는 위로 솟구치는 장면(3~5번)을 빼고 웅크림→수평으로 뻗기→착지만 써요
     'sit': [wr[3]], 'sleep': [wr[4]], 'groom': [wr[5]], 'aegyo': [wr[7]],
 }
 white_f = {g: (tgt / float(np.mean([area(i) for i in (wr_ref if g in ('sit', 'sleep', 'groom', 'aegyo') else imgs)]))) ** 0.5 for g, imgs in white_groups.items()}
+white_f['stand'] = white_f['walkR']   # 걷기와 같은 배율
 for g, imgs in white_groups.items():
     f = white_f[g]
     scaled = [i.resize((max(1, round(i.width * f)), max(1, round(i.height * f))), Image.LANCZOS) for i in imgs]

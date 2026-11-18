@@ -10,7 +10,7 @@ const seq = (g: string) => Array.from({ length: CAT_COUNT[g] }, (_, i) => `${g}$
 const makeFrames = (pre: string) => {
   const q = (g: string) => seq(pre + g)
   return {
-    stand: [`${pre}up0`],      // 서 있기
+    stand: [pre === 'wh_' ? 'wh_stand0' : `${pre}up0`],   // 서 있기 (크리스탈은 걷기 그림에서 뽑은 서 있는 모습)
     sit: [`${pre}sit0`],
     sleep: [`${pre}sleep0`],
     groom: [`${pre}groom0`],

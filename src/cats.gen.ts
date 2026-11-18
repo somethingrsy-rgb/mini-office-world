@@ -352,6 +352,10 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "w": 161,
   "h": 130
  },
+ "wh_stand0": {
+  "w": 158,
+  "h": 130
+ },
  "wh_up0": {
   "w": 174,
   "h": 153
@@ -501,4 +505,4 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "h": 127
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 12, "wh_walkL": 12, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 12, "wh_walkL": 12, "wh_stand": 1, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
