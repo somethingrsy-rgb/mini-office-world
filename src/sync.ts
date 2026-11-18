@@ -96,7 +96,7 @@ export async function syncNow(get: () => SyncApi): Promise<void> {
       const m = mergeTasks(cur.tasks, remote.tasks, localDel, remote.deleted)
       // 설정은 업무처럼 합칠 수 없어서: 이 기기에서 바꾼 적이 없고 다른 기기가 새로 올렸을 때만 받아와요
       const settingsFromRemote = remote.updatedAt > cfg.syncedAt && !cfg.settingsDirty
-      const settings = settingsFromRemote ? { ...remote.settings, theme: cur.settings.theme, skin: cur.settings.skin, backdrop: cur.settings.backdrop } // 화면 모드·하우스·배경은 이 기기 선택을 지켜요 : cur.settings
+      const settings = settingsFromRemote ? { ...remote.settings, theme: cur.settings.theme, skin: cur.settings.skin, backdrop: cur.settings.backdrop } : cur.settings
       const settingsChanged = settingsFromRemote && JSON.stringify(settings) !== JSON.stringify(cur.settings)
       if (!sameTasks(m.tasks, cur.tasks) || settingsChanged) {
         if (!(await cur.apply(m.tasks, settingsChanged ? settings : null))) throw new Error('받아온 내용을 저장하지 못했어요.')
