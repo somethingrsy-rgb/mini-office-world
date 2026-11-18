@@ -39,8 +39,26 @@ for names, row in zip(ROWS, rows):
         sp = Image.fromarray(np.dstack([rgb[y0:y1, x0:x1], al]), 'RGBA')
         imgs[name] = sp.crop(sp.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox())
 
+# 뛰는 그림(tools/src_art/cats_jump.png: 2줄 x 6장, 순서대로 이어서 한 번의 점프): 층과 층 사이를 뛸 때 써요
+jim = Image.open(os.path.join(ROOT, 'tools/src_art/cats_jump.png')).convert('RGBA')
+jrgb = np.asarray(jim)[:, :, :3]; ja = np.asarray(jim)[:, :, 3]
+jl, jn = ndi.label(ja > 200)
+jobjs = ndi.find_objects(jl); jsizes = ndi.sum(ja > 200, jl, range(1, jn + 1))
+jc = [(i, sl, (sl[0].start + sl[0].stop) // 2, (sl[1].start + sl[1].stop) // 2) for i, (sl, sz) in enumerate(zip(jobjs, jsizes), start=1) if sz > 8000]
+jc.sort(key=lambda c: (0 if c[2] < 360 else 1, c[3]))
+assert len(jc) == 12, len(jc)
+JUMP_SRC = {}
+for k, (i, sl, _, _) in enumerate(jc):
+    pad = 12
+    y0, y1 = max(sl[0].start - pad, 0), min(sl[0].stop + pad, ja.shape[0]); x0, x1 = max(sl[1].start - pad, 0), min(sl[1].stop + pad, ja.shape[1])
+    keep = ndi.binary_dilation(jl[y0:y1, x0:x1] == i, iterations=5)
+    al = np.where(keep & (ja[y0:y1, x0:x1] >= 12), ja[y0:y1, x0:x1], 0).astype(np.uint8)
+    sp = Image.fromarray(np.dstack([jrgb[y0:y1, x0:x1], al]), 'RGBA')
+    JUMP_SRC[f'jump{k}'] = sp.crop(sp.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox())
+imgs.update(JUMP_SRC)
+
 scale = STAND_PX / imgs['walk0'].height
-GROUPS = ['walk', 'sit', 'stretch', 'sleep', 'groom', 'aegyo']
+GROUPS = ['walk', 'sit', 'stretch', 'sleep', 'groom', 'aegyo', 'jump']
 # 같은 동작의 그림끼리는 몸 크기(면적)를 맞추고, 같은 크기의 빈 캔버스에 발 높이·가운데를 맞춰 담아요.
 # (그림마다 따로 잘라 쓰면 걸을 때마다 고양이가 커졌다 작아졌다 해 보여요)
 def area(img):
@@ -52,6 +70,7 @@ meta = {}
 for g in GROUPS:
     names = [n for n in imgs if n.startswith(g)]
     mean_a = np.mean([area(imgs[n]) for n in names])
+    if g == 'jump': mean_a = np.mean([area(imgs[n]) for n in imgs if n.startswith('walk')])  # 걷는 모습과 같은 몸 크기로
     scaled = {}
     for n in names:
         f = scale * (mean_a / area(imgs[n])) ** 0.5

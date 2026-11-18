@@ -1030,3 +1030,5 @@ html[data-theme="dark"] .houseimg.nightskin.park { filter:brightness(.58) satura
 .catbounce { animation:catbob .5s ease-in-out infinite; }
 @keyframes catbob { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-3px) } }
 @media (prefers-reduced-motion: reduce) { .catwalk, .catbounce { animation:none } }
+@keyframes catarc { 0% { transform:translateY(0) } 45% { transform:translateY(-46px) } 100% { transform:translateY(0) } }
+@media (prefers-reduced-motion: reduce) { .cat g { animation:none !important } }

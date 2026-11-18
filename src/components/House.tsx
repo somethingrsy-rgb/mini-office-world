@@ -39,14 +39,16 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-/** 안내선 '아래 N'만큼 아바타 발을 내려요 */
-const FOOT_DROP = 30
+/** 안내선 '아래 N'만큼 발을 내려요: 고양이 루비는 30, 아바타·접수대는 20 */
+const CAT_DROP = 30
+const FOOT_DROP = 20
 
 export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
   // 하우스 그림(나무·바다·웨딩·놀이동산)에서는 아바타·고양이·접수대를 바닥 쪽으로 30 내려요 (안내선 '아래 30')
   const drop = skin !== 'default' ? FOOT_DROP : 0
+  const catDrop = skin !== 'default' ? CAT_DROP : 0
   // 고양이가 아바타와 겹치지 않도록 지금 아바타들이 있는(가는) 자리를 알려줘요
   const actRef = useRef(activities)
   actRef.current = activities
@@ -101,12 +103,12 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </text>
       </g>
       </g>
-      <g transform={`translate(0 ${drop})`}>
       {cats && (
-        <g>
+        <g transform={`translate(0 ${catDrop})`}>
           <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} />
         </g>
       )}
+      <g transform={`translate(0 ${drop})`}>
       {AVATARS.filter((a) => a.id !== 'user' && shown.includes(a.id)).map((info, i) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} onManualArrived={onManualArrived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
