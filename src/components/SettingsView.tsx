@@ -227,7 +227,7 @@ export default function SettingsView({ tasks, guide, onGuide, settings, onSettin
                 <button className="ghost sm" onClick={async () => {
                   if (!window.confirm(`${new Date(sn.at).toLocaleString('ko-KR')} 상태로 되돌릴까요?\n지금 상태는 자동 백업에 한 번 더 남겨 둬요.`)) return
                   takeSnapshot(tasks, settings, '되돌리기 전', true)
-                  if (await onReplace(sn.tasks, { ...sn.settings, theme: settings.theme })) { say(true, `업무 ${sn.tasks.length}건으로 되돌렸어요.`); setSnaps(listSnapshots()) }
+                  if (await onReplace(sn.tasks, { ...sn.settings, theme: settings.theme, skin: settings.skin, backdrop: settings.backdrop })) { say(true, `업무 ${sn.tasks.length}건으로 되돌렸어요.`); setSnaps(listSnapshots()) }
                 }}>되돌리기</button>
               </li>
             ))}

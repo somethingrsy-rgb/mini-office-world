@@ -550,7 +550,7 @@ export default function App() {
             onSettings={updateSettings}
             onBackedUp={() => setBackupTick((n) => n + 1)}
             time={{ now, simulated: sim !== null, playing, setSim, setPlaying }}
-            onReplace={async (next, st) => { takeSnapshot(allTasks, settings, '복원·초기화 전', true); const ok = await replaceAll(stampReplace(allTasks, next)); if (ok) updateSettings(st); return ok }}
+            onReplace={async (next, st) => { takeSnapshot(allTasks, settings, '복원·초기화 전', true); const ok = await replaceAll(stampReplace(allTasks, next)); if (ok) updateSettings({ ...st, theme: settings.theme, skin: settings.skin, backdrop: settings.backdrop }); return ok }}
           />
         </Sheet>
       )}
