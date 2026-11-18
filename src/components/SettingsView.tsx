@@ -22,8 +22,8 @@ const SCHEDULE_FIELDS: [keyof typeof DEFAULT_SCHEDULE, string][] = [
 interface Props {
   tasks: Task[]
   guide: boolean
-  cats: boolean
-  onCats: (v: boolean) => void
+  cats: { ruby: boolean; crystal: boolean }
+  onCats: (v: { ruby: boolean; crystal: boolean }) => void
   onGuide: (v: boolean) => void
   settings: Settings
   onSettings: (s: Settings) => void
@@ -148,8 +148,11 @@ export default function SettingsView({ tasks, guide, onGuide, cats, onCats, sett
 
       <section>
         <h3 className="sh">🐱 아기 고양이 루비·크리스탈</h3>
-        <button className="ghost" onClick={() => onCats(!cats)}>{cats ? '🐱 고양이 숨기기' : '🐱 고양이 보이기'}</button>
-        <p className="muted">하우스 안을 돌아다녀요. 고양이를 누르면 애교를 부려요. 이 기기에서만 적용돼요.</p>
+        <div className="btnrow">
+          <button className="ghost" onClick={() => onCats({ ...cats, ruby: !cats.ruby })}>{cats.ruby ? '🐱 루비 숨기기' : '🐱 루비 보이기'}</button>
+          <button className="ghost" onClick={() => onCats({ ...cats, crystal: !cats.crystal })}>{cats.crystal ? '🐈 크리스탈 숨기기' : '🐈 크리스탈 보이기'}</button>
+        </div>
+        <p className="muted">하우스 안을 돌아다녀요. 각각 따로 숨기거나 보일 수 있어요. 고양이를 누르면 애교를 부려요. 이 기기에서만 적용돼요.</p>
       </section>
 
       <section>

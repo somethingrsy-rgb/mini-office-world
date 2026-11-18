@@ -27,7 +27,7 @@ interface Props {
   /** 확대할 때 하우스 그림 크기 (핀치 확대) */
   houseStyle?: React.CSSProperties
   /** 돌아다니는 아기 고양이 보이기 */
-  cats?: boolean
+  cats?: { ruby: boolean; crystal: boolean }
   /** 접수대에서 일을 받기 시작한 아바타 */
   onReceived?: (id: AvatarId) => void
   selected: AvatarId | null
@@ -45,7 +45,7 @@ const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeA
 const CAT_DROP = 30
 const FOOT_DROP = 10
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, houseStyle, cats = false, onReceived }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, houseStyle, cats = { ruby: false, crystal: false }, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
   // 빈 바닥을 두 번 톡 누르면 고양이가 그쪽으로 와서 옆에 앉아요
@@ -128,10 +128,10 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
       </g>
-      {cats && (
+      {(cats.ruby || cats.crystal) && (
         <g transform={`translate(0 ${catDrop})`}>
-          <Cat id="cat1" name="루비" start={{ x: 640, y: 408 }} offset={-10} avoid={avoidFor('cat1')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
-          <Cat id="cat2" pre="wh_" name="크리스탈" side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
+          {cats.ruby && <Cat id="cat1" name="루비" start={{ x: 640, y: 408 }} offset={-10} avoid={avoidFor('cat1')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />}
+          {cats.crystal && <Cat id="cat2" pre="wh_" name="크리스탈" side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />}
         </g>
       )}
     </svg>

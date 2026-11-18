@@ -102,8 +102,15 @@ export default function App() {
   const [manual, setManual] = useState<Record<string, { spot: { x: number; y: number; face: 'l' | 'r' }; until: number; from: number }>>({})
   const [manualTick, setManualTick] = useState(0)
   // 돌아다니는 아기 고양이 (이 기기에서만, 설정에서 켜고 꺼요)
-  const [catsOn, setCatsState] = useState(() => { try { return localStorage.getItem('mow-cats') !== '0' } catch { return true } })
-  const setCats = (v: boolean) => { setCatsState(v); try { localStorage.setItem('mow-cats', v ? '1' : '0') } catch { /* 무시 */ } }
+  const [catsOn, setCatsState] = useState<{ ruby: boolean; crystal: boolean }>(() => {
+    try {
+      const v = JSON.parse(localStorage.getItem('mow-cats2') || 'null')
+      if (v && typeof v === 'object') return { ruby: v.ruby !== false, crystal: v.crystal !== false }
+      const old = localStorage.getItem('mow-cats') !== '0'   // 예전에는 두 마리를 한꺼번에 켜고 껐어요
+      return { ruby: old, crystal: old }
+    } catch { return { ruby: true, crystal: true } }
+  })
+  const setCats = (v: { ruby: boolean; crystal: boolean }) => { setCatsState(v); try { localStorage.setItem('mow-cats2', JSON.stringify(v)) } catch { /* 무시 */ } }
   // 바닥 맞춤 안내선 (이 기기에서만, 설정 > 하우스 그림에서 켜요)
   const [guide, setGuideState] = useState(() => { try { return localStorage.getItem('mow-guide') === '1' } catch { return false } })
   const setGuide = (v: boolean) => { setGuideState(v); try { localStorage.setItem('mow-guide', v ? '1' : '0') } catch { /* 무시 */ } }
