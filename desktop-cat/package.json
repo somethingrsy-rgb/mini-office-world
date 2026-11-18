@@ -1,0 +1,23 @@
+{
+  "name": "ruby-desktop-cat",
+  "version": "1.0.0",
+  "description": "바탕화면을 돌아다니는 아기 고양이 루비",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "local.ruby.desktopcat",
+    "productName": "루비 고양이",
+    "icon": "icon.png",
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "dims.js", "icon.png", "frames/**"],
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }] },
+    "portable": { "artifactName": "Ruby-Cat.exe" },
+    "directories": { "output": "dist" }
+  }
+}
