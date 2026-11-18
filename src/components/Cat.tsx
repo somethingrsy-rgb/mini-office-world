@@ -4,7 +4,7 @@ import { CAT_COUNT, CAT_DIM } from '../cats.gen'
 import { FLOOR_Y, route } from '../schedule'
 
 const WALK_SPEED = 48 // 하우스 좌표/초: 우아하게 천천히 (걸음 그림 속도에 맞춰요)
-const SCALE = 0.7      // 그림 1px이 하우스 좌표에서 차지하는 크기 (1.5배로 키웠던 것을 1배로 되돌림)
+const SCALE = 1.05      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 137)
 /** 자세마다 번갈아 보여 줄 그림들 (tools/process_cats.py 가 만든 개수대로) */
 const frames = (g: string) => Array.from({ length: CAT_COUNT[g] }, (_, i) => `${g}${i}`)
 const FRAMES = {
