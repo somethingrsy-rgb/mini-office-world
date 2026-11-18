@@ -1,22 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { asset } from '../assets'
-import { CAT_COUNT, CAT_DIM } from '../cats.gen'
+import { CAT_DIM } from '../cats.gen'
 import { FLOOR_Y, route } from '../schedule'
 
 const WALK_SPEED = 48 // 하우스 좌표/초: 우아하게 천천히 (걸음 그림 속도에 맞춰요)
 const SCALE = 1.05      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 137)
-/** 자세마다 번갈아 보여 줄 그림들 (tools/process_cats.py 가 만든 개수대로) */
-const frames = (g: string) => Array.from({ length: CAT_COUNT[g] }, (_, i) => `${g}${i}`)
+/** 자세마다 번갈아 보여 줄 그림들 */
 const FRAMES = {
-  stand: frames('stand'),
-  walk: frames('walk'),
-  sit: frames('sit'),
-  sleep: frames('sleep'),
-  groom: frames('groom'),
-  stretch: frames('stretch'),
-  aegyo: frames('aegyo'),
-  jump: frames('jump'),
-}
+  stand: ['walk0'],
+  walk: ['walk0', 'walk1', 'walk2', 'walk3', 'walk4', 'walk5', 'walk6', 'walk7'],
+  sit: ['sit0', 'sit1', 'sit2'],
+  sleep: ['sleep0', 'sleep1'],
+  groom: ['groom0', 'groom1'],
+  stretch: ['stretch0', 'stretch1', 'stretch2'],
+  aegyo: ['aegyo0', 'aegyo1', 'aegyo2'],
+  jump: ['jump0', 'jump1', 'jump2', 'jump3', 'jump4', 'jump5', 'jump6', 'jump7', 'jump8', 'jump9', 'jump10', 'jump11'],
+} as const
 type Pose = keyof typeof FRAMES
 type Spot = { x: number; y: number }
 
@@ -106,7 +105,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   // 그림 바꾸는 속도: 걸을 때는 빠르게(한 걸음씩), 애교는 1.4초, 쉴 때는 천천히(눈 깜빡임·숨쉬기처럼)
   useEffect(() => {
     // 움직이는 동안(걷기·뛰기·애교)만 그림을 바꿔요. 멈춰서 쉬는 모습은 그림 하나로 가만히 있어요
-    const ms = pose === 'walk' ? 190 : pose === 'jump' ? 85 : pose === 'aegyo' ? 1400 : 0
+    const ms = pose === 'walk' ? 190 : pose === 'jump' ? 100 : pose === 'aegyo' ? 1400 : 0
     if (!ms) return
     const t = window.setInterval(() => setFrame((f) => f + 1), ms)
     return () => window.clearInterval(t)
@@ -124,7 +123,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   const pet = (e: React.MouseEvent) => {
     e.stopPropagation()
     holdUntil.current = Date.now() + 6500
-    aegyoStart.current = Math.floor(Math.random() * 4)
+    aegyoStart.current = Math.floor(Math.random() * 3)
     targetRef.current = { x: cur.current.x, y: cur.current.y }
     setTarget({ x: cur.current.x, y: cur.current.y }) // 걷던 걸음을 마치고 멈춰요
     setAegyoUntil(Date.now() + 4500)
