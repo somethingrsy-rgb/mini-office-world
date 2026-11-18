@@ -4,6 +4,9 @@ contextBridge.exposeInMainWorld('api', {
   config: () => ipcRenderer.invoke('config'),
   saveAlarms: (list) => ipcRenderer.send('alarms', list),
   startTimer: (m) => ipcRenderer.send('timer', m),
+  layout: () => ipcRenderer.invoke('layout'),
+  onLayout: (fn) => ipcRenderer.on('layout', (_e, l) => fn(l)),
+  onWindows: (fn) => ipcRenderer.on('windows', (_e, w) => fn(w)),
   onTimer: (fn) => ipcRenderer.on('timer', (_e, m) => fn(m)),
   onConfig: (fn) => ipcRenderer.on('config', (_e, c) => fn(c)),
 })
