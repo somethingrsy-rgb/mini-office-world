@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>루비 알람·타이머</title>
+<style>
+  body { margin:0; padding:18px 20px 30px; font:14px 'Malgun Gothic',sans-serif; color:#3d3354; background:#fbf8ff; }
+  h1 { font-size:18px; margin:0 0 4px } h2 { font-size:15px; margin:22px 0 8px } p.m { margin:0 0 10px; color:#7a6f92; font-size:12.5px }
+  .row { display:flex; gap:8px; align-items:center; margin:6px 0; flex-wrap:wrap }
+  button { border:0; border-radius:10px; padding:8px 14px; font:700 13px 'Malgun Gothic',sans-serif; background:#e9e0ff; color:#3d3354; cursor:pointer }
+  button.p { background:#ff86b6; color:#fff } button.x { background:#ffe3e3; color:#c0344f; padding:6px 10px }
+  input[type=time], input[type=text], input[type=number] { padding:7px 9px; border:1.5px solid #ddd2f7; border-radius:9px; font:inherit; background:#fff }
+  input[type=text] { flex:1; min-width:120px } input[type=number] { width:80px }
+  .al { background:#fff; border:1.5px solid #eee6ff; border-radius:12px; padding:8px 10px; margin:8px 0 }
+  .days label { margin-right:6px; font-size:12.5px; white-space:nowrap } .days input { vertical-align:-2px }
+  .off { opacity:.5 }
+</style></head><body>
+<h1>🐱 루비 알람 · 타이머</h1>
+<p class="m">알람과 타이머가 울리면 루비가 계속 뛰어다니며 알려줘요. 루비를 누르면 멈춰요.</p>
+
+<h2>⏱ 타이머</h2>
+<div class="row"><button class="p" data-m="5">5분</button><button class="p" data-m="10">10분</button><button class="p" data-m="20">20분</button><button class="p" data-m="30">30분</button><button class="p" data-m="60">60분</button></div>
+<div class="row"><input id="cm" type="number" min="1" max="600" placeholder="분"> <button id="cs">직접 시작</button> <button id="cc">타이머 취소</button></div>
+
+<h2>⏰ 알람</h2>
+<div id="list"></div>
+<div class="row"><button class="p" id="add">+ 알람 추가</button></div>
+<script src="settings.js"></script>
+</body></html>

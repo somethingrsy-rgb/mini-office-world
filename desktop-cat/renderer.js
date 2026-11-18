@@ -4,7 +4,7 @@ const api = window.api || { ignore() {}, config: async () => ({ size: 1 }), onCo
 const catEl = document.getElementById('cat'), img = document.getElementById('img')
 const FR = (g, n) => Array.from({ length: n }, (_, i) => `${g}${i}`)
 const SCALE = 0.8          // 그림 1px이 화면에서 차지하는 크기 (보통 크기일 때 고양이 키 ≈ 100px)
-let conf = { hourly: true, sound: true, hours: 'all' }
+let conf = { hourly: true, sound: true, hours: 'all', alarms: [] }
 let st = { x: 300, dir: 1, mode: 'stand', t: 0, frame: 0, until: 0, jumpT: 0, pounceDir: 1, cool: 0 }
 const mouse = { x: -999, y: -999 }
 let hover = false
@@ -35,6 +35,7 @@ function pick(now) {
 function frameFor(now) {
   const n = (g) => dims.count[g]
   switch (st.mode) {
+    case 'run': return st.dir > 0 ? `walkR${Math.floor(now / 80) % n('walkR')}` : `walkL${Math.floor(now / 80) % n('walkL')}`
     case 'walk': return st.dir > 0 ? `walkR${Math.floor(now / 150) % n('walkR')}` : `walkL${Math.floor(now / 150) % n('walkL')}`
     case 'jump': return `up${Math.min(n('up') - 1, Math.floor((now - st.jumpT) / 120))}`
     case 'pounce': return `pounce${Math.min(n('pounce') - 1, Math.floor((now - st.pounceT) / 110))}`
@@ -56,13 +57,13 @@ function loop(now) {
 
   // 마우스가 가까이 오면 잡으려고 해요 (뛰는 중·애교 중에는 안 해요)
   const cx = st.x, cyTop = groundY - H
-  if (!['pounce', 'aegyo', 'jump'].includes(st.mode) && now > st.cool && Math.abs(mouse.x - cx) < 260 * size && mouse.y > cyTop - 120 && mouse.y < groundY + 4 && !hover) {
+  if (!['pounce', 'aegyo', 'jump', 'run'].includes(st.mode) && now > st.cool && Math.abs(mouse.x - cx) < 260 * size && mouse.y > cyTop - 120 && mouse.y < groundY + 4 && !hover) {
     st.mode = 'pounce'; st.pounceT = now; st.until = now + 1400; st.pounceDir = mouse.x < cx ? -1 : 1; st.cool = now + 1400 + 6000
   }
   if (now > st.until) { if (st.after) { st.mode = st.after.mode; st.until = st.after.until; st.after = null } else pick(now) }   // 행동이 끝나면 다음 행동을 골라요
 
-  if (st.mode === 'walk') {
-    const speed = 0.3 * W   // 걸음 그림에 맞춰 발이 미끄러지지 않을 속도
+  if (st.mode === 'walk' || st.mode === 'run') {
+    const speed = (st.mode === 'run' ? 1.5 : 0.3) * W   // 걷기: 걸음 그림에 맞춰 발이 미끄러지지 않을 속도 / 알람이 울리는 동안은 신나게 뛰어다녀요
     st.x += st.dir * speed * dt
     const margin = W * 0.5 + 8
     if (st.x < margin) { st.x = margin; st.dir = 1 } else if (st.x > innerWidth - margin) { st.x = innerWidth - margin; st.dir = -1 } // 화면 끝에서 돌아서 걸어요
@@ -71,6 +72,7 @@ function loop(now) {
   const dd = dims.dim[key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
   let lift = 0
   if (st.mode === 'jump') lift = Math.sin(Math.min(1, (now - st.jumpT) / 1500) * Math.PI) * 70 * size
+  if (st.mode === 'run') lift = Math.abs(Math.sin((now - st.runT) / 230)) * 55 * size
   if (st.mode === 'aegyo') lift = Math.abs(Math.sin((now - st.aegyoT) / 220)) * 5 * size
   const flip = st.mode === 'pounce' ? st.pounceDir < 0 : ['walk'].includes(st.mode) ? false : st.dir < 0
   if (img.dataset.k !== key) { img.src = `frames/${key}.webp`; img.dataset.k = key }
@@ -92,6 +94,7 @@ document.addEventListener('mousedown', () => { if (hover) petCat() })
 
 function petCat() {
   const now = performance.now()
+  stopRing()
   st.mode = 'aegyo'; st.aegyoT = now; st.until = now + 4500; st.cool = now + 6500
   const b = st.box
   for (let i = 0; i < 3; i++) {
@@ -122,12 +125,22 @@ function chime() {
     setTimeout(() => ac.close(), 1500)
   } catch { /* 소리를 못 내도 알림은 보여요 */ }
 }
-function alert(text) {
+function alert(text) {   // 정각 알림: 폴짝 한 번
   const now = performance.now()
   st.mode = 'jump'; st.jumpT = now; st.until = now + 1500   // 폴짝 뛰어 알려요 → 끝나면 앉아서 말풍선 아래에 있어요
   st.after = { mode: 'sit', until: now + 1500 + 8000 }
   chime(); say(text)
 }
+// 알람·타이머가 울리면 루비가 계속 뛰어다녀요. 루비를 누르면 멈추고(최대 3분)
+let ringTimer = 0
+function ring(text) {
+  const now = performance.now()
+  st.mode = 'run'; st.runT = now; st.dir = Math.random() < 0.5 ? -1 : 1; st.until = now + 180000; st.after = null
+  say(text + '  (루비를 눌러 주세요)', 180000)
+  chime(); clearInterval(ringTimer)
+  ringTimer = setInterval(() => { if (st.mode !== 'run') return clearInterval(ringTimer); chime() }, 8000)
+}
+function stopRing() { clearInterval(ringTimer); if (bubbleEl) { bubbleEl.remove(); bubbleEl = null } }
 const hourText = (h) => {
   if (h === 9) return '좋은 아침이에요! 9시 정각이에요'
   if (h === 12) return '12시 정각, 점심시간이에요!'
@@ -135,9 +148,23 @@ const hourText = (h) => {
   if (h === 0) return '밤 12시 정각이에요'
   return h < 12 ? `오전 ${h}시 정각이에요` : `오후 ${h - 12}시 정각이에요`
 }
+const fired = {}
+function checkAlarms(d) {
+  for (const a of conf.alarms || []) {
+    if (!a.on || !a.time) continue
+    const [hh, mm] = a.time.split(':').map(Number)
+    if (d.getHours() !== hh || d.getMinutes() !== mm || d.getSeconds() > 10) continue
+    if (!(a.days || []).includes(d.getDay())) continue
+    const key = a.id + d.toDateString() + a.time
+    if (fired[key]) continue
+    fired[key] = 1
+    ring(`⏰ ${a.time} ${a.label || '알람'}`)
+  }
+}
 let lastHourKey = ''
 setInterval(() => {
   const d = new Date()
+  checkAlarms(d)
   if (d.getMinutes() !== 0 || d.getSeconds() > 5 || !conf.hourly) return
   const key = `${d.getFullYear()}${d.getMonth()}${d.getDate()}${d.getHours()}`
   if (key === lastHourKey) return
@@ -149,8 +176,8 @@ function setTimer(min) {
   clearTimeout(timerId)
   if (!min) { say('타이머를 취소했어요', 3000); return }
   say(`${min}분 뒤에 알려 드릴게요`, 3000)
-  timerId = setTimeout(() => alert(`${min}분이 지났어요!`), min * 60000)
+  timerId = setTimeout(() => ring(`⏱ ${min}분 타이머가 끝났어요!`), min * 60000)
 }
-window.__alert = alert; window.__timer = setTimer   // 시험용
+window.__alert = alert; window.__timer = setTimer; window.__ring = ring   // 시험용
 
 init()

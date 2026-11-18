@@ -7,11 +7,11 @@ const fs = require('fs')
 if (!app.requestSingleInstanceLock()) app.quit()
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all' }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
+let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all', alarms: [] }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
-let win = null, tray = null
+let win = null, tray = null, setWin = null
 
 function fit() {
   // 주 모니터의 작업 영역(작업표시줄 위쪽까지)을 덮어요
@@ -33,6 +33,15 @@ function createWindow() {
   screen.on('display-metrics-changed', () => win && fit())
 }
 
+function openSettings() {
+  if (setWin && !setWin.isDestroyed()) { setWin.show(); setWin.focus(); return }
+  setWin = new BrowserWindow({ width: 480, height: 680, title: '루비 알람·타이머', autoHideMenuBar: true, icon: path.join(__dirname, 'icon.png'),
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false } })
+  setWin.setMenu(null)
+  setWin.loadFile('settings.html')
+  setWin.on('closed', () => { setWin = null })
+}
+
 function sendCfg() { win && win.webContents.send('config', cfg) }
 
 function buildMenu() {
@@ -51,7 +60,8 @@ function buildMenu() {
       { label: '하루 종일', type: 'radio', checked: cfg.hours === 'all', click: () => { cfg.hours = 'all'; save(); sendCfg() } },
       { label: '평일 9~18시만', type: 'radio', checked: cfg.hours === 'work', click: () => { cfg.hours = 'work'; save(); sendCfg() } },
     ] },
-    { label: '타이머', submenu: [5, 10, 30, 60].map((m) => ({ label: `${m}분 뒤 알림`, click: () => win && win.webContents.send('timer', m) })).concat([{ type: 'separator' }, { label: '타이머 취소', click: () => win && win.webContents.send('timer', 0) }]) },
+    { label: '알람·타이머 설정…', click: openSettings },
+    { label: '타이머', submenu: [5, 10, 20, 30, 60].map((m) => ({ label: `${m}분 뒤 알림`, click: () => win && win.webContents.send('timer', m) })).concat([{ type: 'separator' }, { label: '타이머 취소', click: () => win && win.webContents.send('timer', 0) }]) },
     { label: '시작할 때 자동 실행', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (m) => app.setLoginItemSettings({ openAtLogin: m.checked }) },
     { type: 'separator' },
     { label: '종료', click: () => app.quit() },
@@ -69,4 +79,7 @@ app.whenReady().then(() => {
 // 고양이 위에서는 마우스를 받고(쓰다듬기), 그 밖에서는 클릭이 뒤 창으로 통과해요
 ipcMain.on('ignore', (_e, ignore) => { win && win.setIgnoreMouseEvents(ignore, { forward: true }) })
 ipcMain.handle('config', () => cfg)
+// 설정 창에서: 알람 목록 저장, 타이머 시작·취소
+ipcMain.on('alarms', (_e, list) => { cfg.alarms = Array.isArray(list) ? list.slice(0, 50) : []; save(); sendCfg() })
+ipcMain.on('timer', (_e, m) => { win && win.webContents.send('timer', Number(m) || 0) })
 app.on('window-all-closed', () => app.quit())
