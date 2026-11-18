@@ -46,6 +46,8 @@ const FOOT_DROP = 10
 export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
+  // 마우스·손가락이 하우스 위 어디에 있는지 (고양이가 잡으려고 해요)
+  const pointerRef = useRef<{ x: number; y: number } | null>(null)
   // 하우스 그림(나무·바다·웨딩·놀이동산)에서는 아바타·고양이·접수대를 바닥 쪽으로 30 내려요 (안내선 '아래 30')
   const drop = skin !== 'default' ? FOOT_DROP : 0
   const catDrop = skin !== 'default' ? CAT_DROP : 0
@@ -65,7 +67,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
     return { x: q.x, y: q.y }
   }
   return (
-    <svg ref={svgRef} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
+    <svg ref={svgRef} onPointerMove={(e) => { const q = toHouse(e as unknown as React.MouseEvent); pointerRef.current = q }} onPointerLeave={() => { pointerRef.current = null }} onPointerCancel={() => { pointerRef.current = null }} onPointerUp={(e) => { if (e.pointerType !== 'mouse') pointerRef.current = null }} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className={`houseimg ${dark && skin !== 'default' ? `nightskin ${skin}` : ''}`} href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
       {guide && (
         <g pointerEvents="none" fontSize="19" fontWeight="800">
@@ -105,7 +107,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       </g>
       {cats && (
         <g transform={`translate(0 ${catDrop})`}>
-          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} />
+          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />
         </g>
       )}
       <g transform={`translate(0 ${drop})`}>

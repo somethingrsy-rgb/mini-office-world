@@ -192,6 +192,54 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "w": 165,
   "h": 176
  },
+ "pounce0": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce1": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce2": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce3": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce4": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce5": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce6": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce7": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce8": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce9": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce10": {
+  "w": 176,
+  "h": 133
+ },
+ "pounce11": {
+  "w": 176,
+  "h": 133
+ },
  "sit0": {
   "w": 122,
   "h": 152
@@ -209,4 +257,4 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
   "h": 120
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1}

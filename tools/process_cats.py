@@ -8,7 +8,7 @@ from PIL import Image
 import scipy.ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SHEETS = {'walkR': 'walkR', 'walkL': 'walkL', 'up': 'jumpup', 'down': 'jumpdown'}
+SHEETS = {'walkR': 'walkR', 'walkL': 'walkL', 'up': 'jumpup', 'down': 'jumpdown', 'pounce': 'pounce'}  # pounce: 손가락·마우스를 잡으려는 동작
 STAND_PX = 130  # 걷기 그림의 평균 몸 크기가 이 키(px)쯤 되도록 줄여요
 
 

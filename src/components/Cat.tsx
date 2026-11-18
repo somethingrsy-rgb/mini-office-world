@@ -17,6 +17,7 @@ const FRAMES = {
   walkL: seq('walkL'),
   jumpUp: seq('up'),
   jumpDown: seq('down'),
+  pounce: seq('pounce'),     // 손가락·마우스 커서를 잡으려는 동작 (12장)
 }
 type Pose = keyof typeof FRAMES
 type Spot = { x: number; y: number }
@@ -33,7 +34,7 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[] }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid, pointer }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null }) {
   const cur = useRef<Spot>({ ...start })
   const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: 'r' as 'l' | 'r', moving: false, jump: false, leg: 0, up: false })
   const [variant, setVariant] = useState(0) // 쉴 때 보여 줄 그림 번호 (쉬는 동안은 그림을 바꾸지 않아요)
@@ -44,6 +45,9 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   const [target, setTarget] = useState<Spot>({ ...start })
   const aegyoStart = useRef(0)
   const targetRef = useRef<Spot>({ ...start })
+  const [pounceUntil, setPounceUntil] = useState(0)
+  const [pounceDir, setPounceDir] = useState<'l' | 'r'>('r')
+  const pounceCool = useRef(0)
   const holdUntil = useRef(0) // 애교 중에는 새 자리로 떠나지 않아요
 
   const crowded = (p: Spot) => (avoid?.() ?? []).some((q) => Math.abs(q.y - p.y) < 45 && Math.abs(q.x - p.x) < 120)
@@ -102,12 +106,39 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
     return () => window.clearTimeout(timer)
   }, [target.x, target.y])
 
+  // 마우스·손가락이 가까이 오면 눈으로 쫓다가 앞발로 잡으려 해요 (뛰는 중·애교 중에는 안 해요)
+  const jumpingRef = useRef(false)
+  jumpingRef.current = st.jump
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const now = Date.now()
+      const q = pointer?.()
+      if (!q || jumpingRef.current || now < pounceCool.current || now < holdUntil.current) return
+      const cy = cur.current.y + 30 // 그림이 놓이는 높이(발 기준)에 맞춘 하우스 좌표
+      if (Math.abs(q.x - cur.current.x) < 190 && q.y > cy - 150 && q.y < cy + 40) {
+        const dur = 1400
+        pounceCool.current = now + dur + 6000
+        holdUntil.current = now + dur
+        targetRef.current = { x: cur.current.x, y: cur.current.y }
+        setTarget({ x: cur.current.x, y: cur.current.y }) // 걷던 걸음을 멈춰요
+        setPounceDir(q.x < cur.current.x ? 'l' : 'r')
+        setPounceUntil(now + dur)
+      }
+    }, 150)
+    return () => window.clearInterval(t)
+  }, [])
+  const pouncing = Date.now() < pounceUntil
+  useEffect(() => {
+    if (!pounceUntil) return
+    const t = window.setTimeout(() => setFrame((f) => f + 1), Math.max(0, pounceUntil - Date.now()) + 60)
+    return () => window.clearTimeout(t)
+  }, [pounceUntil])
   const aegyo = Date.now() < aegyoUntil
-  const pose: Pose = aegyo ? 'aegyo' : st.moving ? (st.jump ? (st.up ? 'jumpUp' : 'jumpDown') : st.face === 'l' ? 'walkL' : 'walk') : rest
+  const pose: Pose = pouncing && !aegyo ? 'pounce' : aegyo ? 'aegyo' : st.moving ? (st.jump ? (st.up ? 'jumpUp' : 'jumpDown') : st.face === 'l' ? 'walkL' : 'walk') : rest
   // 그림 바꾸는 속도: 걸을 때는 빠르게(한 걸음씩), 애교는 1.4초, 쉴 때는 천천히(눈 깜빡임·숨쉬기처럼)
   useEffect(() => {
     // 움직이는 동안(걷기·뛰기·애교)만 그림을 바꿔요. 멈춰서 쉬는 모습은 그림 하나로 가만히 있어요
-    const ms = pose === 'walk' || pose === 'walkL' ? 150 : pose === 'jumpUp' || pose === 'jumpDown' ? 120 : 0  // 걷기 12장·뛰기 12장을 한 번씩 (뛰기는 1.5초에 맞춰요)
+    const ms = pose === 'walk' || pose === 'walkL' ? 150 : pose === 'jumpUp' || pose === 'jumpDown' ? 120 : pose === 'pounce' ? 110 : 0  // 걷기 12장·뛰기 12장을 한 번씩 (뛰기는 1.5초에 맞춰요)
     if (!ms) return
     const t = window.setInterval(() => setFrame((f) => f + 1), ms)
     return () => window.clearInterval(t)
@@ -120,7 +151,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   }, [aegyoUntil])
   useEffect(() => { setFrame(0) }, [pose, st.leg])
   const list = FRAMES[pose]
-  const key = pose === 'jumpUp' || pose === 'jumpDown' ? list[Math.min(frame, list.length - 1)] : list.length > 1 ? list[frame % list.length] : list[0]
+  const key = pose === 'jumpUp' || pose === 'jumpDown' || pose === 'pounce' ? list[Math.min(frame, list.length - 1)] : list.length > 1 ? list[frame % list.length] : list[0]
 
   const pet = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -135,7 +166,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
 
   const d = CAT_DIM[key]
   const W = d.w * SCALE, H = d.h * SCALE
-  const flip = st.face === 'l' && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
+  const flip = (pose === 'pounce' ? pounceDir === 'l' : st.face === 'l') && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
   return (
     <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label="루비(고양이) 쓰다듬기" cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
