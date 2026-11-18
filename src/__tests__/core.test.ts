@@ -80,6 +80,19 @@ describe('아바타 이동·자리', () => {
     const xs = ids.filter((i) => i !== 'user' && out[i].spot.y < 550).map((i) => out[i].spot.x).sort((a, b) => a - b)
     for (let i = 1; i < xs.length; i++) expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(60)
   })
+  it('눌러서 같은 자리로 보내거나 결과 확인 칸에 모여도 서로 겹치지 않아요', () => {
+    const ids = ['momo', 'luna', 'coco', 'mimi', 'kiki', 'user'] as const
+    const mk = (over: Record<string, unknown>) => Object.fromEntries(ids.map((id) => [id, { ...getActivity(id, 600, null, undefined, null, true, 0), ...over }])) as Record<(typeof ids)[number], ReturnType<typeof getActivity>>
+    for (const acts of [mk({ spot: { x: 500, y: 690, face: 'r' }, pose: 'stand' }), mk({ event: 'finish' })]) {
+      const fin = Object.fromEntries(ids.map((id) => [id, { ...acts[id], spot: id === 'user' ? acts[id].spot : { ...acts[id].spot, x: 800, y: 1002 } }])) as typeof acts
+      const out = spreadSpots(fin)
+      const pts = ids.filter((i) => i !== 'user').map((i) => out[i].spot)
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
+        const near = Math.abs(pts[i].y - pts[j].y) < 26 && Math.abs(pts[i].x - pts[j].x) < 65
+        expect(near).toBe(false)
+      }
+    }
+  })
   it('대기 중에는 정원(바깥)으로 나가지 않아요', () => {
     for (const slot of Array.from({ length: 60 }, (_, i) => i * 4)) for (const id of ['momo', 'luna', 'coco', 'mimi', 'kiki'] as const) {
       expect(getActivity(id, 600, null, undefined, null, true, slot).spot.y).toBeLessThan(550)

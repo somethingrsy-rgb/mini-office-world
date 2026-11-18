@@ -264,21 +264,28 @@ export function routeLength(from: { x: number; y: number }, to: { x: number; y: 
 }
 
 /** 라운지·정원에서 쉬는 아바타끼리 같은 자리에 서지 않도록 가로 위치를 벌려 줘요 (일하는 방·접수대는 자리가 따로 정해져 있어서 건드리지 않아요) */
-export function spreadSpots<T extends { spot: Spot; task?: string; leaving?: boolean; enter?: Spot }>(acts: Record<AvatarId, T>): Record<AvatarId, T> {
+export function spreadSpots<T extends { spot: Spot; task?: string; leaving?: boolean; enter?: Spot; pose?: string; manual?: boolean }>(acts: Record<AvatarId, T>): Record<AvatarId, T> {
   const out = { ...acts }
-  const free = (id: AvatarId) => !acts[id].task && !acts[id].leaving && !acts[id].enter && id !== 'user' && (Math.abs(acts[id].spot.y - AT) < 30)
-  const placed: Spot[] = []
-  for (const id of ORDER.filter(free)) {
-    const base = acts[id].spot
-    let x = base.x
-    for (const d of [0, 100, -100, 200, -200, 300, -300]) {
-      const nx = base.x + d
-      if (nx < 130 || nx > 870) continue
-      if (!placed.some((p) => Math.abs(p.y - base.y) < 40 && Math.abs(p.x - nx) < 100)) { x = nx; break }
+  // 자리가 따로 정해진 아바타(일하는 중·정문으로 나가는 중·접수대로 오는 중)와 소영은 그대로 두고, 나머지가 서로 겹치지 않게 비켜 서요
+  const fixed = (id: AvatarId) => id === 'user' || !!acts[id].task || !!acts[id].leaving || !!acts[id].enter
+  const placed: Spot[] = ORDER.filter(fixed).map((id) => acts[id].spot)
+  for (const id of ORDER.filter((i) => !fixed(i))) {
+    const a = acts[id]
+    const base = a.spot
+    const done = a.pose === 'done' // 결과 확인 방은 좁아서 간격을 줄이고 방 안에서만
+    const gap = done ? 70 : 95
+    const lo = done ? 660 : 120, hi = done ? 940 : 880
+    const clash = (x: number, y: number) => placed.some((p) => Math.abs(p.y - y) < 26 && Math.abs(p.x - x) < gap)
+    let spot: Spot = base
+    search: for (const dy of [0, 30, -30]) {                              // 같은 줄에서 못 찾으면 앞줄·뒷줄에 서요
+      for (const d of [0, 95, -95, 190, -190, 285, -285, 380, -380]) {
+        const nx = base.x + d
+        if (nx < lo || nx > hi) continue
+        if (!clash(nx, base.y + dy)) { spot = { ...base, x: nx, y: base.y + dy }; break search }
+      }
     }
-    const spot = { ...base, x }
     placed.push(spot)
-    out[id] = { ...acts[id], spot }
+    out[id] = { ...a, spot }
   }
   return out
 }
