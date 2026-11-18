@@ -8,7 +8,11 @@ const SCALE = 0.84     // 그림 1px이 하우스 좌표에서 차지하는 크�
 /** 그림 묶음 (tools/process_cats.py 가 만든 12프레임씩): 걷기(오른쪽·왼쪽), 위층으로 뛰기, 아래층으로 뛰기 */
 const seq = (g: string) => Array.from({ length: CAT_COUNT[g] }, (_, i) => `${g}${i}`)
 const FRAMES = {
-  stand: ['up0'],            // 서 있기·쉬기·애교 때는 이 한 장
+  stand: ['up0'],            // 서 있기
+  sit: ['sit0'],
+  sleep: ['sleep0'],
+  groom: ['groom0'],
+  aegyo: ['aegyo0'],         // 쓰다듬으면 배를 보이며 구르는 애교
   walk: seq('walkR'),
   walkL: seq('walkL'),
   jumpUp: seq('up'),
@@ -24,7 +28,7 @@ const SPOTS: Spot[] = [
   { x: 120, y: 1046 }, { x: 255, y: 1052 }, // 접수대(주인인 소영이 있는 곳) 앞
   { x: 430, y: FLOOR_Y.f1 }, { x: 560, y: FLOOR_Y.f1 }, { x: 760, y: FLOOR_Y.f1 }, { x: 880, y: FLOOR_Y.f1 },
 ]
-const REST: Pose[] = ['stand']
+const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
@@ -99,7 +103,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
   }, [target.x, target.y])
 
   const aegyo = Date.now() < aegyoUntil
-  const pose: Pose = aegyo ? 'stand' : st.moving ? (st.jump ? (st.up ? 'jumpUp' : 'jumpDown') : st.face === 'l' ? 'walkL' : 'walk') : 'stand'
+  const pose: Pose = aegyo ? 'aegyo' : st.moving ? (st.jump ? (st.up ? 'jumpUp' : 'jumpDown') : st.face === 'l' ? 'walkL' : 'walk') : rest
   // 그림 바꾸는 속도: 걸을 때는 빠르게(한 걸음씩), 애교는 1.4초, 쉴 때는 천천히(눈 깜빡임·숨쉬기처럼)
   useEffect(() => {
     // 움직이는 동안(걷기·뛰기·애교)만 그림을 바꿔요. 멈춰서 쉬는 모습은 그림 하나로 가만히 있어요
@@ -131,11 +135,11 @@ export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: st
 
   const d = CAT_DIM[key]
   const W = d.w * SCALE, H = d.h * SCALE
-  const flip = st.face === 'l' && (pose === 'stand' || pose === 'jumpUp' || pose === 'jumpDown') // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
+  const flip = st.face === 'l' && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
   return (
     <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear` }} onClick={pet} role="button" aria-label="루비(고양이) 쓰다듬기" cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
-      <g key={st.jump ? st.leg : aegyo ? 'a' + hearts : 'x'} style={st.jump ? { animation: `catarc ${st.dur}s ease-in-out` } : aegyo ? { animation: 'catbounce2 .5s ease-in-out 3' } : undefined}>
+      <g key={st.jump ? st.leg : aegyo ? 'a' + hearts : 'x'} style={st.jump ? { animation: `catarc ${st.dur}s ease-in-out` } : undefined}>
         <g transform={flip ? 'scale(-1 1)' : undefined}>
           <image href={asset(`cats/${key}.webp`)} x={-W / 2} y={-H} width={W} height={H} style={tint ? { filter: tint } : undefined} />
         </g>

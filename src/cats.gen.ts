@@ -191,6 +191,22 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
  "down11": {
   "w": 165,
   "h": 176
+ },
+ "sit0": {
+  "w": 122,
+  "h": 152
+ },
+ "sleep0": {
+  "w": 155,
+  "h": 104
+ },
+ "groom0": {
+  "w": 131,
+  "h": 147
+ },
+ "aegyo0": {
+  "w": 164,
+  "h": 120
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1}
