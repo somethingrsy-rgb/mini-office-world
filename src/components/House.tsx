@@ -24,6 +24,8 @@ interface Props {
   skin?: Skin
   /** 바닥 맞춤 안내선 보기 (설정에서 켜요) */
   guide?: boolean
+  /** 확대할 때 하우스 그림 크기 (핀치 확대) */
+  houseStyle?: React.CSSProperties
   /** 돌아다니는 아기 고양이 보이기 */
   cats?: boolean
   /** 접수대에서 일을 받기 시작한 아바타 */
@@ -43,7 +45,7 @@ const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeA
 const CAT_DROP = 30
 const FOOT_DROP = 10
 
-export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
+export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, houseStyle, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
   // 마우스·손가락이 하우스 위 어디에 있는지 (고양이가 잡으려고 해요)
@@ -67,7 +69,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
     return { x: q.x, y: q.y }
   }
   return (
-    <svg ref={svgRef} onPointerMove={(e) => { const q = toHouse(e as unknown as React.MouseEvent); pointerRef.current = q }} onPointerLeave={() => { pointerRef.current = null }} onPointerCancel={() => { pointerRef.current = null }} onPointerUp={(e) => { if (e.pointerType !== 'mouse') pointerRef.current = null }} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
+    <svg ref={svgRef} style={houseStyle} onPointerMove={(e) => { const q = toHouse(e as unknown as React.MouseEvent); pointerRef.current = q }} onPointerLeave={() => { pointerRef.current = null }} onPointerCancel={() => { pointerRef.current = null }} onPointerUp={(e) => { if (e.pointerType !== 'mouse') pointerRef.current = null }} viewBox={`0 0 ${th.houseDim.w} ${th.houseDim.h}`} className="house" role="img" aria-label="미니어처 오피스 하우스">
       <image className={`houseimg ${dark && skin !== 'default' ? `nightskin ${skin}` : ''}`} href={th.house} width={th.houseDim.w} height={th.houseDim.h} />
       {guide && (
         <g pointerEvents="none" fontSize="19" fontWeight="800">

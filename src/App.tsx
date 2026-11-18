@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import House from './components/House'
 import { AVATARS, applyNames, type AvatarId } from './avatars'
 import { asset, preloadAssets, themed } from './assets'
@@ -35,6 +35,7 @@ import BottomBar from './components/BottomBar'
 import SidePanel from './components/SidePanel'
 import EventForm from './components/EventForm'
 import { useLandscape } from './useLandscape'
+import { usePinchZoom } from './usePinchZoom'
 import { usePipPrefs } from './usePipPrefs'
 import { useAvatarEvents } from './useAvatarEvents'
 import ReminderBar from './components/ReminderBar'
@@ -111,7 +112,8 @@ export default function App() {
   const phoneLand = landMode === 'phone'
   const [sideTab, setSideTab] = useState<'todo' | 'cal' | 'list'>('todo')
   // 가로 화면에서 하우스를 확대해서 볼 수 있어요 (1~2.6배)
-  const [zoom, setZoom] = useState(1)
+  const stageRef = useRef<HTMLElement>(null)
+  const { zoom, setZoom, stageStyle, houseStyle } = usePinchZoom(stageRef)
   const [view, setView] = useState<null | 'form' | 'list' | 'schedule' | 'brief' | 'settings' | 'todo'>(null)
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
@@ -431,7 +433,7 @@ export default function App() {
   })
 
   return (
-    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''} ${phoneLand ? 'phone' : ''}`} style={land ? { ['--zoom' as string]: zoom } : undefined}>
+    <div className={`app ${revealed ? '' : 'pre'} ${reminders.length && !userSay ? 'hasrem' : ''} ${land ? 'land' : ''} ${phoneLand ? 'phone' : ''}`} >
       {!introDone && <Intro dark={dark} skin={settings.skin} onReveal={() => setRevealed(true)} onDone={() => setIntroDone(true)} />}
       {pip.portal}
       <div className="sky" style={{ backgroundImage: `url(${themed(dark, 'default', settings.backdrop).bg})` }} />
@@ -450,15 +452,15 @@ export default function App() {
       {toast && <div className="toast" key={toast.key}><RichText text={toast.text} /></div>}
 
       <div className="stagewrap">
-      <main className="stage">
-        <House dark={dark} skin={settings.skin} guide={guide} cats={catsOn} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
+      <main className="stage" ref={stageRef} style={stageStyle}>
+        <House houseStyle={houseStyle} dark={dark} skin={settings.skin} guide={guide} cats={catsOn} activities={activities} alerts={alerts} cheers={cheers} labels={labels} shown={shown} speech={{ ...speech, ...(userSay ? { user: userSay } : {}) }} remaining={items.length} onReceived={onReceived} selected={selected} onRoom={setRoom} onMove={selected && (selected === 'user' || shown.includes(selected)) ? moveSelected : undefined} onManualArrived={manualArrived}
           onSelect={(id) => pickAvatar(id, true)} />
       </main>
-      {land && (
+      {(land || zoom > 1) && (
         <div className="zoombar" role="group" aria-label="하우스 확대">
-          <button onClick={() => setZoom((z) => Math.max(1, Math.round((z - 0.4) * 10) / 10))} disabled={zoom <= 1} aria-label="축소">−</button>
+          <button onClick={() => setZoom((z) => z - 0.4)} disabled={zoom <= 1} aria-label="축소">−</button>
           <button className="zv" onClick={() => setZoom(1)} aria-label="원래 크기">{Math.round(zoom * 100)}%</button>
-          <button onClick={() => setZoom((z) => Math.min(2.6, Math.round((z + 0.4) * 10) / 10))} disabled={zoom >= 2.6} aria-label="확대">+</button>
+          <button onClick={() => setZoom((z) => z + 0.4)} disabled={zoom >= 3} aria-label="확대">+</button>
         </div>
       )}
       </div>

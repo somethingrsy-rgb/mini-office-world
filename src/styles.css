@@ -919,7 +919,8 @@ html[data-theme="dark"] .namecard input { background:transparent; }
 html[data-theme="dark"] .sheet.glass .namecard input { border-bottom-color:rgba(255,235,190,.3); }
 
 /* ═══ 가로 화면(아이패드·PC): 왼쪽 하우스 + 오른쪽 3칸(해야 할 일 / 월간 달력 / 업무 목록) ═══ */
-.leftcol, .stagewrap { display:contents; }
+.leftcol { display:contents; }
+.stagewrap { display:block; position:relative; }
 .app.land { max-width:none; width:100%; margin:0; padding:0 14px 0 0; box-sizing:border-box; display:grid; grid-template-columns:minmax(0,1fr) clamp(380px,36vw,460px); column-gap:14px; --appw:calc(100vw - clamp(380px,36vw,460px) - 28px); }
 .app.land .leftcol { display:block; position:relative; min-width:0; height:100dvh; box-sizing:border-box; padding:var(--pt) 12px var(--pb); }
 .app.land.hasrem .leftcol { padding-bottom:calc(122px + env(safe-area-inset-bottom)); }
