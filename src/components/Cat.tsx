@@ -4,7 +4,7 @@ import { CAT_DIM } from '../cats.gen'
 import { FLOOR_Y, route } from '../schedule'
 
 const WALK_SPEED = 95 // 하우스 좌표/초 (아바타보다 느리게, 걸음 그림 속도에 맞춰요)
-const SCALE = 0.7      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 90)
+const SCALE = 1.05      // 그림 1px이 하우스 좌표에서 차지하는 크기 (고양이 키 ≈ 137)
 /** 자세마다 번갈아 보여 줄 그림들 */
 const FRAMES = {
   stand: ['walk0'],
@@ -22,6 +22,7 @@ type Spot = { x: number; y: number }
 const SPOTS: Spot[] = [
   { x: 230, y: FLOOR_Y.attic }, { x: 470, y: FLOOR_Y.attic }, { x: 640, y: FLOOR_Y.attic }, { x: 820, y: FLOOR_Y.attic },
   { x: 180, y: FLOOR_Y.f2 }, { x: 330, y: FLOOR_Y.f2 }, { x: 700, y: FLOOR_Y.f2 }, { x: 860, y: FLOOR_Y.f2 },
+  { x: 120, y: 1046 }, { x: 255, y: 1052 }, // 접수대(주인인 소영이 있는 곳) 앞
   { x: 430, y: FLOOR_Y.f1 }, { x: 560, y: FLOOR_Y.f1 }, { x: 760, y: FLOOR_Y.f1 }, { x: 880, y: FLOOR_Y.f1 },
 ]
 const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom', 'stretch']
@@ -29,7 +30,7 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom', 'stretch']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid }: { id: string; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[] }) {
   const cur = useRef<Spot>({ ...start })
   const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: 'r' as 'l' | 'r', moving: false })
   const [rest, setRest] = useState<Pose>('stand')
@@ -38,19 +39,33 @@ export default function Cat({ id, start, offset, tint, onNear }: { id: string; s
   const [frame, setFrame] = useState(0) // 걷기는 8장을 차례로, 쉴 때는 몇 초마다 한 번씩 그림을 바꿔요
   const [target, setTarget] = useState<Spot>({ ...start })
   const aegyoStart = useRef(0)
+  const targetRef = useRef<Spot>({ ...start })
   const holdUntil = useRef(0) // 애교 중에는 새 자리로 떠나지 않아요
 
-  // 몇 초에 한 번 새 자리와 쉬는 자세를 골라요
+  const crowded = (p: Spot) => (avoid?.() ?? []).some((q) => Math.abs(q.y - p.y) < 45 && Math.abs(q.x - p.x) < 120)
+  // 몇 초에 한 번 새 자리와 쉬는 자세를 골라요 (아바타가 서 있는 자리는 피해요)
+  const pickNew = () => {
+    const ok = SPOTS.filter((p) => (Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y) && !crowded(p))
+    if (ok.length === 0) return false
+    const nt = { ...rnd(ok) }
+    targetRef.current = nt; setTarget(nt); setRest(rnd(REST))
+    return true
+  }
   useEffect(() => {
     let t = 0
     const pick = () => {
       if (Date.now() < holdUntil.current) { t = window.setTimeout(pick, 1500); return }
-      const s = rnd(SPOTS.filter((p) => Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y))
-      setTarget({ ...s }); setRest(rnd(REST))
+      pickNew()
       t = window.setTimeout(pick, 14000 + Math.random() * 16000)
     }
     t = window.setTimeout(pick, 1500 + Math.random() * 3000)
-    return () => window.clearTimeout(t)
+    // 아바타가 고양이 쪽으로 와서 겹치면 비켜 줘요 (애교 중에는 그대로)
+    const watch = window.setInterval(() => {
+      if (Date.now() < holdUntil.current) return
+      if (crowded(cur.current) || crowded(targetRef.current)) pickNew()
+    }, 2000)
+    return () => { window.clearTimeout(t); window.clearInterval(watch) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // 아바타와 같은 길(route)로 걸어가요
@@ -93,6 +108,7 @@ export default function Cat({ id, start, offset, tint, onNear }: { id: string; s
     e.stopPropagation()
     holdUntil.current = Date.now() + 6500
     aegyoStart.current = Math.floor(Math.random() * 3)
+    targetRef.current = { x: cur.current.x, y: cur.current.y }
     setTarget({ x: cur.current.x, y: cur.current.y }) // 걷던 걸음을 마치고 멈춰요
     setAegyoUntil(Date.now() + 4500)
     setHearts((h) => h + 1)

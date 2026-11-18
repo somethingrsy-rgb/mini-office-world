@@ -42,6 +42,12 @@ const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeA
 export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
+  // 고양이가 아바타와 겹치지 않도록 지금 아바타들이 있는(가는) 자리를 알려줘요
+  const actRef = useRef(activities)
+  actRef.current = activities
+  const shownRef = useRef(shown)
+  shownRef.current = shown
+  const avatarSpots = () => AVATARS.filter((a) => a.id === 'user' || shownRef.current.includes(a.id)).map((a) => actRef.current[a.id].spot)
   /** 화면 좌표 → 하우스 좌표 */
   const toHouse = (e: React.MouseEvent) => {
     const svg = svgRef.current
@@ -75,7 +81,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       ))}
       {cats && (
         <g>
-          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} />
+          <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} />
         </g>
       )}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
