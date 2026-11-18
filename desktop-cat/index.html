@@ -8,5 +8,7 @@
   @keyframes up { from { opacity:1; transform:translateY(0) } to { opacity:0; transform:translateY(-70px) } }
   .name { position:absolute; padding:2px 12px; border-radius:14px; background:#fff; border:2px solid #ff86b6; color:#5b4a78; font:800 14px 'Malgun Gothic',sans-serif; pointer-events:none; transform:translateX(-50%); animation:fade 3.2s forwards; }
   @keyframes fade { 0%,80% { opacity:1 } 100% { opacity:0 } }
+  .bubble { position:absolute; max-width:260px; padding:6px 14px; border-radius:16px; background:#fff; border:2.5px solid #ff86b6; color:#5b4a78; font:800 15px 'Malgun Gothic',sans-serif; text-align:center; pointer-events:none; transform:translateX(-50%); box-shadow:0 4px 14px rgba(80,40,120,.25); animation:pop .25s ease-out; }
+  @keyframes pop { from { opacity:0; transform:translateX(-50%) scale(.8) } to { opacity:1; transform:translateX(-50%) scale(1) } }
 </style></head>
 <body><div id="cat"><img id="img" alt=""></div><script src="dims.js"></script><script src="renderer.js"></script></body></html>

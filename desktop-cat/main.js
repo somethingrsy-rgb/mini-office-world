@@ -7,7 +7,7 @@ const fs = require('fs')
 if (!app.requestSingleInstanceLock()) app.quit()
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { size: 1, hidden: false, sound: false }
+let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all' }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
@@ -44,6 +44,14 @@ function buildMenu() {
       { label: '보통', type: 'radio', checked: cfg.size === 1, click: setSize(1) },
       { label: '크게', type: 'radio', checked: cfg.size === 1.4, click: setSize(1.4) },
     ] },
+    { label: '정각 알림', submenu: [
+      { label: '켜기', type: 'checkbox', checked: cfg.hourly, click: (m) => { cfg.hourly = m.checked; save(); sendCfg() } },
+      { label: '소리', type: 'checkbox', checked: cfg.sound, click: (m) => { cfg.sound = m.checked; save(); sendCfg() } },
+      { type: 'separator' },
+      { label: '하루 종일', type: 'radio', checked: cfg.hours === 'all', click: () => { cfg.hours = 'all'; save(); sendCfg() } },
+      { label: '평일 9~18시만', type: 'radio', checked: cfg.hours === 'work', click: () => { cfg.hours = 'work'; save(); sendCfg() } },
+    ] },
+    { label: '타이머', submenu: [5, 10, 30, 60].map((m) => ({ label: `${m}분 뒤 알림`, click: () => win && win.webContents.send('timer', m) })).concat([{ type: 'separator' }, { label: '타이머 취소', click: () => win && win.webContents.send('timer', 0) }]) },
     { label: '시작할 때 자동 실행', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (m) => app.setLoginItemSettings({ openAtLogin: m.checked }) },
     { type: 'separator' },
     { label: '종료', click: () => app.quit() },
