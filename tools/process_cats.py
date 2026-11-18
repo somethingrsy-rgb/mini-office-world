@@ -63,16 +63,24 @@ meta = {}
 names = []
 for g, (mode, items) in PLAN.items():
     imgs = [pick(t) for t in items]
-    mean_a = float(np.mean([area(i) for i in imgs]))
+    srcs = [t[0] for t in items]
     scaled = []
-    for img in imgs:
-        # 같은 동작의 그림끼리 몸 크기를 맞춰요 (그림마다 크기가 달라 보이면 걸을 때 커졌다 작아져 보여요)
-        f = (T0 / area(img)) ** 0.5 if mode == 'T0' else scaleA * (mean_a / area(img)) ** 0.5
+    for img, sh in zip(imgs, srcs):
+        same = [area(i) for i, h in zip(imgs, srcs) if h == sh]
+        mean_a = float(np.mean(same))
+        # 같은 동작의 그림은 모두 같은 배율로 줄여요 (그림마다 크기를 따로 맞추면 걸을 때 몸이 커졌다 작아져 보여요)
+        f = (T0 / mean_a) ** 0.5 if mode == 'T0' else scaleA * (float(np.mean([area(i) for i in imgs])) / mean_a) ** 0.5 * (mean_a / area(img)) ** 0 
         scaled.append(img.resize((max(1, round(img.width * f)), max(1, round(img.height * f))), Image.LANCZOS))
-    cw = max(v.width for v in scaled); ch = max(v.height for v in scaled)
-    for k, v in enumerate(scaled):
+    # 몸의 무게중심(가로)을 칸 가운데에 맞춰요: 다리·꼬리 모양이 바뀌어도 몸이 좌우로 흔들리지 않아요
+    def cx(v):
+        al = np.asarray(v.getchannel('A')).astype(np.float64)
+        return float((al.sum(axis=0) * np.arange(al.shape[1])).sum() / max(al.sum(), 1))
+    cxs = [cx(v) for v in scaled]
+    half = max(max(c, v.width - c) for c, v in zip(cxs, scaled))
+    cw = int(np.ceil(half * 2)) + 2; ch = max(v.height for v in scaled)
+    for k, (v, c) in enumerate(zip(scaled, cxs)):
         canvas = Image.new('RGBA', (cw, ch), (0, 0, 0, 0))
-        canvas.alpha_composite(v, ((cw - v.width) // 2, ch - v.height))   # 같은 칸에 발 높이·가운데를 맞춰 담아요
+        canvas.alpha_composite(v, (int(round(cw / 2 - c)), ch - v.height))   # 발 높이는 아래에, 몸 무게중심은 가운데에
         canvas.save(os.path.join(out, f'{g}{k}.webp'), 'WEBP', quality=90, method=6)
         meta[f'{g}{k}'] = {'w': cw, 'h': ch}; names.append(f'{g}{k}')
 with open(os.path.join(ROOT, 'src/cats.gen.ts'), 'w') as f:
