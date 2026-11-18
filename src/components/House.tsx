@@ -39,9 +39,14 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
+/** 안내선 '아래 N'만큼 아바타 발을 내려요 */
+const FOOT_DROP = 30
+
 export default function House({ activities, alerts, cheers, labels, shown, speech, remaining, selected, onSelect, onRoom, onMove, onManualArrived, dark = false, skin = 'default', guide = false, cats = false, onReceived }: Props) {
   const th = themed(dark, skin)
   const svgRef = useRef<SVGSVGElement>(null)
+  // 하우스 그림(나무·바다·웨딩·놀이동산)에서는 아바타·고양이·접수대를 바닥 쪽으로 30 내려요 (안내선 '아래 30')
+  const drop = skin !== 'default' ? FOOT_DROP : 0
   // 고양이가 아바타와 겹치지 않도록 지금 아바타들이 있는(가는) 자리를 알려줘요
   const actRef = useRef(activities)
   actRef.current = activities
@@ -81,7 +86,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       ))}
       {/* 나(관리자)는 접수대 안쪽에 서 있고, 카운터 그림이 앞에 놓여요. 일을 받으러 온 아바타는 카운터 앞에 서야 하므로 그 뒤에 그려요 */}
       {/* 다크 하우스는 접수실 나무 바닥이 조금 더 아래에서 시작해서, 카운터와 나를 그만큼 내려요 */}
-      <g transform={`translate(0 ${dark ? COUNTER_DARK_DROP : 0})`}>
+      <g transform={`translate(0 ${(dark ? COUNTER_DARK_DROP : 0) + drop})`}>
       {AVATARS.filter((a) => a.id === 'user').map((info) => (
         <Avatar key={info.id} info={info} activity={activities[info.id]} cheer={cheers[info.id]} speech={speech[info.id]} hideName onManualArrived={onManualArrived}
           delay={1.2} selected={selected === info.id} onSelect={onSelect} />
@@ -96,6 +101,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         </text>
       </g>
       </g>
+      <g transform={`translate(0 ${drop})`}>
       {cats && (
         <g>
           <Cat id="cat1" start={{ x: 640, y: 408 }} offset={-10} avoid={avatarSpots} />
@@ -105,6 +111,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         <Avatar key={info.id} info={info} activity={activities[info.id]} alert={alerts[info.id as Staff]} cheer={cheers[info.id]} taskLabel={labels[info.id as Staff]} speech={speech[info.id]} onReceived={onReceived} onManualArrived={onManualArrived} dark={dark}
           delay={i * 0.3} selected={selected === info.id} onSelect={onSelect} />
       ))}
+      </g>
     </svg>
   )
 }
