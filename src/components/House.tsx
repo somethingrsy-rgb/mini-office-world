@@ -104,14 +104,16 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
         setOv(cur.leftIs === 'cat1' ? { cat1: L, cat2: R } : { cat1: R, cat2: L })
         return
       }
-      const a = catPos.current['cat1'] as { x: number; y: number; free?: boolean } | undefined   // 루비
-      const b = catPos.current['cat2'] as { x: number; y: number; free?: boolean } | undefined   // 크리스탈
+      const a = catPos.current['cat1'] as { x: number; y: number; free?: boolean; dir?: number } | undefined   // 루비
+      const b = catPos.current['cat2'] as { x: number; y: number; free?: boolean; dir?: number } | undefined   // 크리스탈
       if (!a || !b || !a.free || !b.free) return
       if (now - lastScene.current < cooldown.current) return
-      if (Math.abs(a.y - b.y) > 40 || Math.abs(a.x - b.x) > 250) return   // 같은 층에서 마주쳤을 때만
+      if (Math.abs(a.y - b.y) > 40 || Math.abs(a.x - b.x) > 1.6 * UNIT) return   // 같은 층에서 마주쳤을 때만
+      const away = (c: { x: number; dir?: number }, o: { x: number }) => !!c.dir && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
+      if (away(a, b) || away(b, a)) return
       const leftIs = a.x <= b.x ? 'cat1' : 'cat2'
       const kinds = ['hello', 'tag', 'tag', 'roll'] as const
-      const plan = buildScene(kinds[Math.floor(Math.random() * kinds.length)], Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830)
+      const plan = buildScene(kinds[Math.floor(Math.random() * kinds.length)], Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830, 48)
       sceneRef.current = { plan, t0: now, leftIs, y: (a.y + b.y) / 2 }
       setPlaying(true)
     }, 80)
@@ -129,8 +131,8 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
   // 만날 때가 됐으면 고양이가 다른 층으로 갈 때 상대가 있는 층을 조금 더 골라요 (쫓아가는 건 아니고 층만 같아져요)
   const wantFloorY = (other: string) => () => (bothCats && !sceneRef.current && Date.now() - lastScene.current > cooldown.current ? (catPos.current[other]?.y ?? null) : null)
   // 두 고양이의 자리를 서로에게 알려요
-  const catPos = useRef<Record<string, { x: number; y: number; free?: boolean }>>({})
-  const reportCat = (id: string, p: { x: number; y: number; free: boolean }) => { catPos.current[id] = p }
+  const catPos = useRef<Record<string, { x: number; y: number; free?: boolean; dir?: number }>>({})
+  const reportCat = (id: string, p: { x: number; y: number; free: boolean; dir: number }) => { catPos.current[id] = p }
   const avoidFor = (id: string) => () => [...avatarSpots(), ...Object.entries(catPos.current).filter(([k]) => k !== id).map(([, v]) => v)]
   const avatarSpots = () => AVATARS.filter((a) => a.id === 'user' || shownRef.current.includes(a.id)).map((a) => actRef.current[a.id].spot)
   /** 화면 좌표 → 하우스 좌표 */

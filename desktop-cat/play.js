@@ -1,4 +1,4 @@
-const FPS = { sneak: 130, sniff: 140, bow: 110, tap: 130, roll: 150, dash: 80 };
+const FPS = { walkR: 150, walkL: 150, sneak: 130, sniff: 140, bow: 110, tap: 130, roll: 150, dash: 80 };
 const clamp = (v, a, b) => Math.min(Math.max(v, a), Math.max(a, b));
 const ease = (p) => p * p * (3 - 2 * p);
 /**
@@ -7,23 +7,28 @@ const ease = (p) => p * p * (3 - 2 * p);
  * @param u     걷기 그림 속 고양이 한 마리의 가로 크기(화면 px)
  * @param lo,hi 고양이가 설 수 있는 가로 범위
  */
-function buildScene(kind, xL, xR, u, lo, hi) {
+function buildScene(kind, xL, xR, u, lo, hi, speed) {
     const gap = 0.9 * u;
     const m = clamp((xL + xR) / 2, lo + gap / 2, hi - gap / 2);
     let pL = m - gap / 2, pR = m + gap / 2; // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)
     const segs = [];
     const frame = (g, t, loops = 12) => Math.floor(t / FPS[g]) % loops;
     const still = (x, g, flip, f = 0) => ({ g, f, x, flip });
-    // 1) 살금살금 다가가기: 서로 마주 볼 자리까지 걸어요
+    // 1) 걷던 모습 그대로 서로에게 다가가다가, 가까워지면 살금살금 걸어요 (갑자기 자세가 바뀌지 않게 걷는 그림부터 이어 써요)
     {
         const fromL = xL, fromR = xR, toL = pL, toR = pR;
         const dist = Math.max(Math.abs(toL - fromL), Math.abs(toR - fromR));
-        const dur = Math.max(700, (dist / (0.2 * u)) * 1000);
+        const dur = Math.max(500, (dist / speed) * 1000);
         segs.push({
             dur,
             at: (t) => {
                 const p = Math.min(1, t / dur);
-                const side = (a, b, face) => (Math.abs(b - a) < 2 ? still(a, 'sneak', face, 0) : { g: 'sneak', f: frame('sneak', t), x: a + (b - a) * p, flip: b < a });
+                const side = (a, b, face) => {
+                    if (Math.abs(b - a) < 2)
+                        return still(a, 'sneak', face, 0);
+                    const x = a + (b - a) * p, left = b < a, near = Math.abs(b - x) < 0.2 * u;
+                    return near ? { g: 'sneak', f: frame('sneak', t), x, flip: left } : { g: left ? 'walkL' : 'walkR', f: frame('walkR', t), x, flip: false };
+                };
                 return { L: side(fromL, toL, false), R: side(fromR, toR, true) };
             },
         });
@@ -102,5 +107,5 @@ function buildScene(kind, xL, xR, u, lo, hi) {
 }
 /** 그림 이름을 만들어요 (pre: '' 루비 / 'wh_' 크리스탈) */
 function playKey(pre, s) {
-    return s.g === 'sit' ? `${pre}sit0` : `${pre}${s.g}${s.f}`;
+    return `${pre}${s.g}${s.f}`;
 }

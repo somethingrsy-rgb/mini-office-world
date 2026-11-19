@@ -262,10 +262,12 @@ function directScenes(now) {
   if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) return
   if (!FREE.includes(a.mode) || !FREE.includes(b.mode)) return
   const unit = dims.dim.walkR0.w * SCALE * size
-  if (Math.abs(a.x - b.x) > 1.9 * unit) return
+  if (Math.abs(a.x - b.x) > 1.6 * unit) return
+  const away = (c, o) => c.mode === 'walk' && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
+  if (away(a, b) || away(b, a)) return
   const [lo, hi] = surfRange(a.surf, unit * 1.2)
   const kinds = ['hello', 'tag', 'tag', 'roll']
-  const plan = buildScene(rnd(kinds), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi)
+  const plan = buildScene(rnd(kinds), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi, 0.3 * unit)
   scene = { plan, t0: now, leftIs: a.x <= b.x ? 'ruby' : 'crystal' }
   b.y = a.y; ruby.setFrozen(true); crystal.setFrozen(true)
 }

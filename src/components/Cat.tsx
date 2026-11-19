@@ -43,12 +43,14 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report, frozen = false, ov = null, want, place }: { id: string; /** 다른 고양이와 장난치는 장면 중이면 숨기고 가만히 있어요 */ frozen?: boolean; /** 장난치는 중이면 이 자리·그림으로 그려요 */ ov?: { x: number; y: number; key: string; flip: boolean } | null; /** 다른 고양이를 만날 때가 됐으면 그 고양이가 있는 층의 y (아니면 null) */ want?: () => number | null; /** 이 자리에 바로 놓아요 (장난이 끝난 뒤) */ place?: { x: number; y: number; n: number } | null; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number; free: boolean }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report, frozen = false, ov = null, want, place }: { id: string; /** 다른 고양이와 장난치는 장면 중이면 숨기고 가만히 있어요 */ frozen?: boolean; /** 장난치는 중이면 이 자리·그림으로 그려요 */ ov?: { x: number; y: number; key: string; flip: boolean } | null; /** 다른 고양이를 만날 때가 됐으면 그 고양이가 있는 층의 y (아니면 null) */ want?: () => number | null; /** 이 자리에 바로 놓아요 (장난이 끝난 뒤) */ place?: { x: number; y: number; n: number } | null; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number; free: boolean; dir: number }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
   const FR = FRAME_SETS[pre] ?? FRAMES
   const frozenRef = useRef(frozen)
   frozenRef.current = frozen
   const idleRef = useRef(true)
   const cur = useRef<Spot>({ ...start })
+  const seg = useRef({ x0: start.x, y0: start.y, x1: start.x, y1: start.y, t0: 0, dur: 0 })   // 지금 걸음의 시작·끝·시각 (지금 화면에 보이는 자리를 알아내려고)
+  const nowPos = () => { const g = seg.current, p = g.dur > 0 ? Math.min(1, (Date.now() - g.t0) / (g.dur * 1000)) : 1; return { x: g.x0 + (g.x1 - g.x0) * p, y: g.y1 } }
   const [st, setSt] = useState({ x: start.x, y: start.y, dur: 0, face: 'r' as 'l' | 'r', moving: false, jump: false, leg: 0, up: false })
   const [variant, setVariant] = useState(0) // 쉴 때 보여 줄 그림 번호 (쉬는 동안은 그림을 바꾸지 않아요)
   const [rest, setRest] = useState<Pose>('stand')
@@ -121,7 +123,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
 
   // 지금 자리를 다른 고양이에게 알려 줘요 (서로 겹치지 않게)
   useEffect(() => {
-    const t = window.setInterval(() => report?.(id, { x: cur.current.x, y: cur.current.y, free: idleRef.current }), 500)
+    const t = window.setInterval(() => report?.(id, { ...nowPos(), free: idleRef.current, dir: stMoving.current ? Math.sign(cur.current.x - seg.current.x0) : 0 }), 500)
     return () => window.clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -132,6 +134,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     window.clearTimeout(nextTimer.current)
     callActive.current = false
     cur.current = { x: place.x, y: place.y }
+    seg.current = { x0: place.x, y0: place.y, x1: place.x, y1: place.y, t0: 0, dur: 0 }
     targetRef.current = { x: place.x, y: place.y }
     setSt((q) => ({ ...q, x: place.x, y: place.y, dur: 0, moving: false, jump: false }))
     setTarget({ x: place.x, y: place.y })
@@ -145,9 +148,11 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     if (!frozen) return
     window.clearTimeout(nextTimer.current)
     callActive.current = false
-    targetRef.current = { x: cur.current.x, y: cur.current.y }
-    setTarget({ x: cur.current.x, y: cur.current.y })
-    setSt((q) => ({ ...q, dur: 0, moving: false, jump: false }))
+    const np = nowPos()
+    cur.current = np; seg.current = { x0: np.x, y0: np.y, x1: np.x, y1: np.y, t0: 0, dur: 0 }
+    targetRef.current = { ...np }
+    setTarget({ ...np })
+    setSt((q) => ({ ...q, x: np.x, y: np.y, dur: 0, moving: false, jump: false }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [frozen])
 
@@ -173,6 +178,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
       // 층과 층 사이(계단 쪽 벽을 오르내리는 길)는 걷지 않고 폴짝 뛰어요
       const jump = Math.abs(dx) < 6 && Math.abs(dy) > 40
       const dur = jump ? 1.5 : Math.max(0.2, Math.hypot(dx, dy) / WALK_SPEED)
+      seg.current = { x0: cur.current.x, y0: cur.current.y, x1: p.x, y1: p.y, t0: Date.now(), dur }
       cur.current = { x: p.x, y: p.y }
       moveEnd.current = Date.now() + dur * 1000
       setSt((s) => ({ x: p.x, y: p.y, dur, moving: true, jump, up: dy < 0, leg: s.leg + 1, face: Math.abs(dx) < 5 ? s.face : dx > 0 ? 'r' : 'l' }))
