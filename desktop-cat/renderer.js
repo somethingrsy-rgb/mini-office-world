@@ -3,9 +3,9 @@
 //  · 마우스를 코앞에서 흔들면 앞발로 잡으려 하고, 재빨리 빼면 헛짚어요
 //  · 드래그해서 원하는 곳(다른 모니터 포함)에 둘 수 있어요  · 고양이 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
 //  · 정각 알림, 타이머, 사용자 알람 (울리면 계속 뛰어다녀요)
-let dims = null, size = 1
-let conf = { hourly: true, sound: true, hours: 'all', alarms: [], ruby: true, crystal: true }
-const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {}, onCursor() {} }
+let dims = null, size = 1, baseSize = 1   // size: 지금 쓰는 크기 (집중 모드에서는 baseSize의 0.6배)
+let conf = { hourly: true, sound: true, hours: 'all', alarms: [], ruby: true, crystal: true, focus: false }
+const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {}, onCursor() {}, onPlay() {} }
 const SCALE = 0.8          // 그림 1px이 화면에서 차지하는 크기 (보통 크기일 때 고양이 키 ≈ 100px)
 const rnd = (a) => a[Math.floor(Math.random() * a.length)]
 
@@ -45,6 +45,7 @@ function makeCat(pre, name, x0) {
 
   // ── 다음 행동 고르기 ──
   function pick(now) {
+    if (conf.focus) { st.mode = rnd(['sit', 'sit', 'sleep']); st.until = now + 4000; return }   // 집중 모드: 구석에서 가만히 쉬어요
     const onWin = st.surf.t === 'win'
     const cands = wins.filter((w) => w.y > 140 && w.y < layout.displays[dispAt(st.x)].floor - 100 && w.x2 - w.x1 > 240 && !(onWin && w.id === st.surf.id))
     const r = Math.random()
@@ -76,6 +77,7 @@ function makeCat(pre, name, x0) {
   function frameFor(now) {
     switch (st.mode) {
       case 'run': return st.dir > 0 ? `${pre}walkR${Math.floor(now / 80) % n('walkR')}` : `${pre}walkL${Math.floor(now / 80) % n('walkL')}`
+      case 'goto': return st.dir > 0 ? `${pre}walkR${Math.floor(now / 110) % n('walkR')}` : `${pre}walkL${Math.floor(now / 110) % n('walkL')}`
       case 'walk': return st.dir > 0 ? `${pre}walkR${Math.floor(now / 150) % n('walkR')}` : `${pre}walkL${Math.floor(now / 150) % n('walkL')}`
       case 'jump': return `${pre}up${Math.min(n('up') - 1, Math.floor((now - st.jumpT) / 120))}`
       case 'leap': { const g = st.y1 < st.y0 - 20 ? 'up' : 'down'; return `${pre}${g}${Math.min(n(g) - 1, Math.floor(((now - st.leapT) / st.dur) * n(g)))}` }
@@ -101,7 +103,7 @@ function makeCat(pre, name, x0) {
     } else if (st.surf.t === 'floor' && !['leap', 'drag'].includes(st.mode)) st.y = surfY(st.surf)
 
     // 마우스가 코앞에서 흔들리면 앞발로 잡으려 해요
-    const interactive = !['pounce', 'aegyo', 'jump', 'run', 'leap', 'drag', 'miss'].includes(st.mode)
+    const interactive = !conf.focus && !['pounce', 'aegyo', 'jump', 'run', 'leap', 'drag', 'miss', 'goto'].includes(st.mode)
     if (interactive && now > st.cool && !hover && Math.abs(mouse.x - st.x) < 240 * size && mouse.y > st.y - H0 - 100 && mouse.y < st.y + 70) {
       Object.assign(st, { mode: 'pounce', pounceT: now, until: now + 1400, pounceDir: mouse.x < st.x ? -1 : 1, cool: now + 1400 + 6000, mx0: mouse.x, my0: mouse.y })
     }
@@ -120,6 +122,11 @@ function makeCat(pre, name, x0) {
       if (st.after) { st.mode = st.after.mode; st.until = st.after.until; st.after = null } else pick(now)
     }
 
+    if (st.mode === 'goto') {   // 정한 자리까지 걸어가요 (고양이 불러서 놀게 하기·집중 모드 구석으로 가기)
+      const d = st.gx - st.x, step = (st.gFast ? 1.2 : 0.5) * W0 * dt
+      st.dir = d >= 0 ? 1 : -1
+      if (Math.abs(d) <= step) { st.x = st.gx; st.mode = 'stand'; st.until = now + (st.gUntil || 1500) } else st.x += st.dir * step
+    }
     if (st.mode === 'walk' || st.mode === 'run') {
       const speed = (st.mode === 'run' ? 1.5 : 0.3) * W0
       st.x += st.dir * speed * dt
@@ -131,7 +138,7 @@ function makeCat(pre, name, x0) {
     let lift = 0
     if (st.mode === 'run') lift = Math.abs(Math.sin((now - st.runT) / 230)) * 55 * size
     if (st.mode === 'jump') lift = Math.sin(Math.min(1, (now - st.jumpT) / 1500) * Math.PI) * 70 * size
-    const flip = st.mode === 'pounce' ? st.pounceDir < 0 : ['walk', 'run'].includes(st.mode) ? false : st.dir < 0
+    const flip = st.mode === 'pounce' ? st.pounceDir < 0 : ['walk', 'run', 'goto'].includes(st.mode) ? false : st.dir < 0
     const tilt = st.mode === 'miss' ? -8 : st.mode === 'drag' ? Math.sin(now / 120) * 5 : 0
     if (img.dataset.k !== key) { img.src = `frames/${key}.webp`; img.dataset.k = key }
     img.style.width = w + 'px'; img.style.height = h + 'px'
@@ -179,6 +186,15 @@ function makeCat(pre, name, x0) {
     nm.style.left = (b.x + b.w / 2) + 'px'; nm.style.top = (b.y - 36) + 'px'; document.body.appendChild(nm); setTimeout(() => nm.remove(), 3300)
   }
 
+  // 지정한 모니터 바닥의 x 자리로 걸어가요 (창 위에 있으면 바닥으로 내려와요)
+  function goTo(x, d, hold, fast) {
+    if (st.mode === 'drag' || st.mode === 'leap') return
+    if (st.surf.t !== 'floor' || st.surf.d !== d) {
+      if (dispAt(st.x) !== d) st.x = layout.displays[d].x + layout.displays[d].w * (st.x < layout.displays[d].x ? 0.1 : 0.9)
+      st.surf = { t: 'floor', d }; st.y = layout.displays[d].floor
+    }
+    Object.assign(st, { mode: 'goto', gx: x, gFast: !!fast, gUntil: hold || 1500, until: 1e15, after: null })
+  }
   const toFloor = () => { if (st.surf.t === 'win') { const d = dispAt(st.x); st.surf = { t: 'floor', d }; st.y = layout.displays[d].floor } }
   function hop(delay = 0) {   // 정각 알림: 폴짝 한 번 → 앉아서 기다려요
     endScene(); const now = performance.now() + delay; toFloor()
@@ -204,17 +220,23 @@ function makeCat(pre, name, x0) {
     st.box = null
   }
 
-  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, name }
+  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, goTo, name }
   return self
 }
 const calmAll = () => { clearInterval(ringTimer); if (bubbleEl && cats.some((c) => c.st.mode === 'run')) { bubbleEl.remove(); bubbleEl = null }; cats.forEach((c) => c.calm()) }
 
 async function init() {
   dims = window.DIMS
-  const c = await bridge.config(); size = c.size || 1; conf = { ...conf, ...c }
+  const c = await bridge.config(); baseSize = c.size || 1; conf = { ...conf, ...c }; size = baseSize * (conf.focus ? 0.6 : 1)
   const l = await bridge.layout(); if (l) layout = l
   const applyVis = () => { if (cats[0]) cats[0].setHidden(conf.ruby === false); if (cats[1]) cats[1].setHidden(conf.crystal === false) }
-  bridge.onConfig((c) => { size = c.size || 1; conf = { ...conf, ...c }; applyVis() })
+  bridge.onConfig((c) => {
+    const wasFocus = !!conf.focus
+    baseSize = c.size || 1; conf = { ...conf, ...c }; size = baseSize * (conf.focus ? 0.6 : 1); applyVis()
+    if (conf.focus && !wasFocus) enterFocus()
+    else if (!conf.focus && wasFocus) cats.forEach((k) => { if (k.st.mode === 'goto') k.st.until = 0; k.st.until = performance.now() })
+  })
+  bridge.onPlay && bridge.onPlay(playNow)
   bridge.onLayout((l) => { layout = l })
   bridge.onWindows((w) => { wins = w })
   bridge.onTimer && bridge.onTimer(setTimer)
@@ -226,6 +248,28 @@ async function init() {
   for (const c of cats) { c.st.surf = { t: 'floor', d: 0 }; c.st.y = d.floor; c.st.mode = 'stand'; c.st.until = performance.now() + 1500 + Math.random() * 3000 }
   applyVis()
   last = performance.now(); requestAnimationFrame(loop)
+}
+
+// ═══ 집중 모드: 고양이가 작아져서 오른쪽 아래 구석에 앉아 가만히 있어요 (정각 알림은 소리 없이 말풍선만) ═══
+function enterFocus() {
+  endScene(); pendingPlay = null
+  const d = layout.displays[0]
+  cats.forEach((c, i) => c.goTo(d.x + d.w - (60 + i * 105) * size, 0, 4000, true))
+}
+
+// ═══ 고양이 불러서 놀게 하기: 마우스가 있는 모니터 바닥 가운데로 두 마리가 와서 장난쳐요 ═══
+let pendingPlay = null
+function playNow() {
+  const [ruby, crystal] = cats
+  if (!ruby || !crystal) return
+  if (conf.focus) { say('집중 모드를 끄면 같이 놀 수 있어요', 4000); return }
+  if (conf.ruby === false || conf.crystal === false) { say('두 고양이를 모두 보이게 하면 놀 수 있어요', 4000); return }
+  endScene()
+  const d = dispAt(mouse.x > -900 ? mouse.x : 0), disp = layout.displays[d], cx = disp.x + disp.w / 2
+  const unit = dims.dim.walkR0.w * SCALE * size, half = 0.45 * unit
+  const rubyLeft = ruby.st.x <= crystal.st.x
+  ruby.goTo(cx + (rubyLeft ? -half : half), d, 60000); crystal.goTo(cx + (rubyLeft ? half : -half), d, 60000)
+  pendingPlay = { t: performance.now(), d, cx }
 }
 
 // ═══ 두 마리가 걸어 다니다 우연히 마주치면 장난쳐요 (일부러 서로를 쫓아가지는 않아요) ═══
@@ -255,6 +299,21 @@ function directScenes(now) {
     const rs = scene.leftIs === 'ruby' ? s.L : s.R, cs = scene.leftIs === 'ruby' ? s.R : s.L
     ruby.st.ov = { x: rs.x, key: playKey('', rs), flip: rs.flip }
     crystal.st.ov = { x: cs.x, key: playKey('wh_', cs), flip: cs.flip }
+    return
+  }
+  if (conf.focus) return
+  if (pendingPlay) {   // 불러서 온 경우: 둘 다 도착하면 바로, 25초가 지나도 못 오면 그 자리로 불러서 장난쳐요
+    const pp = pendingPlay, a = ruby.st, b = crystal.st
+    const arrived = a.mode !== 'goto' && b.mode !== 'goto'
+    if (now - pp.t > 800 && (arrived || now - pp.t > 25000)) {
+      pendingPlay = null
+      const unit = dims.dim.walkR0.w * SCALE * size, disp = layout.displays[pp.d]
+      for (const c of cats) { c.st.surf = { t: 'floor', d: pp.d }; c.st.y = disp.floor; if (arrived) continue; c.st.x = pp.cx }
+      const [lo, hi] = surfRange(a.surf, unit * 1.2)
+      const plan = buildScene(pickActions(), Math.min(a.x, b.x) - (arrived ? 0 : unit * 0.45), Math.max(a.x, b.x) + (arrived ? 0 : unit * 0.45), unit, lo, hi, 0.3 * unit)
+      scene = { plan, t0: now, leftIs: a.x <= b.x ? 'ruby' : 'crystal' }
+      ruby.setFrozen(true); crystal.setFrozen(true)
+    }
     return
   }
   if (conf.ruby === false || conf.crystal === false || drag || now - lastScene < cooldown) return
@@ -322,7 +381,8 @@ function chime() {
     setTimeout(() => ac.close(), 1500)
   } catch { /* 소리를 못 내도 알림은 보여요 */ }
 }
-function alert(text) { cats.forEach((c) => c.hop()); chime(); say(text) }
+function alert(text) { if (conf.focus) { say(text, 6000); return }   // 집중 모드: 소리·폴짝 없이 말풍선만
+  cats.forEach((c) => c.hop()); chime(); say(text) }
 function ring(text) {
   cats.forEach((c) => c.run())
   say(text + '  (고양이를 눌러 주세요)', 180000)

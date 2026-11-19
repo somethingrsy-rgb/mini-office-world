@@ -13,6 +13,24 @@ public static class WinList {
   [DllImport("user32.dll", EntryPoint="GetWindowLongW")] static extern int GetWindowLong(IntPtr h, int i);
   [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("dwmapi.dll")] static extern int DwmGetWindowAttribute(IntPtr h, int a, out int v, int s);
+  [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+  [DllImport("user32.dll")] static extern IntPtr MonitorFromWindow(IntPtr h, uint f);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [StructLayout(LayoutKind.Sequential)] public struct MONITORINFO { public int cb; public RECT m; public RECT w; public uint f; }
+  [DllImport("user32.dll")] static extern bool GetMonitorInfo(IntPtr m, ref MONITORINFO i);
+  // 지금 맨 앞 창이 모니터 전체를 덮고 제목 표시줄이 없으면(영상·발표·게임 전체 화면) 1
+  static int Full(uint skipPid) {
+    IntPtr h = GetForegroundWindow(); if (h == IntPtr.Zero) return 0;
+    uint pid; GetWindowThreadProcessId(h, out pid); if (pid == skipPid) return 0;
+    var cls = new StringBuilder(64); GetClassName(h, cls, 64); string c = cls.ToString();
+    if (c == "Progman" || c == "WorkerW" || c == "Shell_TrayWnd") return 0;
+    RECT r; if (!GetWindowRect(h, out r)) return 0;
+    var mi = new MONITORINFO(); mi.cb = Marshal.SizeOf(typeof(MONITORINFO));
+    if (!GetMonitorInfo(MonitorFromWindow(h, 2), ref mi)) return 0;
+    bool cover = r.L <= mi.m.L && r.T <= mi.m.T && r.R >= mi.m.R && r.B >= mi.m.B;
+    bool caption = (GetWindowLong(h, -16) & 0x00C00000) == 0x00C00000;
+    return cover && !caption ? 1 : 0;
+  }
   public static void Init() { SetProcessDPIAware(); }
   public static string Run(uint skipPid) {
     var sb = new StringBuilder();
@@ -27,7 +45,7 @@ public static class WinList {
       sb.Append(h.ToInt64()).Append(':').Append(r.L).Append(':').Append(r.T).Append(':').Append(r.R).Append(':').Append(r.B).Append(';');
       return true;
     }, IntPtr.Zero);
-    return sb.ToString();
+    return "F" + Full(skipPid) + "|" + sb.ToString();
   }
 }
 "@

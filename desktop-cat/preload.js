@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('api', {
   onLayout: (fn) => ipcRenderer.on('layout', (_e, l) => fn(l)),
   onWindows: (fn) => ipcRenderer.on('windows', (_e, w) => fn(w)),
   onCursor: (fn) => ipcRenderer.on('cursor', (_e, c) => fn(c)),
+  onPlay: (fn) => ipcRenderer.on('play', () => fn()),
   onTimer: (fn) => ipcRenderer.on('timer', (_e, m) => fn(m)),
   onConfig: (fn) => ipcRenderer.on('config', (_e, c) => fn(c)),
 })

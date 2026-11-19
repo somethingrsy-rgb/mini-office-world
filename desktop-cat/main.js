@@ -4,6 +4,7 @@ const { app, dialog, Notification, BrowserWindow, Tray, Menu, screen, ipcMain, n
 const { spawn } = require('child_process')
 const path = require('path')
 const fs = require('fs')
+const { parseLine, makeDebounce } = require('./fsparse')
 
 // 그래픽 가속을 끄면 원격 데스크톱·가상 PC(VDI)에서도 투명한 창이 제대로 보여요
 app.disableHardwareAcceleration()
@@ -17,7 +18,7 @@ if (!app.requestSingleInstanceLock()) { log('이미 실행 중이라 종료해�
 else app.on('second-instance', () => { try { new Notification({ title: '루비는 이미 실행 중이에요', body: '작업표시줄 오른쪽 아래(^ 안쪽)에서 고양이 아이콘을 찾아 보세요.' }).show() } catch { /* 무시 */ } })
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all', alarms: [], ruby: true, crystal: true }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
+let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all', alarms: [], ruby: true, crystal: true, focus: false }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
@@ -55,7 +56,17 @@ function watchWindows() {
     psProc.on('error', () => { psProc = null })   // 파워셸을 못 쓰면 창 위 올라앉기만 빠져요
   } catch { /* 무시 */ }
 }
-function handleWins(line) {
+// 영상·발표·게임이 전체 화면이면 고양이를 잠깐 숨겼다가 끝나면 다시 보여요 (직접 숨긴 경우는 그대로)
+let fsHidden = false
+const onFull = makeDebounce((full) => { fsHidden = full; applyVisible() })
+function applyVisible() {
+  if (!win || win.isDestroyed()) return
+  if (cfg.hidden || fsHidden) win.hide(); else win.showInactive()
+}
+function handleWins(raw) {
+  const p = parseLine(raw)
+  onFull(p.full)
+  const line = p.segs
   if (line === lastWins || !win) return
   lastWins = line
   const o = layout().origin
@@ -104,10 +115,15 @@ function openSettings() {
 
 function sendCfg() { win && win.webContents.send('config', cfg) }
 
+function callPlay() { win && win.webContents.send('play') }
+function toggleFocus() { cfg.focus = !cfg.focus; save(); sendCfg(); tray && tray.setContextMenu(buildMenu()) }
 function buildMenu() {
   const setSize = (v) => () => { cfg.size = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
   return Menu.buildFromTemplate([
-    { label: (cfg.hidden ? '루비 보이기' : '루비 숨기기') + ' (Ctrl+Alt+H)', click: () => { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : win.showInactive(); tray.setContextMenu(buildMenu()) } },
+    { label: '고양이 불러서 놀게 하기 (Ctrl+Alt+C)', click: callPlay },
+    { label: '집중 모드 (Ctrl+Alt+F)', type: 'checkbox', checked: !!cfg.focus, click: () => toggleFocus() },
+    { type: 'separator' },
+    { label: (cfg.hidden ? '루비 보이기' : '루비 숨기기') + ' (Ctrl+Alt+H)', click: () => { cfg.hidden = !cfg.hidden; save(); applyVisible(); tray.setContextMenu(buildMenu()) } },
     { label: '루비 보이기', type: 'checkbox', checked: cfg.ruby !== false, click: (m) => { cfg.ruby = m.checked; save(); sendCfg() } },
     { label: '크리스탈 보이기', type: 'checkbox', checked: cfg.crystal !== false, click: (m) => { cfg.crystal = m.checked; save(); sendCfg() } },
     { label: '크기', submenu: [
@@ -142,7 +158,9 @@ app.whenReady().then(() => {
   tray.setContextMenu(buildMenu())
   tray.on('click', () => tray.popUpContextMenu())
   // 발표·화면 공유할 때: Ctrl+Alt+H 로 루비를 숨겼다가 다시 불러요
-  globalShortcut.register('CommandOrControl+Alt+H', () => { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : win.showInactive(); tray.setContextMenu(buildMenu()) })
+  globalShortcut.register('CommandOrControl+Alt+H', () => { cfg.hidden = !cfg.hidden; save(); applyVisible(); tray.setContextMenu(buildMenu()) })
+  globalShortcut.register('CommandOrControl+Alt+C', callPlay)      // 두 고양이를 불러서 놀게 해요
+  globalShortcut.register('CommandOrControl+Alt+F', toggleFocus)   // 집중 모드 켜기·끄기
 })
 
 // 고양이 위에서는 마우스를 받고(쓰다듬기), 그 밖에서는 클릭이 뒤 창으로 통과해요

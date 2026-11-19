@@ -15,7 +15,7 @@
     "appId": "local.ruby.desktopcat",
     "productName": "루비 고양이",
     "icon": "icon.png",
-    "files": ["main.js", "preload.js", "settings.html", "settings.js", "index.html", "renderer.js", "play.js", "dims.js", "icon.png", "winlist.ps1", "frames/**"],
+    "files": ["main.js", "preload.js", "settings.html", "settings.js", "index.html", "renderer.js", "play.js", "fsparse.js", "dims.js", "icon.png", "winlist.ps1", "frames/**"],
     "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "Ruby-Cat-folder.${ext}" },
     "portable": { "artifactName": "Ruby-Cat.exe" },
     "directories": { "output": "dist" }
