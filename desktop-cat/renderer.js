@@ -243,7 +243,7 @@ function directScenes(now) {
   if (scene) {
     const k = Math.floor((now - scene.t) / scene.ms)
     if (k >= 12 * scene.loops || conf.ruby === false || conf.crystal === false || drag) return endScene(false)
-    const key = `pair${scene.kind}${k % 12}`, d = dims.dim[key], w = d.w * SCALE * size, h = d.h * SCALE * size
+    const key = `pair${scene.kind}${k % 12}`, d = dims.dim[key], pk = scene.kind === 'A' || scene.kind === 'B' ? 0.86 : 0.78, w = d.w * SCALE * size * pk, h = d.h * SCALE * size * pk
     if (pairImg.dataset.k !== key) { pairImg.src = `frames/${key}.webp`; pairImg.dataset.k = key }
     pairImg.style.width = w + 'px'; pairImg.style.height = h + 'px'
     pairImg.style.transform = `translate(${Math.round(scene.x - w / 2)}px, ${Math.round(scene.y - h)}px)${scene.flip ? ' scaleX(-1)' : ''}`
@@ -255,7 +255,7 @@ function directScenes(now) {
   if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) return
   if (!IDLE.includes(a.mode) || !IDLE.includes(b.mode)) { if (!(b.mode === 'walk' && b.seek)) return }
   const dx = Math.abs(a.x - b.x)
-  if (now - lastScene > 45000 && dx < 280 * size && IDLE.includes(a.mode) && IDLE.includes(b.mode)) {
+  if (now - lastScene > 15000 && dx < 360 * size && IDLE.includes(a.mode) && IDLE.includes(b.mode)) {
     let r = Math.random() * SCENES.reduce((s, c) => s + c[3], 0), pick = SCENES[0]
     for (const c of SCENES) { if ((r -= c[3]) < 0) { pick = c; break } }
     const [lo, hi] = surfRange(a.surf, 260 * size)
@@ -264,7 +264,7 @@ function directScenes(now) {
     return
   }
   if (b.seek && (dx < 220 * size || b.mode !== 'walk')) b.seek = false
-  if (!b.seek && now - lastScene > 80000 && now - lastVisit > 35000 && dx > 400 * size && IDLE.includes(b.mode)) {   // 멀리 있으면 크리스탈이 루비에게 놀러 가요
+  if (!b.seek && now - lastScene > 25000 && now - lastVisit > 12000 && dx > 400 * size && IDLE.includes(b.mode)) {   // 멀리 있으면 크리스탈이 루비에게 놀러 가요
     lastVisit = now; b.seek = true; b.mode = 'walk'; b.dir = a.x > b.x ? 1 : -1; b.until = now + Math.min(40000, (dx - 200 * size) / (0.3 * 133 * size) * 1000)
   }
 }

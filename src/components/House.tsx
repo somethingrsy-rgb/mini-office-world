@@ -57,7 +57,8 @@ function PairScene({ scene }: { scene: Scene }) {
   const info = SCENES[scene.kind]
   const idx = Math.min(11, Math.floor(((Date.now() - scene.t0) / info.ms) % 12))
   const d = CAT_DIM[`${scene.kind}0`]
-  const W = d.w * CAT_SCALE, H = d.h * CAT_SCALE
+  const k = scene.kind === 'pairA' || scene.kind === 'pairB' ? 0.86 : 0.78   // 걸어 다닐 때 고양이와 같은 크기로 보이게
+  const W = d.w * CAT_SCALE * k, H = d.h * CAT_SCALE * k
   return (
     <g pointerEvents="none" transform={`translate(${scene.x} ${scene.y})`}>
       <g transform={scene.flip ? 'scale(-1 1)' : undefined}>
@@ -125,14 +126,14 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       }
       if (!a.idle || !b.idle) return
       const sameFloor = Math.abs(a.y - b.y) < 40
-      if (sameFloor && Math.abs(a.x - b.x) < 260 && now - lastScene.current > 45000) {
+      if (sameFloor && Math.abs(a.x - b.x) < 360 && now - lastScene.current > 15000) {
         const kinds = Object.keys(SCENES) as SceneKind[]
         let r = Math.random() * kinds.reduce((v, k) => v + SCENES[k].weight, 0), kind = kinds[0]
         for (const k of kinds) { r -= SCENES[k].weight; if (r <= 0) { kind = k; break } }
         const info = SCENES[kind]
         const x = Math.min(Math.max((a.x + b.x) / 2, 190), 800)
         setScene({ n: ++sceneN.current, kind, x, y: (a.y + b.y) / 2, flip: b.x > a.x, t0: now, dur: info.ms * 12 * info.loops })
-      } else if (now - lastScene.current > 80000 && now - lastVisit.current > 35000 && !(sameFloor && Math.abs(a.x - b.x) < 260)) {
+      } else if (now - lastScene.current > 25000 && now - lastVisit.current > 12000 && !(sameFloor && Math.abs(a.x - b.x) < 360)) {
         lastVisit.current = now   // 오래 못 만났으면 크리스탈이 루비 옆으로 가요
         setVisit({ x: a.x + (a.x > 480 ? -110 : 110), y: a.y, n: ++sceneN.current })
       }
