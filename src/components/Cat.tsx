@@ -29,11 +29,10 @@ const FRAMES = FRAME_SETS['']
 type Pose = keyof typeof FRAMES
 type Spot = { x: number; y: number }
 
-/** 고양이가 쉬러 가는 자리들: 아바타와 같은 층 바닥·같은 길(계단 벽)을 따라가요. 접수대 앞(왼쪽 아래)은 피해요 */
+/** 고양이가 쉬러 가는 자리들: 아바타와 같은 층 바닥·같은 길(계단 벽)을 따라가요. 3층·2층·1층 바닥 위에서만 다녀요(1층 아래 정원으로는 내려가지 않아요) */
 const SPOTS: Spot[] = [
   { x: 230, y: FLOOR_Y.attic }, { x: 470, y: FLOOR_Y.attic }, { x: 640, y: FLOOR_Y.attic }, { x: 820, y: FLOOR_Y.attic },
   { x: 180, y: FLOOR_Y.f2 }, { x: 330, y: FLOOR_Y.f2 }, { x: 700, y: FLOOR_Y.f2 }, { x: 860, y: FLOOR_Y.f2 },
-  { x: 120, y: 1046 }, { x: 255, y: 1052 }, // 접수대(주인인 소영이 있는 곳) 앞
   { x: 430, y: FLOOR_Y.f1 }, { x: 560, y: FLOOR_Y.f1 }, { x: 760, y: FLOOR_Y.f1 }, { x: 880, y: FLOOR_Y.f1 },
 ]
 /** 바닥 양 끝(벽 쪽)에는 가지 않아요: 길이 끝났는데 계속 걷는 것처럼 보이지 않게 안쪽 자리만 써요 */
