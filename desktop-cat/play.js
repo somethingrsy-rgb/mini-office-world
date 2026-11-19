@@ -1,13 +1,20 @@
+const ACTIONS = ['sniff', 'tap', 'bow', 'chase', 'roll'];
+/** 서로 다른 동작 두 가지를 골라요 (순서도 섞여서 조합이 20가지예요) */
+function pickActions() {
+    const a = [...ACTIONS];
+    const first = a.splice(Math.floor(Math.random() * a.length), 1)[0];
+    return [first, a[Math.floor(Math.random() * a.length)]];
+}
 const FPS = { walkR: 150, walkL: 150, sneak: 130, sniff: 140, bow: 110, tap: 130, roll: 150, dash: 80 };
 const clamp = (v, a, b) => Math.min(Math.max(v, a), Math.max(a, b));
 const ease = (p) => p * p * (3 - 2 * p);
 /**
- * @param kind  hello(인사) | tag(쫓고 쫓기) | roll(뒹굴기)
+ * @param acts  마주친 뒤 할 동작 (보통 두 가지): sniff(코 인사) | tap(앞발 톡톡) | bow(장난 걸기) | chase(쫓고 쫓기) | roll(뒹굴기)
  * @param xL,xR 장면이 시작될 때 왼쪽·오른쪽 고양이 자리
  * @param u     걷기 그림 속 고양이 한 마리의 가로 크기(화면 px)
  * @param lo,hi 고양이가 설 수 있는 가로 범위
  */
-function buildScene(kind, xL, xR, u, lo, hi, speed) {
+function buildScene(acts, xL, xR, u, lo, hi, speed) {
     const gap = 0.9 * u;
     const m = clamp((xL + xR) / 2, lo + gap / 2, hi - gap / 2);
     let pL = m - gap / 2, pR = m + gap / 2; // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)
@@ -42,26 +49,28 @@ function buildScene(kind, xL, xR, u, lo, hi, speed) {
         const xl = pL, xr = pR, dur = FPS.tap * 12;
         segs.push({ dur, at: (t) => ({ L: still(xl, 'tap', false, leftTaps ? frame('tap', t) : 0), R: still(xr, 'tap', true, leftTaps ? 0 : frame('tap', t)) }) });
     };
-    // 2) 코 인사
-    both('sniff', 0);
-    if (kind === 'hello') {
-        oneTap(true);
-        oneTap(false);
-        if (Math.random() < 0.5)
-            both('tap', 0);
-    }
-    else if (kind === 'roll') {
-        both('roll', 0, 1);
-        oneTap(Math.random() < 0.5);
-        both('roll', 0, 1);
-    }
-    else {
-        // 쫓고 쫓기: 장난 걸기 → 한 마리가 도망치고 한 마리가 쫓아가요 → 서로 마주 보고 뒹굴어요
-        both('bow', 0);
-        const roomR = hi - pR, roomL = pL - lo;
-        const dir = roomR >= roomL ? 1 : -1; // 자리가 더 넓은 쪽으로 달려요
-        const d = Math.min(2.2 * u, Math.max(roomR, roomL));
-        if (d > 1.1 * u) {
+    // 2) 고른 동작을 차례로 해요
+    for (const act of acts) {
+        if (act === 'sniff')
+            both('sniff', 0);
+        else if (act === 'bow')
+            both('bow', 0);
+        else if (act === 'roll')
+            both('roll', 0, 1);
+        else if (act === 'tap') {
+            const lf = Math.random() < 0.5;
+            oneTap(lf);
+            oneTap(!lf);
+        }
+        else {
+            // 쫓고 쫓기: 한 마리가 도망치고 한 마리가 쫓아가요
+            const roomR = hi - pR, roomL = pL - lo;
+            const dir = roomR >= roomL ? 1 : -1; // 자리가 더 넓은 쪽으로 달려요
+            const d = Math.min(2.2 * u, Math.max(roomR, roomL));
+            if (d <= 1.1 * u) {
+                both('bow', 0);
+                continue;
+            }
             const fleeIsR = dir > 0; // 오른쪽으로 달리면 오른쪽 고양이가 도망쳐요
             const f0 = fleeIsR ? pR : pL, c0 = fleeIsR ? pL : pR;
             const f1 = f0 + dir * d, c1 = f1 - dir * gap;
@@ -83,7 +92,6 @@ function buildScene(kind, xL, xR, u, lo, hi, speed) {
                 pR = q;
             }
         }
-        both('roll', 0, 1);
     }
     // 3) 마무리: 같이 앉아서 숨을 골라요
     const el = pL, er = pR;

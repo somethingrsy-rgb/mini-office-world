@@ -266,8 +266,7 @@ function directScenes(now) {
   const away = (c, o) => c.mode === 'walk' && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
   if (away(a, b) || away(b, a)) return
   const [lo, hi] = surfRange(a.surf, unit * 1.2)
-  const kinds = ['hello', 'tag', 'tag', 'roll']
-  const plan = buildScene(rnd(kinds), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi, 0.3 * unit)
+  const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi, 0.3 * unit)
   scene = { plan, t0: now, leftIs: a.x <= b.x ? 'ruby' : 'crystal' }
   b.y = a.y; ruby.setFrozen(true); crystal.setFrozen(true)
 }

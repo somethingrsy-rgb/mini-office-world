@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Avatar from './Avatar'
 import Cat, { CAT_SCALE } from './Cat'
-import { buildScene, playKey, type PlayScene } from '../playScene'
+import { buildScene, pickActions, playKey, type PlayScene } from '../playScene'
 import { asset } from '../assets'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
@@ -112,8 +112,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       const away = (c: { x: number; dir?: number }, o: { x: number }) => !!c.dir && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
       if (away(a, b) || away(b, a)) return
       const leftIs = a.x <= b.x ? 'cat1' : 'cat2'
-      const kinds = ['hello', 'tag', 'tag', 'roll'] as const
-      const plan = buildScene(kinds[Math.floor(Math.random() * kinds.length)], Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830, 48)
+      const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830, 48)
       sceneRef.current = { plan, t0: now, leftIs, y: (a.y + b.y) / 2 }
       setPlaying(true)
     }, 80)
