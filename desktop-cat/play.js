@@ -16,7 +16,7 @@ const ease = (p) => p * p * (3 - 2 * p);
  */
 function buildScene(acts, xL, xR, u, lo, hi, speed) {
     // 이미 가까이 있으면 뒤로 물러나지 않고 그 자리에서 마주 봐요 (서로에게 다가가기만 해요)
-    const gap = Math.max(Math.min(0.9 * u, xR - xL), 0.35 * u);
+    const gap = Math.min(0.9 * u, xR - xL);
     const m = clamp((xL + xR) / 2, lo + gap / 2, hi - gap / 2);
     let pL = m - gap / 2, pR = m + gap / 2; // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)
     const segs = [];
@@ -74,7 +74,7 @@ function buildScene(acts, xL, xR, u, lo, hi, speed) {
             }
             const fleeIsR = dir > 0; // 오른쪽으로 달리면 오른쪽 고양이가 도망쳐요
             const f0 = fleeIsR ? pR : pL, c0 = fleeIsR ? pL : pR;
-            const f1 = f0 + dir * d, c1 = f1 - dir * gap;
+            const f1 = f0 + dir * d, c1 = f1 - dir * Math.max(gap, 0.6 * u);
             const dur = 2000, delay = 260;
             segs.push({
                 dur,
