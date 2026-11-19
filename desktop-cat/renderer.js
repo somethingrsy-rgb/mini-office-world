@@ -241,7 +241,7 @@ function endScene() {
   const lc = sc.leftIs === 'ruby' ? ruby : crystal, rc = sc.leftIs === 'ruby' ? crystal : ruby
   for (const [c, x, dir] of [[lc, pos.L, 1], [rc, pos.R, -1]]) {
     c.setFrozen(false)
-    c.st.x = x; c.st.dir = dir; c.st.mode = 'sit'; c.st.until = performance.now() + 4000 + Math.random() * 5000; c.st.cool = performance.now() + 3000
+    c.st.x = x; c.st.dir = dir; c.st.mode = 'sit'; c.st.until = performance.now() + 1000; c.st.cool = performance.now() + 3000   // 장난이 끝나고 1초만 멈춰 있어요
   }
   lastScene = performance.now(); cooldown = 55000 + Math.random() * 15000
 }

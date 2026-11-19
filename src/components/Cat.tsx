@@ -139,7 +139,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     setSt((q) => ({ ...q, x: place.x, y: place.y, dur: 0, moving: false, jump: false }))
     setTarget({ x: place.x, y: place.y })
     setRest(rnd(['sit', 'stand']))
-    scheduleNext(REST_MS)
+    scheduleNext(1000)   // 장난이 끝나고 1초만 멈춰 있다가 다시 돌아다녀요
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place?.n])
 
