@@ -82,6 +82,14 @@ function createWindow() {
   win.loadFile('index.html')
   win.once('ready-to-show', () => { if (!cfg.hidden) win.showInactive() })
   watchWindows()
+  // 마우스 위치는 윈도우 쪽에서 직접 읽어서 보내요 (투명 창이 마우스 이벤트를 무시하는 동안에도 고양이가 알아챌 수 있게)
+  let lastC = ''
+  setInterval(() => {
+    if (!win || win.isDestroyed() || !win.isVisible()) return
+    const p = screen.getCursorScreenPoint(), o = layout().origin
+    const c = `${p.x - o.x},${p.y - o.y}`
+    if (c !== lastC) { lastC = c; win.webContents.send('cursor', { x: p.x - o.x, y: p.y - o.y }) }
+  }, 50)
   screen.on('display-metrics-changed', () => win && fit())
 }
 

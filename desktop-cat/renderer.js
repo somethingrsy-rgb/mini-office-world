@@ -5,7 +5,7 @@
 //  · 정각 알림, 타이머, 사용자 알람 (울리면 계속 뛰어다녀요)
 let dims = null, size = 1
 let conf = { hourly: true, sound: true, hours: 'all', alarms: [] }
-const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {} }
+const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {}, onCursor() {} }
 const catEl = document.getElementById('cat'), img = document.getElementById('img')
 const SCALE = 0.8          // 그림 1px이 화면에서 차지하는 크기 (보통 크기일 때 고양이 키 ≈ 100px)
 const rnd = (a) => a[Math.floor(Math.random() * a.length)]
@@ -106,7 +106,7 @@ function loop(now) {
 
   // 마우스가 코앞에서 흔들리면 앞발로 잡으려 해요
   const interactive = !['pounce', 'aegyo', 'jump', 'run', 'leap', 'drag', 'miss'].includes(st.mode)
-  if (interactive && now > st.cool && !hover && Math.abs(mouse.x - st.x) < 240 * size && mouse.y > st.y - H0 - 100 && mouse.y < st.y + 6) {
+  if (interactive && now > st.cool && !hover && Math.abs(mouse.x - st.x) < 240 * size && mouse.y > st.y - H0 - 100 && mouse.y < st.y + 70) {
     Object.assign(st, { mode: 'pounce', pounceT: now, until: now + 1400, pounceDir: mouse.x < st.x ? -1 : 1, cool: now + 1400 + 6000, mx0: mouse.x, my0: mouse.y })
   }
   if (st.mode === 'pounce' && now - st.pounceT > 500 && Math.hypot(mouse.x - st.mx0, mouse.y - st.my0) > 160 * size) {   // 재빨리 빼면 헛짚고 고개를 갸웃해요
@@ -168,12 +168,14 @@ function overCat(x, y) {
   }
   return false
 }
-document.addEventListener('mousemove', (e) => {
-  mouse.x = e.clientX; mouse.y = e.clientY
-  if (drag && !drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 7) { drag.moved = true; st.mode = 'drag'; st.surf = st.surf; stopRing() }
-  const over = drag ? true : overCat(e.clientX, e.clientY)
+function handleMove(x, y) {
+  mouse.x = x; mouse.y = y
+  if (drag && !drag.moved && Math.hypot(x - drag.sx, y - drag.sy) > 7) { drag.moved = true; st.mode = 'drag'; stopRing() }
+  const over = drag ? true : overCat(x, y)
   if (over !== hover) { hover = over; bridge.ignore(!over) }
-})
+}
+document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY))
+bridge.onCursor && bridge.onCursor((c) => handleMove(c.x, c.y))   // 윈도우가 알려 주는 마우스 위치 (이벤트가 안 와도 동작)
 document.addEventListener('mousedown', (e) => { if (hover && overCat(e.clientX, e.clientY)) drag = { sx: e.clientX, sy: e.clientY, moved: false } })
 document.addEventListener('mouseup', () => {
   if (!drag) return
