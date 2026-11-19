@@ -194,7 +194,7 @@ function makeCat(pre, name, x0) {
   const setHidden = (h) => { hid = h; el.style.display = h || st.frozen ? 'none' : ''; if (h) st.box = null }
   const setFrozen = (f) => { st.frozen = f; el.style.display = f || hid ? 'none' : ''; if (f) st.box = null }
 
-  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, name }
+  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, name, comeDown: () => fall(performance.now()) }
   return self
 }
 const calmAll = () => { clearInterval(ringTimer); if (bubbleEl && cats.some((c) => c.st.mode === 'run')) { bubbleEl.remove(); bubbleEl = null }; cats.forEach((c) => c.calm()) }
@@ -252,10 +252,19 @@ function directScenes(now) {
   }
   if (conf.ruby === false || conf.crystal === false || drag) return
   const a = ruby.st, b = crystal.st
-  if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) return
-  if (!IDLE.includes(a.mode) || !IDLE.includes(b.mode)) { if (!(b.mode === 'walk' && b.seek)) return }
+  if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) {
+    if (now - lastScene > 25000 && now - lastVisit > 12000) {   // 창 위나 다른 모니터에 있으면 한 마리가 바닥으로 내려와 만나러 가요
+      lastVisit = now
+      const w = a.surf.t === 'win' ? ruby : b.surf.t === 'win' ? crystal : null
+      if (w && !['leap', 'drag', 'pounce', 'aegyo', 'run'].includes(w.st.mode)) w.comeDown()
+      else if (!w && a.surf.t === 'floor' && b.surf.t === 'floor' && !['leap', 'drag', 'run'].includes(b.st.mode)) { b.st.surf = { t: 'floor', d: a.surf.d }; b.st.x = layout.displays[a.surf.d].x + layout.displays[a.surf.d].w * 0.3 }
+    }
+    return
+  }
+  const FREE = [...IDLE, 'walk']   // 걷고 있어도 만나면 멈춰서 장난쳐요
+  if (!FREE.includes(a.mode) || !FREE.includes(b.mode)) return
   const dx = Math.abs(a.x - b.x)
-  if (now - lastScene > 15000 && dx < 360 * size && IDLE.includes(a.mode) && IDLE.includes(b.mode)) {
+  if (now - lastScene > 15000 && dx < 360 * size) {
     let r = Math.random() * SCENES.reduce((s, c) => s + c[3], 0), pick = SCENES[0]
     for (const c of SCENES) { if ((r -= c[3]) < 0) { pick = c; break } }
     const [lo, hi] = surfRange(a.surf, 260 * size)
@@ -263,9 +272,9 @@ function directScenes(now) {
     ruby.setFrozen(true); crystal.setFrozen(true); b.seek = false
     return
   }
-  if (b.seek && (dx < 220 * size || b.mode !== 'walk')) b.seek = false
-  if (!b.seek && now - lastScene > 25000 && now - lastVisit > 12000 && dx > 400 * size && IDLE.includes(b.mode)) {   // 멀리 있으면 크리스탈이 루비에게 놀러 가요
-    lastVisit = now; b.seek = true; b.mode = 'walk'; b.dir = a.x > b.x ? 1 : -1; b.until = now + Math.min(40000, (dx - 200 * size) / (0.3 * 133 * size) * 1000)
+  if (b.seek && dx < 360 * size) b.seek = false
+  if (!b.seek && now - lastScene > 25000 && now - lastVisit > 12000 && dx >= 360 * size) {   // 멀리 있으면 크리스탈이 루비에게 놀러 가요
+    lastVisit = now; b.seek = true; b.mode = 'walk'; b.dir = a.x > b.x ? 1 : -1; b.until = now + 60000
   }
 }
 
@@ -274,6 +283,7 @@ function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now
   for (const c of cats) c.update(now, dt)
   directScenes(now)
+  if (cats[1] && cats[1].st.seek && cats[1].st.mode === 'walk') cats[1].st.dir = cats[0].st.x > cats[1].st.x ? 1 : -1
   if (bubbleEl) {
     const b = cats[0] && cats[0].st.box
     if (now > bubbleUntil || !b) { bubbleEl.remove(); bubbleEl = null }
