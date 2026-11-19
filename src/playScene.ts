@@ -31,7 +31,8 @@ type Seg = { dur: number; at: (t: number) => { L: PlayState; R: PlayState } }
  * @param lo,hi 고양이가 설 수 있는 가로 범위
  */
 export function buildScene(acts: Action[], xL: number, xR: number, u: number, lo: number, hi: number, speed: number): PlayScene {
-  const gap = 0.9 * u
+  // 이미 가까이 있으면 뒤로 물러나지 않고 그 자리에서 마주 봐요 (서로에게 다가가기만 해요)
+  const gap = Math.max(Math.min(0.9 * u, xR - xL), 0.35 * u)
   const m = clamp((xL + xR) / 2, lo + gap / 2, hi - gap / 2)
   let pL = m - gap / 2, pR = m + gap / 2          // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)
   const segs: Seg[] = []
