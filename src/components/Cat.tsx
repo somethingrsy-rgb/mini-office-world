@@ -43,7 +43,7 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report, frozen = false, visit, place }: { id: string; /** 다른 고양이와 장난치는 장면 중이면 숨기고 가만히 있어요 */ frozen?: boolean; /** 이 자리로 걸어가요 (다른 고양이를 만나러 갈 때) */ visit?: { x: number; y: number; n: number } | null; /** 이 자리에 바로 놓아요 (장난이 끝난 뒤) */ place?: { x: number; y: number; n: number } | null; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number; idle: boolean }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report, frozen = false, ov = null, want, place }: { id: string; /** 다른 고양이와 장난치는 장면 중이면 숨기고 가만히 있어요 */ frozen?: boolean; /** 장난치는 중이면 이 자리·그림으로 그려요 */ ov?: { x: number; key: string; flip: boolean } | null; /** 다른 고양이를 만날 때가 됐으면 그 고양이가 있는 층의 y (아니면 null) */ want?: () => number | null; /** 이 자리에 바로 놓아요 (장난이 끝난 뒤) */ place?: { x: number; y: number; n: number } | null; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number; free: boolean }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
   const FR = FRAME_SETS[pre] ?? FRAMES
   const frozenRef = useRef(frozen)
   frozenRef.current = frozen
@@ -71,9 +71,12 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     const floorOf = (y: number) => (y < 550 ? 0 : y < 850 ? 1 : 2)
     const free = INSET(SPOTS).filter((p) => (Math.abs(p.x - cur.current.x) > 60 || p.y !== cur.current.y) && !crowded(p))
     // 층은 되도록 옮기지 않아요: 같은 층의 자리를 먼저 고르고, 층을 바꾸는 건 아주 가끔(10%)만 해요
+    const wy = want?.()
+    const wantFloor = wy == null ? null : floorOf(wy)
     const same = free.filter((p) => floorOf(p.y) === floorOf(cur.current.y))
     const other = free.filter((p) => floorOf(p.y) !== floorOf(cur.current.y))
-    const ok = same.length > 0 && !(other.length > 0 && Math.random() < 0.1) ? same : other.length > 0 ? other : same
+    const toward = wantFloor != null && floorOf(cur.current.y) !== wantFloor && Math.random() < 0.35 ? other.filter((p) => floorOf(p.y) === wantFloor) : []
+    const ok = toward.length > 0 ? toward : same.length > 0 && !(other.length > 0 && Math.random() < 0.1) ? same : other.length > 0 ? other : same
     if (ok.length === 0) return false
     const nt = { ...rnd(ok) }
     targetRef.current = nt; setTarget(nt); setRest(rnd(REST)); setVariant(Math.floor(Math.random() * 3))
@@ -118,22 +121,12 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
 
   // 지금 자리를 다른 고양이에게 알려 줘요 (서로 겹치지 않게)
   useEffect(() => {
-    const t = window.setInterval(() => report?.(id, { x: cur.current.x, y: cur.current.y, idle: idleRef.current }), 500)
+    const t = window.setInterval(() => report?.(id, { x: cur.current.x, y: cur.current.y, free: idleRef.current }), 500)
     return () => window.clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // 다른 고양이를 만나러 가요 / 장난이 끝난 뒤 그 자리에 놓여요
-  useEffect(() => {
-    if (!visit) return
-    window.clearTimeout(nextTimer.current)
-    callActive.current = true
-    holdUntil.current = 0
-    const nt = { x: Math.min(Math.max(visit.x, 140), 840), y: visit.y }
-    targetRef.current = nt; setTarget(nt); setRest('stand')
-    setSt((q) => ({ ...q, face: nt.x < cur.current.x ? 'l' : 'r' }))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visit?.n])
+  // 장난이 끝난 뒤 그 자리에 놓여요
   useEffect(() => {
     if (!place) return
     window.clearTimeout(nextTimer.current)
@@ -222,7 +215,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     return () => window.clearTimeout(t)
   }, [aegyoUntil])
   useEffect(() => { setFrame(0) }, [pose, st.leg])
-  idleRef.current = !st.moving && !aegyo && !pouncing && !callActive.current && !frozen
+  idleRef.current = !st.jump && !aegyo && !pouncing && !callActive.current && !frozen
   const list = FR[pose]
   const key = pose === 'jumpUp' || pose === 'jumpDown' || pose === 'pounce' ? list[Math.min(frame, list.length - 1)] : list.length > 1 ? list[frame % list.length] : list[0]
 
@@ -237,15 +230,16 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     onNear?.(cur.current.x, cur.current.y)
   }
 
-  const d = CAT_DIM[key]
+  const shownKey = ov ? ov.key : key
+  const d = CAT_DIM[shownKey]
   const W = d.w * SCALE, H = d.h * SCALE
-  const flip = (pose === 'pounce' ? pounceDir === 'l' : st.face === 'l') && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
+  const flip = ov ? ov.flip : (pose === 'pounce' ? pounceDir === 'l' : st.face === 'l') && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
   return (
-    <g className="cat" style={{ transform: `translate(${st.x}px, ${st.y}px)`, transition: `transform ${st.dur}s linear`, visibility: frozen ? 'hidden' : undefined, pointerEvents: frozen ? 'none' : undefined }} onClick={pet} role="button" aria-label={`${name}(고양이) 쓰다듬기`} cursor="pointer">
+    <g className="cat" style={{ transform: `translate(${ov ? ov.x : st.x}px, ${st.y}px)`, transition: ov ? 'none' : `transform ${st.dur}s linear`, pointerEvents: frozen ? 'none' : undefined }} onClick={pet} role="button" aria-label={`${name}(고양이) 쓰다듬기`} cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
       <g key={st.jump ? st.leg : aegyo ? 'a' + hearts : 'x'} style={st.jump ? { animation: `catarc ${st.dur}s ease-in-out` } : undefined}>
         <g transform={flip ? 'scale(-1 1)' : undefined}>
-          <image href={asset(`cats/${key}.webp`)} x={-W / 2} y={-H} width={W} height={H} style={tint ? { filter: tint } : undefined} />
+          <image href={asset(`cats/${shownKey}.webp`)} x={-W / 2} y={-H} width={W} height={H} style={tint ? { filter: tint } : undefined} />
         </g>
       </g>
       {aegyo && (

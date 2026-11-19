@@ -119,44 +119,49 @@ for g, imgs in white_groups.items():
         canvas.save(os.path.join(out, f'wh_{g}{k}.webp'), 'WEBP', quality=90, method=6)
         meta[f'wh_{g}{k}'] = {'w': cw, 'h': ch}; names.append(f'wh_{g}{k}')
 
-# ── 두 고양이가 만나서 장난치는 장면(한 장에 두 마리): pairA·pairB(앉아서 비비기), pairC·pairD(뛰며 장난) 각 12장 ──
-# 그림 한 장이 12칸(4x3)이고 칸마다 흰 고양이(왼쪽)와 루비(오른쪽)가 함께 있어요. 칸 안의 위치를 그대로 지켜서 움직임이 이어져요.
-def extract_pair(path, thr, dil):
+# ── 두 고양이가 만났을 때 쓰는 동작(고양이 한 마리씩): sneak(살금살금 다가가기) sniff(코 인사) bow(장난 걸기) tap(앞발 톡톡) roll(뒹굴기) dash(뛰기) ──
+# 그림마다 12칸(4x3)이고 오른쪽을 보고 있어요. 칸 안의 위치를 그대로 지켜서 움직임이 이어지고, 걷기와 같은 몸 크기가 되도록 장마다 한 배율을 써요.
+def extract_cells(path, thr=200):
     im = Image.open(path).convert('RGBA'); rgb = np.asarray(im)[:, :, :3]; a = np.asarray(im)[:, :, 3]; H, W = a.shape
-    lab, n = ndi.label(a > thr); objs = ndi.find_objects(lab); sizes = ndi.sum(a > thr, lab, range(1, n + 1))
+    lab, n = ndi.label(a > thr); sizes = ndi.sum(a > thr, lab, range(1, n + 1))
     cells = {}
-    for i, (sl, sz) in enumerate(zip(objs, sizes), start=1):
-        if sz < 3500: continue                                   # 배경 번짐(작은 덩어리)은 빼요
-        cy, cx = ndi.center_of_mass(lab == i)
-        cells.setdefault((min(2, int(cy * 3 / H)), min(3, int(cx * 4 / W))), []).append(i)
+    for i in range(1, n + 1):
+        if sizes[i - 1] < 150: continue
+        cy, cx_ = ndi.center_of_mass(lab == i)
+        cells.setdefault((min(2, int(cy * 3 / H)), min(3, int(cx_ * 4 / W))), []).append(i)
     frames = []
     for r in range(3):
         for c in range(4):
-            m = ndi.binary_dilation(np.isin(lab, cells.get((r, c), [])), iterations=dil)
+            ids = cells.get((r, c), []); big = max(ids, key=lambda i: sizes[i - 1])
+            near = ndi.binary_dilation(lab == big, iterations=14)
+            keep = [i for i in ids if i == big or (sizes[i - 1] >= 150 and (near & (lab == i)).any())]
+            m = ndi.binary_dilation(np.isin(lab, keep), iterations=3)
             al = np.where(m & (a >= 40), a, 0).astype(np.uint8)
             frames.append((Image.fromarray(np.dstack([rgb, al]), 'RGBA'), (r, c)))
     return frames, (W, H)
 
-PAIRS = {'pairA': ('pairA.png', 200, 4, 0.66), 'pairB': ('pairB.png', 200, 4, 0.66), 'pairC': ('pairC.png', 245, 3, 0.95), 'pairD': ('pairD.png', 245, 3, 0.95)}
-for g, (fn, thr, dil, sc) in PAIRS.items():
-    frames, (W, H) = extract_pair(os.path.join(ROOT, 'tools/src_art', fn), thr, dil)
-    # 12칸 모두에서 고양이가 있는 영역을 합친 상자를 구해서, 칸 안에서의 위치 그대로 같은 크기의 판에 담아요
-    boxes = []
-    for im2, (r, c) in frames:
-        bb = im2.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox()
-        ox, oy = c * W // 4, r * H // 3
-        boxes.append((bb[0] - ox, bb[1] - oy, bb[2] - ox, bb[3] - oy))
-    x0 = min(b[0] for b in boxes); y0 = min(b[1] for b in boxes); x1 = max(b[2] for b in boxes); y1 = max(b[3] for b in boxes)
-    cwid, chei = x1 - x0, y1 - y0
-    for k, (im2, (r, c)) in enumerate(frames):
-        ox, oy = c * W // 4, r * H // 3
-        crop = im2.crop((ox + x0, oy + y0, ox + x1, oy + y1)).resize((max(1, round(cwid * sc)), max(1, round(chei * sc))), Image.LANCZOS)
-        crop.save(os.path.join(out, f'{g}{k}.webp'), 'WEBP', quality=90, method=6)
-        meta[f'{g}{k}'] = {'w': crop.width, 'h': crop.height}; names.append(f'{g}{k}')
-    white_groups_count = 12
+PLAY = ['sneak', 'sniff', 'bow', 'tap', 'roll', 'dash']
+play_scale = json.load(open(os.path.join(ROOT, 'tools/play_scale.json'))) if os.path.exists(os.path.join(ROOT, 'tools/play_scale.json')) else {}
+for who, pre in (('rb', ''), ('wh', 'wh_')):
+    for g in PLAY:
+        frames, (W, H) = extract_cells(os.path.join(ROOT, f'tools/src_art/play_{who}_{g}.png'))
+        boxes = []
+        for im2, (r, c) in frames:
+            bb = im2.getchannel('A').point(lambda v: 255 if v > 8 else 0).getbbox()
+            ox, oy = c * W // 4, r * H // 3
+            boxes.append((bb[0] - ox, bb[1] - oy, bb[2] - ox, bb[3] - oy))
+        x0 = min(b[0] for b in boxes); y0 = min(b[1] for b in boxes); x1 = max(b[2] for b in boxes); y1 = max(b[3] for b in boxes)
+        f = (tgt / float(np.mean([area(i) for i, _ in frames]))) ** 0.5 * play_scale.get(f'{who}_{g}', 1.0)
+        cwid, chei = x1 - x0, y1 - y0
+        for k, (im2, (r, c)) in enumerate(frames):
+            ox, oy = c * W // 4, r * H // 3
+            crop = im2.crop((ox + x0, oy + y0, ox + x1, oy + y1)).resize((max(1, round(cwid * f)), max(1, round(chei * f))), Image.LANCZOS)
+            crop.save(os.path.join(out, f'{pre}{g}{k}.webp'), 'WEBP', quality=90, method=6)
+            meta[f'{pre}{g}{k}'] = {'w': crop.width, 'h': crop.height}; names.append(f'{pre}{g}{k}')
+        print(who, g, round(f, 3), crop.size, flush=True)
 counts = {g: len(i) for g, i in list(raw.items()) + list(raw_rest.items())}
 counts.update({f'wh_{g}': len(i) for g, i in white_groups.items()})
-counts.update({g: 12 for g in PAIRS})
+counts.update({g: 12 for g in PLAY}); counts.update({f'wh_{g}': 12 for g in PLAY})
 with open(os.path.join(ROOT, 'src/cats.gen.ts'), 'w') as fh:
     fh.write('// tools/process_cats.py 가 만든 파일이에요. 직접 고치지 마세요.\nexport const CAT_DIM: Record<string, { w: number; h: number }> = ' + json.dumps(meta, indent=1) + '\n'
              + 'export const CAT_COUNT: Record<string, number> = ' + json.dumps(counts) + '\n')

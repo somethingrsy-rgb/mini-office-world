@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Avatar from './Avatar'
 import Cat, { CAT_SCALE } from './Cat'
-import { CAT_DIM } from '../cats.gen'
+import { buildScene, playKey, type PlayScene } from '../playScene'
 import { asset } from '../assets'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
@@ -43,31 +43,6 @@ interface Props {
 /** 글자 수에 맞춘 말풍선 폭 (한글은 넓게, 영문·숫자는 좁게) */
 const tw = (t: string, size: number) => [...t].reduce((n, c) => n + (c.charCodeAt(0) > 255 ? size : size * 0.58), 0)
 
-type SceneKind = 'pairA' | 'pairB' | 'pairC' | 'pairD'
-interface Scene { n: number; kind: SceneKind; x: number; y: number; flip: boolean; t0: number; dur: number }
-/** 장면마다 한 장을 보여 주는 시간(ms)과 반복 횟수: 앉아서 비비기는 천천히 한 번, 뛰며 장난은 빠르게 두 번 */
-const SCENES: Record<SceneKind, { ms: number; loops: number; weight: number }> = {
-  pairA: { ms: 480, loops: 1, weight: 15 }, pairB: { ms: 480, loops: 1, weight: 15 },
-  pairC: { ms: 330, loops: 2, weight: 35 }, pairD: { ms: 330, loops: 2, weight: 35 },
-}
-/** 두 고양이가 만나서 장난치는 장면 (한 장에 두 마리가 그려져 있어요) */
-function PairScene({ scene }: { scene: Scene }) {
-  const [, setTick] = useState(0)
-  useEffect(() => { const t = window.setInterval(() => setTick((v) => v + 1), 60); return () => window.clearInterval(t) }, [])
-  const info = SCENES[scene.kind]
-  const idx = Math.min(11, Math.floor(((Date.now() - scene.t0) / info.ms) % 12))
-  const d = CAT_DIM[`${scene.kind}0`]
-  const k = scene.kind === 'pairA' || scene.kind === 'pairB' ? 0.86 : 0.78   // 걸어 다닐 때 고양이와 같은 크기로 보이게
-  const W = d.w * CAT_SCALE * k, H = d.h * CAT_SCALE * k
-  return (
-    <g pointerEvents="none" transform={`translate(${scene.x} ${scene.y})`}>
-      <g transform={scene.flip ? 'scale(-1 1)' : undefined}>
-        <image href={asset(`cats/${scene.kind}${idx}.webp`)} x={-W / 2} y={-H} width={W} height={H} />
-      </g>
-    </g>
-  )
-}
-
 /** 안내선 '아래 N'만큼 발을 내려요: 고양이 루비는 30, 아바타·접수대는 10 */
 const CAT_DROP = 30
 const FOOT_DROP = 10
@@ -96,53 +71,66 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
   actRef.current = activities
   const shownRef = useRef(shown)
   shownRef.current = shown
-  // 두 고양이가 가까이 있으면 만나서 장난쳐요 (가끔 크리스탈이 루비를 만나러 가요)
-  const [scene, setScene] = useState<Scene | null>(null)
-  const sceneRef = useRef<Scene | null>(null)
-  sceneRef.current = scene
+  // 두 고양이가 걸어 다니다가 우연히 마주치면 장난쳐요 (일부러 서로를 쫓아가지는 않아요)
+  type Ov = { x: number; key: string; flip: boolean }
+  const [ov, setOv] = useState<{ cat1: Ov | null; cat2: Ov | null }>({ cat1: null, cat2: null })
+  const sceneRef = useRef<{ plan: PlayScene; t0: number; leftIs: 'cat1' | 'cat2'; y: number } | null>(null)
   const [placeRuby, setPlaceRuby] = useState<{ x: number; y: number; n: number } | null>(null)
   const [placeCrystal, setPlaceCrystal] = useState<{ x: number; y: number; n: number } | null>(null)
-  const [visit, setVisit] = useState<{ x: number; y: number; n: number } | null>(null)
-  const lastScene = useRef(Date.now() - 30000)
-  const lastVisit = useRef(Date.now())
+  const [playing, setPlaying] = useState(false)
   const sceneN = useRef(0)
+  const lastScene = useRef(Date.now() - 20000)
+  const cooldown = useRef(55000 + Math.random() * 15000)   // 장난은 1분에 한 번쯤
   const bothCats = cats.ruby && cats.crystal
+  const UNIT = 160 * CAT_SCALE                                // 걷는 고양이 한 마리의 가로 크기
   useEffect(() => {
-    if (!bothCats) { setScene(null); return }
+    if (!bothCats) { sceneRef.current = null; setPlaying(false); setOv({ cat1: null, cat2: null }); return }
     const t = window.setInterval(() => {
       const now = Date.now()
-      const a = catPos.current['cat1'] as { x: number; y: number; idle?: boolean } | undefined   // 루비
-      const b = catPos.current['cat2'] as { x: number; y: number; idle?: boolean } | undefined   // 크리스탈(흰 고양이)
-      if (!a || !b) return
       const cur = sceneRef.current
       if (cur) {
-        if (now >= cur.t0 + cur.dur) {   // 끝나면 두 마리를 장면 속 자리에 놓고 다시 돌아다녀요
-          const gap = 75
-          const wx = cur.flip ? cur.x + gap : cur.x - gap, rx = cur.flip ? cur.x - gap : cur.x + gap
-          setPlaceRuby({ x: rx, y: cur.y, n: ++sceneN.current }); setPlaceCrystal({ x: wx, y: cur.y, n: ++sceneN.current })
-          lastScene.current = now; setScene(null)
+        const el = now - cur.t0
+        if (el >= cur.plan.dur) {   // 끝나면 두 마리를 그 자리에 앉혀 놓고 다시 돌아다녀요
+          const { L, R } = cur.plan.end
+          const left = cur.leftIs === 'cat1' ? setPlaceRuby : setPlaceCrystal, right = cur.leftIs === 'cat1' ? setPlaceCrystal : setPlaceRuby
+          left({ x: L, y: cur.y, n: ++sceneN.current }); right({ x: R, y: cur.y, n: ++sceneN.current })
+          sceneRef.current = null; setPlaying(false); setOv({ cat1: null, cat2: null })
+          lastScene.current = now; cooldown.current = 55000 + Math.random() * 15000
+          return
         }
+        const st = cur.plan.at(el)
+        const mk = (s: typeof st.L, pre: string): Ov => ({ x: s.x, key: playKey(pre, s), flip: s.flip })
+        const L = mk(st.L, cur.leftIs === 'cat1' ? '' : 'wh_'), R = mk(st.R, cur.leftIs === 'cat1' ? 'wh_' : '')
+        setOv(cur.leftIs === 'cat1' ? { cat1: L, cat2: R } : { cat1: R, cat2: L })
         return
       }
-      if (!a.idle || !b.idle) return
-      const sameFloor = Math.abs(a.y - b.y) < 40
-      if (sameFloor && Math.abs(a.x - b.x) < 360 && now - lastScene.current > 15000) {
-        const kinds = Object.keys(SCENES) as SceneKind[]
-        let r = Math.random() * kinds.reduce((v, k) => v + SCENES[k].weight, 0), kind = kinds[0]
-        for (const k of kinds) { r -= SCENES[k].weight; if (r <= 0) { kind = k; break } }
-        const info = SCENES[kind]
-        const x = Math.min(Math.max((a.x + b.x) / 2, 190), 800)
-        setScene({ n: ++sceneN.current, kind, x, y: (a.y + b.y) / 2, flip: b.x > a.x, t0: now, dur: info.ms * 12 * info.loops })
-      } else if (now - lastScene.current > 25000 && now - lastVisit.current > 12000 && !(sameFloor && Math.abs(a.x - b.x) < 360)) {
-        lastVisit.current = now   // 오래 못 만났으면 크리스탈이 루비 옆으로 가요
-        setVisit({ x: a.x + (a.x > 480 ? -110 : 110), y: a.y, n: ++sceneN.current })
-      }
-    }, 1000)
+      const a = catPos.current['cat1'] as { x: number; y: number; free?: boolean } | undefined   // 루비
+      const b = catPos.current['cat2'] as { x: number; y: number; free?: boolean } | undefined   // 크리스탈
+      if (!a || !b || !a.free || !b.free) return
+      if (now - lastScene.current < cooldown.current) return
+      if (Math.abs(a.y - b.y) > 40 || Math.abs(a.x - b.x) > 250) return   // 같은 층에서 마주쳤을 때만
+      const leftIs = a.x <= b.x ? 'cat1' : 'cat2'
+      const kinds = ['hello', 'tag', 'tag', 'roll'] as const
+      const plan = buildScene(kinds[Math.floor(Math.random() * kinds.length)], Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830)
+      sceneRef.current = { plan, t0: now, leftIs, y: (a.y + b.y) / 2 }
+      setPlaying(true)
+    }, 80)
     return () => window.clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bothCats])
+  // 시험용: 두 고양이를 같은 자리 근처에 놓고 바로 장난치게 해요
+  useEffect(() => {
+    (window as unknown as Record<string, unknown>).__catPlay = () => {
+      const a = catPos.current['cat1']; if (!a) return
+      lastScene.current = 0; cooldown.current = 0
+      setPlaceRuby({ x: 560, y: a.y, n: ++sceneN.current }); setPlaceCrystal({ x: 360, y: a.y, n: ++sceneN.current })
+    }
+  }, [])
+  // 만날 때가 됐으면 고양이가 다른 층으로 갈 때 상대가 있는 층을 조금 더 골라요 (쫓아가는 건 아니고 층만 같아져요)
+  const wantFloorY = (other: string) => () => (bothCats && !sceneRef.current && Date.now() - lastScene.current > cooldown.current ? (catPos.current[other]?.y ?? null) : null)
   // 두 고양이의 자리를 서로에게 알려요
-  const catPos = useRef<Record<string, { x: number; y: number; idle?: boolean }>>({})
-  const reportCat = (id: string, p: { x: number; y: number; idle: boolean }) => { catPos.current[id] = p }
+  const catPos = useRef<Record<string, { x: number; y: number; free?: boolean }>>({})
+  const reportCat = (id: string, p: { x: number; y: number; free: boolean }) => { catPos.current[id] = p }
   const avoidFor = (id: string) => () => [...avatarSpots(), ...Object.entries(catPos.current).filter(([k]) => k !== id).map(([, v]) => v)]
   const avatarSpots = () => AVATARS.filter((a) => a.id === 'user' || shownRef.current.includes(a.id)).map((a) => actRef.current[a.id].spot)
   /** 화면 좌표 → 하우스 좌표 */
@@ -201,9 +189,8 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       </g>
       {(cats.ruby || cats.crystal) && (
         <g transform={`translate(0 ${catDrop})`}>
-          {cats.ruby && <Cat id="cat1" name="루비" frozen={!!scene} place={placeRuby} start={{ x: 640, y: 408 }} offset={-10} avoid={avoidFor('cat1')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />}
-          {cats.crystal && <Cat id="cat2" pre="wh_" name="크리스탈" frozen={!!scene} place={placeCrystal} visit={visit} side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />}
-          {scene && bothCats && <PairScene key={scene.n} scene={scene} />}
+          {cats.ruby && <Cat id="cat1" name="루비" frozen={playing} ov={ov.cat1} place={placeRuby} want={wantFloorY('cat2')} start={{ x: 640, y: 408 }} offset={-10} avoid={avoidFor('cat1')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />}
+          {cats.crystal && <Cat id="cat2" pre="wh_" name="크리스탈" frozen={playing} ov={ov.cat2} place={placeCrystal} want={wantFloorY('cat1')} side={150} start={{ x: 330, y: 690 }} offset={10} avoid={avoidFor('cat2')} report={reportCat} call={callSpot} pointer={() => (pointerRef.current ? { x: pointerRef.current.x, y: pointerRef.current.y - catDrop } : null)} />}
         </g>
       )}
     </svg>

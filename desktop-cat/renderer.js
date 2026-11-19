@@ -89,7 +89,7 @@ function makeCat(pre, name, x0) {
   }
 
   function update(now, dt) {
-    if (st.frozen) { el.style.display = 'none'; st.box = null; return }
+    if (st.frozen) { if (st.ov) drawOv(st.ov); return }
     if (el.style.display === 'none') return
     const k0 = frameFor(now), d0 = dims.dim[k0], W0 = d0.w * SCALE * size, H0 = d0.h * SCALE * size
 
@@ -191,10 +191,20 @@ function makeCat(pre, name, x0) {
   }
   function calm() { if (st.mode === 'run') { st.mode = 'stand'; st.until = performance.now() } }
   let hid = false
-  const setHidden = (h) => { hid = h; el.style.display = h || st.frozen ? 'none' : ''; if (h) st.box = null }
-  const setFrozen = (f) => { st.frozen = f; el.style.display = f || hid ? 'none' : ''; if (f) st.box = null }
+  const setHidden = (h) => { hid = h; el.style.display = h ? 'none' : ''; if (h) st.box = null }
+  const setFrozen = (f) => { st.frozen = f; if (!f) st.ov = null; st.box = null }
+  // 장난치는 동안은 장면이 정해 준 자리·그림으로 그려요
+  function drawOv(o) {
+    const d = dims.dim[o.key]; if (!d) return
+    const w = d.w * SCALE * size, h = d.h * SCALE * size
+    if (img.dataset.k !== o.key) { img.src = `frames/${o.key}.webp`; img.dataset.k = o.key }
+    img.style.width = w + 'px'; img.style.height = h + 'px'
+    img.style.transform = o.flip ? 'scaleX(-1)' : ''; img.style.transformOrigin = '50% 90%'
+    el.style.transform = `translate(${Math.round(o.x - w / 2)}px, ${Math.round(st.y - h)}px)`
+    st.box = null
+  }
 
-  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, name, comeDown: () => fall(performance.now()) }
+  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, name }
   return self
 }
 const calmAll = () => { clearInterval(ringTimer); if (bubbleEl && cats.some((c) => c.st.mode === 'run')) { bubbleEl.remove(); bubbleEl = null }; cats.forEach((c) => c.calm()) }
@@ -218,64 +228,46 @@ async function init() {
   last = performance.now(); requestAnimationFrame(loop)
 }
 
-// ═══ 두 마리가 만나면 장난쳐요: 가까이 있는 둘이 쉬고 있으면 짝 그림(A·B 코 비비기 / C·D 뛰어놀기)을 보여 줘요 ═══
-const SCENES = [['A', 480, 1, 15], ['B', 480, 1, 15], ['C', 330, 2, 35], ['D', 330, 2, 35]]
-let scene = null, lastScene = performance.now() - 30000, lastVisit = 0
-const pairImg = document.createElement('img'); pairImg.alt = ''; pairImg.className = 'pair'; pairImg.style.display = 'none'; document.body.appendChild(pairImg)
-const IDLE = ['stand', 'sit', 'sleep', 'groom']
-function endScene(place = true) {
+// ═══ 두 마리가 걸어 다니다 우연히 마주치면 장난쳐요 (일부러 서로를 쫓아가지는 않아요) ═══
+// 장면의 움직임은 play.js(buildScene)가 만들고, 고양이마다 자기 그림(sneak·sniff·bow·tap·roll·dash)으로 움직여요.
+let scene = null, lastScene = performance.now() - 20000, cooldown = 55000 + Math.random() * 15000
+const FREE = ['stand', 'sit', 'sleep', 'groom', 'walk']
+function endScene() {
   if (!scene) return
-  const sc = scene; scene = null; pairImg.style.display = 'none'; lastScene = performance.now()
+  const sc = scene; scene = null
   const [ruby, crystal] = cats
-  const away = sc.flip ? -1 : 1                      // 크리스탈은 그림에서 왼쪽(뒤집히면 오른쪽)
-  for (const [c, off] of [[crystal, -75 * away], [ruby, 75 * away]]) {
+  const fin = sc.plan.at(Math.min(performance.now() - sc.t0, sc.plan.dur - 1))
+  const pos = { L: fin.L.x, R: fin.R.x }
+  const lc = sc.leftIs === 'ruby' ? ruby : crystal, rc = sc.leftIs === 'ruby' ? crystal : ruby
+  for (const [c, x, dir] of [[lc, pos.L, 1], [rc, pos.R, -1]]) {
     c.setFrozen(false)
-    if (place) {
-      const [lo, hi] = surfRange(c.st.surf, 130 * size)
-      c.st.x = Math.min(Math.max(sc.x + off, lo), Math.max(lo, hi)); c.st.dir = off < 0 ? 1 : -1
-      c.st.mode = 'sit'; c.st.until = performance.now() + 5000 + Math.random() * 6000; c.st.cool = performance.now() + 4000
-    }
+    c.st.x = x; c.st.dir = dir; c.st.mode = 'sit'; c.st.until = performance.now() + 4000 + Math.random() * 5000; c.st.cool = performance.now() + 3000
   }
+  lastScene = performance.now(); cooldown = 55000 + Math.random() * 15000
 }
 function directScenes(now) {
   const [ruby, crystal] = cats
   if (!ruby || !crystal) return
   if (scene) {
-    const k = Math.floor((now - scene.t) / scene.ms)
-    if (k >= 12 * scene.loops || conf.ruby === false || conf.crystal === false || drag) return endScene(false)
-    const key = `pair${scene.kind}${k % 12}`, d = dims.dim[key], pk = scene.kind === 'A' || scene.kind === 'B' ? 0.86 : 0.78, w = d.w * SCALE * size * pk, h = d.h * SCALE * size * pk
-    if (pairImg.dataset.k !== key) { pairImg.src = `frames/${key}.webp`; pairImg.dataset.k = key }
-    pairImg.style.width = w + 'px'; pairImg.style.height = h + 'px'
-    pairImg.style.transform = `translate(${Math.round(scene.x - w / 2)}px, ${Math.round(scene.y - h)}px)${scene.flip ? ' scaleX(-1)' : ''}`
-    pairImg.style.display = ''
+    const el = now - scene.t0
+    if (el >= scene.plan.dur || conf.ruby === false || conf.crystal === false) return endScene()
+    const s = scene.plan.at(el)
+    const rs = scene.leftIs === 'ruby' ? s.L : s.R, cs = scene.leftIs === 'ruby' ? s.R : s.L
+    ruby.st.ov = { x: rs.x, key: playKey('', rs), flip: rs.flip }
+    crystal.st.ov = { x: cs.x, key: playKey('wh_', cs), flip: cs.flip }
     return
   }
-  if (conf.ruby === false || conf.crystal === false || drag) return
+  if (conf.ruby === false || conf.crystal === false || drag || now - lastScene < cooldown) return
   const a = ruby.st, b = crystal.st
-  if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) {
-    if (now - lastScene > 25000 && now - lastVisit > 12000) {   // 창 위나 다른 모니터에 있으면 한 마리가 바닥으로 내려와 만나러 가요
-      lastVisit = now
-      const w = a.surf.t === 'win' ? ruby : b.surf.t === 'win' ? crystal : null
-      if (w && !['leap', 'drag', 'pounce', 'aegyo', 'run'].includes(w.st.mode)) w.comeDown()
-      else if (!w && a.surf.t === 'floor' && b.surf.t === 'floor' && !['leap', 'drag', 'run'].includes(b.st.mode)) { b.st.surf = { t: 'floor', d: a.surf.d }; b.st.x = layout.displays[a.surf.d].x + layout.displays[a.surf.d].w * 0.3 }
-    }
-    return
-  }
-  const FREE = [...IDLE, 'walk']   // 걷고 있어도 만나면 멈춰서 장난쳐요
+  if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) return
   if (!FREE.includes(a.mode) || !FREE.includes(b.mode)) return
-  const dx = Math.abs(a.x - b.x)
-  if (now - lastScene > 15000 && dx < 360 * size) {
-    let r = Math.random() * SCENES.reduce((s, c) => s + c[3], 0), pick = SCENES[0]
-    for (const c of SCENES) { if ((r -= c[3]) < 0) { pick = c; break } }
-    const [lo, hi] = surfRange(a.surf, 260 * size)
-    scene = { kind: pick[0], ms: pick[1], loops: pick[2], t: now, x: Math.min(Math.max((a.x + b.x) / 2, lo), Math.max(lo, hi)), y: a.y, flip: b.x > a.x, n: 0 }
-    ruby.setFrozen(true); crystal.setFrozen(true); b.seek = false
-    return
-  }
-  if (b.seek && dx < 360 * size) b.seek = false
-  if (!b.seek && now - lastScene > 25000 && now - lastVisit > 12000 && dx >= 360 * size) {   // 멀리 있으면 크리스탈이 루비에게 놀러 가요
-    lastVisit = now; b.seek = true; b.mode = 'walk'; b.dir = a.x > b.x ? 1 : -1; b.until = now + 60000
-  }
+  const unit = dims.dim.walkR0.w * SCALE * size
+  if (Math.abs(a.x - b.x) > 1.9 * unit) return
+  const [lo, hi] = surfRange(a.surf, unit * 1.2)
+  const kinds = ['hello', 'tag', 'tag', 'roll']
+  const plan = buildScene(rnd(kinds), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi)
+  scene = { plan, t0: now, leftIs: a.x <= b.x ? 'ruby' : 'crystal' }
+  b.y = a.y; ruby.setFrozen(true); crystal.setFrozen(true)
 }
 
 let last = 0
@@ -283,7 +275,6 @@ function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now
   for (const c of cats) c.update(now, dt)
   directScenes(now)
-  if (cats[1] && cats[1].st.seek && cats[1].st.mode === 'walk') cats[1].st.dir = cats[0].st.x > cats[1].st.x ? 1 : -1
   if (bubbleEl) {
     const b = cats[0] && cats[0].st.box
     if (now > bubbleUntil || !b) { bubbleEl.remove(); bubbleEl = null }
@@ -374,6 +365,6 @@ function setTimer(min) {
   say(`${min}분 뒤에 알려 드릴게요`, 3000)
   timerId = setTimeout(() => ring(`⏱ ${min}분 타이머가 끝났어요!`), min * 60000)
 }
-window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__play = (kind) => { const [r, c] = cats; r.st.mode = c.st.mode = 'stand'; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; c.st.y = r.st.y; lastScene = -1e9; scene = null; const p = SCENES.find((s) => s[0] === kind) || SCENES[0]; scene = { kind: p[0], ms: p[1], loops: p[2], t: performance.now(), x: r.st.x - 75, y: r.st.y, flip: false, n: 0 }; r.setFrozen(true); c.setFrozen(true) }   // 시험용
+window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__force = () => { const [r, c] = cats; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; lastScene = -1e9; cooldown = 0; r.st.mode = c.st.mode = 'stand' }   // 시험용
 
 init()
