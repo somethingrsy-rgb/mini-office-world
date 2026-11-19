@@ -6,7 +6,7 @@ import { asset } from '../assets'
 import { AVATARS, type AvatarId } from '../avatars'
 import { COUNTER_IMG, themed } from '../assets'
 import { COUNTER, COUNTER_DARK_DROP, ROOMS, type RoomId } from '../rooms'
-import type { Activity } from '../schedule'
+import { FLOOR_Y, type Activity } from '../schedule'
 import type { Staff } from '../types'
 import type { Skin } from '../settings'
 
@@ -52,14 +52,14 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
   const svgRef = useRef<SVGSVGElement>(null)
   // 빈 바닥을 두 번 톡 누르면 고양이가 그쪽으로 와서 옆에 앉아요
   const [callSpot, setCallSpot] = useState<{ x: number; y: number; n: number } | null>(null)
-  const pendingCall = useRef<{ x: number; t: number } | null>(null)   // 빈 바닥을 두 번 눌러 불렀으면, 둘이 도착했을 때 바로 장난쳐요
+  const pendingCall = useRef<{ x: number; y: number; t: number } | null>(null)   // 빈 바닥을 두 번 눌러 불렀으면, 둘이 도착했을 때 바로 장난쳐요
   const lastTap = useRef<{ x: number; y: number; t: number } | null>(null)
   const tapForCat = (e: React.MouseEvent) => {
     if (onMove || (e.target as Element).closest('g.avatar, g.cat')) return   // 아바타를 고른 상태나 아바타·고양이를 누른 건 제외
     const q = toHouse(e)
     if (!q) return
     const now = Date.now(), p = lastTap.current
-    if (p && now - p.t < 450 && Math.hypot(p.x - q.x, p.y - q.y) < 70) { lastTap.current = null; setCallSpot((c) => ({ x: q.x, y: q.y - catDrop, n: (c?.n ?? 0) + 1 })); pendingCall.current = { x: q.x, t: now } }
+    if (p && now - p.t < 450 && Math.hypot(p.x - q.x, p.y - q.y) < 70) { lastTap.current = null; setCallSpot((c) => ({ x: q.x, y: q.y - catDrop, n: (c?.n ?? 0) + 1 })); pendingCall.current = { x: q.x, y: q.y - catDrop < 550 ? FLOOR_Y.attic : q.y - catDrop < 850 ? FLOOR_Y.f2 : FLOOR_Y.f1, t: now } }
     else lastTap.current = { x: q.x, y: q.y, t: now }
   }
   // 마우스·손가락이 하우스 위 어디에 있는지 (고양이가 잡으려고 해요)
@@ -107,19 +107,24 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       }
       const a = catPos.current['cat1'] as { x: number; y: number; free?: boolean; dir?: number } | undefined   // 루비
       const b = catPos.current['cat2'] as { x: number; y: number; free?: boolean; dir?: number } | undefined   // 크리스탈
-      if (!a || !b || !a.free || !b.free) return
+      if (!a || !b) return
       const pc = pendingCall.current
-      if (pc) {   // 불러서 온 경우: 둘 다 도착해서 가까이 있으면 쉬는 시간 없이 바로 장난쳐요
-        if (now - pc.t > 90000) pendingCall.current = null
-        else if (now - pc.t > 1500 && Math.abs(a.y - b.y) < 40 && Math.abs(a.x - pc.x) < 300 && Math.abs(b.x - pc.x) < 300) {
+      if (pc) {   // 빈 바닥을 두 번 눌러 불렀으면 항상 장난쳐요: 둘이 도착하면 바로, 30초가 지나도 못 오면 그 자리로 불러서 시작해요
+        const near = (c: { x: number; y: number }) => Math.abs(c.y - pc.y) < 40 && Math.abs(c.x - pc.x) < 300
+        const arrived = a.free && b.free && near(a) && near(b) && Math.abs(a.y - b.y) < 40
+        if (now - pc.t > 1500 && (arrived || now - pc.t > 30000)) {
           pendingCall.current = null
-          const leftIs = a.x <= b.x ? 'cat1' : 'cat2'
-          const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830, 48)
-          sceneRef.current = { plan, t0: now, leftIs, y: (a.y + b.y) / 2 }
+          const here = arrived
+          const xs = here ? [Math.min(a.x, b.x), Math.max(a.x, b.x)] : [Math.min(Math.max(pc.x - 70, 190), 800), Math.min(Math.max(pc.x + 70, 190), 800)]
+          const y = here ? (a.y + b.y) / 2 : pc.y
+          const leftIs = here ? (a.x <= b.x ? 'cat1' : 'cat2') : (Math.random() < 0.5 ? 'cat1' : 'cat2')
+          const plan = buildScene(pickActions(), xs[0], xs[1], UNIT, 170, 830, 48)
+          sceneRef.current = { plan, t0: now, leftIs, y }
           setPlaying(true)
-          return
         }
+        return
       }
+      if (!a.free || !b.free) return
       if (now - lastScene.current < cooldown.current) return
       if (Math.abs(a.y - b.y) > 40 || Math.abs(a.x - b.x) > 1.6 * UNIT) return   // 같은 층에서 마주쳤을 때만
       const away = (c: { x: number; dir?: number }, o: { x: number }) => !!c.dir && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
