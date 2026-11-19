@@ -503,6 +503,198 @@ export const CAT_DIM: Record<string, { w: number; h: number }> = {
  "wh_aegyo0": {
   "w": 169,
   "h": 127
+ },
+ "pairA0": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA1": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA2": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA3": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA4": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA5": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA6": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA7": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA8": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA9": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA10": {
+  "w": 223,
+  "h": 166
+ },
+ "pairA11": {
+  "w": 223,
+  "h": 166
+ },
+ "pairB0": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB1": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB2": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB3": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB4": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB5": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB6": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB7": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB8": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB9": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB10": {
+  "w": 223,
+  "h": 158
+ },
+ "pairB11": {
+  "w": 223,
+  "h": 158
+ },
+ "pairC0": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC1": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC2": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC3": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC4": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC5": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC6": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC7": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC8": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC9": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC10": {
+  "w": 337,
+  "h": 254
+ },
+ "pairC11": {
+  "w": 337,
+  "h": 254
+ },
+ "pairD0": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD1": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD2": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD3": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD4": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD5": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD6": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD7": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD8": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD9": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD10": {
+  "w": 340,
+  "h": 213
+ },
+ "pairD11": {
+  "w": 340,
+  "h": 213
  }
 }
-export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 12, "wh_walkL": 12, "wh_stand": 1, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1}
+export const CAT_COUNT: Record<string, number> = {"walkR": 12, "walkL": 12, "up": 12, "down": 12, "pounce": 12, "sit": 1, "sleep": 1, "groom": 1, "aegyo": 1, "wh_walkR": 12, "wh_walkL": 12, "wh_stand": 1, "wh_up": 12, "wh_down": 9, "wh_pounce": 12, "wh_sit": 1, "wh_sleep": 1, "wh_groom": 1, "wh_aegyo": 1, "pairA": 12, "pairB": 12, "pairC": 12, "pairD": 12}
