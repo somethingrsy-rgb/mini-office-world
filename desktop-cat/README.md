@@ -26,3 +26,9 @@ GitHub의 **Actions → Desktop cat (Windows) → Run workflow**를 누르면 `R
 
 ## 그림을 바꾸려면
 `frames/`의 webp 파일과 `dims.js`(그림 크기)를 같은 이름으로 교체해요. 원본은 앱 저장소의 `tools/process_cats.py`로 만들어요.
+
+## 안 뜰 때
+1. **zip을 풀었는지** 확인하세요. zip 안에서 바로 실행하면 안 돼요.
+2. 같은 실행 결과에 **Ruby-Cat.exe(한 파일)** 와 **Ruby-Cat-folder.zip(폴더 형태)** 두 가지가 있어요. 한 파일이 막히면 폴더 형태를 풀어서 안의 `루비 고양이.exe`를 실행해 보세요.
+3. 시작하면 오른쪽 아래에 "루비가 시작됐어요" 알림이 떠요. 안 뜨면 `%APPDATA%\ruby-desktop-cat\ruby.log` 파일(메모장)을 열어 마지막 줄을 알려주세요.
+4. 처음 실행할 때 파란 "Windows의 PC 보호" 창이 뜨면 **추가 정보 → 실행**.

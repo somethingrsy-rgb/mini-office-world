@@ -25,5 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Ruby-Cat
-          path: desktop-cat/dist/Ruby-Cat.exe
+          path: |
+            desktop-cat/dist/Ruby-Cat.exe
+            desktop-cat/dist/Ruby-Cat-folder.zip
           if-no-files-found: error

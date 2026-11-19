@@ -1,11 +1,20 @@
 // 루비 바탕화면 고양이: 화면 위에 투명한 창을 항상 띄우고 그 안에서 고양이가 돌아다녀요.
 // 고양이가 없는 부분은 클릭이 뒤에 있는 창으로 그대로 통과해서 업무에 방해되지 않아요.
-const { app, BrowserWindow, Tray, Menu, screen, ipcMain, nativeImage, globalShortcut } = require('electron')
+const { app, dialog, Notification, BrowserWindow, Tray, Menu, screen, ipcMain, nativeImage, globalShortcut } = require('electron')
 const { spawn } = require('child_process')
 const path = require('path')
 const fs = require('fs')
 
-if (!app.requestSingleInstanceLock()) app.quit()
+// 그래픽 가속을 끄면 원격 데스크톱·가상 PC(VDI)에서도 투명한 창이 제대로 보여요
+app.disableHardwareAcceleration()
+
+// 시작할 때 무슨 일이 있었는지 기록해요 (안 뜰 때 원인을 찾기 위해): %APPDATA%\ruby-desktop-cat\ruby.log
+const logFile = () => path.join(app.getPath('userData'), 'ruby.log')
+const log = (m) => { try { fs.appendFileSync(logFile(), `[${new Date().toISOString()}] ${m}\n`) } catch { /* 무시 */ } }
+process.on('uncaughtException', (e) => { log('오류: ' + (e && e.stack || e)); try { dialog.showErrorBox('루비 고양이 오류', String(e && e.message || e) + '\n\n기록: ' + logFile()) } catch { /* 무시 */ } })
+
+if (!app.requestSingleInstanceLock()) { log('이미 실행 중이라 종료해요'); app.quit() }
+else app.on('second-instance', () => { try { new Notification({ title: '루비는 이미 실행 중이에요', body: '작업표시줄 오른쪽 아래(^ 안쪽)에서 고양이 아이콘을 찾아 보세요.' }).show() } catch { /* 무시 */ } })
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
 let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all', alarms: [] }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
@@ -112,7 +121,12 @@ function buildMenu() {
 }
 
 app.whenReady().then(() => {
+  log('시작: ' + app.getVersion() + ' / ' + process.platform + ' / 화면 ' + screen.getAllDisplays().length + '개')
   createWindow()
+  win.webContents.on('did-fail-load', (_e, c, d) => log('화면 불러오기 실패: ' + c + ' ' + d))
+  win.webContents.on('render-process-gone', (_e, d) => log('화면 프로세스 종료: ' + JSON.stringify(d)))
+  win.webContents.on('console-message', (_e, lv, m) => { if (lv >= 2) log('화면 오류: ' + m) })
+  try { new Notification({ title: '루비가 시작됐어요 🐱', body: '화면 아래쪽을 돌아다녀요. 작업표시줄 오른쪽 아래 고양이 아이콘으로 설정해요.' }).show() } catch { /* 무시 */ }
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 32, height: 32 }))
   tray.setToolTip('루비 (바탕화면 고양이)')
   tray.setContextMenu(buildMenu())
