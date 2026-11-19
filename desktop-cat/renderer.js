@@ -89,6 +89,7 @@ function makeCat(pre, name, x0) {
   }
 
   function update(now, dt) {
+    if (st.frozen) { el.style.display = 'none'; st.box = null; return }
     if (el.style.display === 'none') return
     const k0 = frameFor(now), d0 = dims.dim[k0], W0 = d0.w * SCALE * size, H0 = d0.h * SCALE * size
 
@@ -180,18 +181,20 @@ function makeCat(pre, name, x0) {
 
   const toFloor = () => { if (st.surf.t === 'win') { const d = dispAt(st.x); st.surf = { t: 'floor', d }; st.y = layout.displays[d].floor } }
   function hop(delay = 0) {   // 정각 알림: 폴짝 한 번 → 앉아서 기다려요
-    const now = performance.now() + delay; toFloor()
+    endScene(); const now = performance.now() + delay; toFloor()
     st.mode = 'jump'; st.jumpT = now; st.until = now + 1500
     st.after = { mode: 'sit', until: now + 1500 + 8000 }
   }
   function run() {   // 타이머·알람: 누를 때까지 뛰어다녀요
-    const now = performance.now(); toFloor()
+    endScene(); const now = performance.now(); toFloor()
     st.mode = 'run'; st.runT = now; st.dir = Math.random() < 0.5 ? -1 : 1; st.until = now + 180000; st.after = null
   }
   function calm() { if (st.mode === 'run') { st.mode = 'stand'; st.until = performance.now() } }
-  const setHidden = (h) => { el.style.display = h ? 'none' : ''; if (h) st.box = null }
+  let hid = false
+  const setHidden = (h) => { hid = h; el.style.display = h || st.frozen ? 'none' : ''; if (h) st.box = null }
+  const setFrozen = (f) => { st.frozen = f; el.style.display = f || hid ? 'none' : ''; if (f) st.box = null }
 
-  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, name }
+  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, name }
   return self
 }
 const calmAll = () => { clearInterval(ringTimer); if (bubbleEl && cats.some((c) => c.st.mode === 'run')) { bubbleEl.remove(); bubbleEl = null }; cats.forEach((c) => c.calm()) }
@@ -215,10 +218,62 @@ async function init() {
   last = performance.now(); requestAnimationFrame(loop)
 }
 
+// ═══ 두 마리가 만나면 장난쳐요: 가까이 있는 둘이 쉬고 있으면 짝 그림(A·B 코 비비기 / C·D 뛰어놀기)을 보여 줘요 ═══
+const SCENES = [['A', 480, 1, 15], ['B', 480, 1, 15], ['C', 330, 2, 35], ['D', 330, 2, 35]]
+let scene = null, lastScene = performance.now() - 30000, lastVisit = 0
+const pairImg = document.createElement('img'); pairImg.alt = ''; pairImg.className = 'pair'; pairImg.style.display = 'none'; document.body.appendChild(pairImg)
+const IDLE = ['stand', 'sit', 'sleep', 'groom']
+function endScene(place = true) {
+  if (!scene) return
+  const sc = scene; scene = null; pairImg.style.display = 'none'; lastScene = performance.now()
+  const [ruby, crystal] = cats
+  const away = sc.flip ? -1 : 1                      // 크리스탈은 그림에서 왼쪽(뒤집히면 오른쪽)
+  for (const [c, off] of [[crystal, -75 * away], [ruby, 75 * away]]) {
+    c.setFrozen(false)
+    if (place) {
+      const [lo, hi] = surfRange(c.st.surf, 130 * size)
+      c.st.x = Math.min(Math.max(sc.x + off, lo), Math.max(lo, hi)); c.st.dir = off < 0 ? 1 : -1
+      c.st.mode = 'sit'; c.st.until = performance.now() + 5000 + Math.random() * 6000; c.st.cool = performance.now() + 4000
+    }
+  }
+}
+function directScenes(now) {
+  const [ruby, crystal] = cats
+  if (!ruby || !crystal) return
+  if (scene) {
+    const k = Math.floor((now - scene.t) / scene.ms)
+    if (k >= 12 * scene.loops || conf.ruby === false || conf.crystal === false || drag) return endScene(false)
+    const key = `pair${scene.kind}${k % 12}`, d = dims.dim[key], w = d.w * SCALE * size, h = d.h * SCALE * size
+    if (pairImg.dataset.k !== key) { pairImg.src = `frames/${key}.webp`; pairImg.dataset.k = key }
+    pairImg.style.width = w + 'px'; pairImg.style.height = h + 'px'
+    pairImg.style.transform = `translate(${Math.round(scene.x - w / 2)}px, ${Math.round(scene.y - h)}px)${scene.flip ? ' scaleX(-1)' : ''}`
+    pairImg.style.display = ''
+    return
+  }
+  if (conf.ruby === false || conf.crystal === false || drag) return
+  const a = ruby.st, b = crystal.st
+  if (a.surf.t !== b.surf.t || (a.surf.t === 'floor' ? a.surf.d !== b.surf.d : a.surf.id !== b.surf.id)) return
+  if (!IDLE.includes(a.mode) || !IDLE.includes(b.mode)) { if (!(b.mode === 'walk' && b.seek)) return }
+  const dx = Math.abs(a.x - b.x)
+  if (now - lastScene > 45000 && dx < 280 * size && IDLE.includes(a.mode) && IDLE.includes(b.mode)) {
+    let r = Math.random() * SCENES.reduce((s, c) => s + c[3], 0), pick = SCENES[0]
+    for (const c of SCENES) { if ((r -= c[3]) < 0) { pick = c; break } }
+    const [lo, hi] = surfRange(a.surf, 260 * size)
+    scene = { kind: pick[0], ms: pick[1], loops: pick[2], t: now, x: Math.min(Math.max((a.x + b.x) / 2, lo), Math.max(lo, hi)), y: a.y, flip: b.x > a.x, n: 0 }
+    ruby.setFrozen(true); crystal.setFrozen(true); b.seek = false
+    return
+  }
+  if (b.seek && (dx < 220 * size || b.mode !== 'walk')) b.seek = false
+  if (!b.seek && now - lastScene > 80000 && now - lastVisit > 35000 && dx > 400 * size && IDLE.includes(b.mode)) {   // 멀리 있으면 크리스탈이 루비에게 놀러 가요
+    lastVisit = now; b.seek = true; b.mode = 'walk'; b.dir = a.x > b.x ? 1 : -1; b.until = now + Math.min(40000, (dx - 200 * size) / (0.3 * 133 * size) * 1000)
+  }
+}
+
 let last = 0
 function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now
   for (const c of cats) c.update(now, dt)
+  directScenes(now)
   if (bubbleEl) {
     const b = cats[0] && cats[0].st.box
     if (now > bubbleUntil || !b) { bubbleEl.remove(); bubbleEl = null }
@@ -309,6 +364,6 @@ function setTimer(min) {
   say(`${min}분 뒤에 알려 드릴게요`, 3000)
   timerId = setTimeout(() => ring(`⏱ ${min}분 타이머가 끝났어요!`), min * 60000)
 }
-window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats   // 시험용
+window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__play = (kind) => { const [r, c] = cats; r.st.mode = c.st.mode = 'stand'; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; c.st.y = r.st.y; lastScene = -1e9; scene = null; const p = SCENES.find((s) => s[0] === kind) || SCENES[0]; scene = { kind: p[0], ms: p[1], loops: p[2], t: performance.now(), x: r.st.x - 75, y: r.st.y, flip: false, n: 0 }; r.setFrozen(true); c.setFrozen(true) }   // 시험용
 
 init()
