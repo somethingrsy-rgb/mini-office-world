@@ -1,10 +1,10 @@
-const api = window.api
+const bridge = window.api
 let alarms = []
 const DAYS = ['일', '월', '화', '수', '목', '금', '토']
 const $ = (id) => document.getElementById(id)
 const uid = () => Math.random().toString(36).slice(2, 9)
 
-function save() { api.saveAlarms(alarms) }
+function save() { bridge.saveAlarms(alarms) }
 function render() {
   const box = $('list'); box.innerHTML = ''
   if (!alarms.length) box.innerHTML = '<p class="m">아직 알람이 없어요. 아래 "+ 알람 추가"를 눌러 보세요.</p>'
@@ -30,7 +30,7 @@ function render() {
   })
 }
 $('add').onclick = () => { alarms.push({ id: uid(), on: true, time: '09:00', label: '', days: [1, 2, 3, 4, 5] }); save(); render() }
-document.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => api.startTimer(Number(b.dataset.m))))
-$('cs').onclick = () => { const v = Number($('cm').value); if (v >= 1) api.startTimer(v) }
-$('cc').onclick = () => api.startTimer(0)
-api.config().then((c) => { alarms = Array.isArray(c.alarms) ? c.alarms : []; render() })
+document.querySelectorAll('[data-m]').forEach((b) => (b.onclick = () => bridge.startTimer(Number(b.dataset.m))))
+$('cs').onclick = () => { const v = Number($('cm').value); if (v >= 1) bridge.startTimer(v) }
+$('cc').onclick = () => bridge.startTimer(0)
+bridge.config().then((c) => { alarms = Array.isArray(c.alarms) ? c.alarms : []; render() })

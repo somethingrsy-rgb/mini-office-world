@@ -5,7 +5,7 @@
 //  · 정각 알림, 타이머, 사용자 알람 (울리면 계속 뛰어다녀요)
 let dims = null, size = 1
 let conf = { hourly: true, sound: true, hours: 'all', alarms: [] }
-const api = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {} }
+const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {} }
 const catEl = document.getElementById('cat'), img = document.getElementById('img')
 const SCALE = 0.8          // 그림 1px이 화면에서 차지하는 크기 (보통 크기일 때 고양이 키 ≈ 100px)
 const rnd = (a) => a[Math.floor(Math.random() * a.length)]
@@ -27,12 +27,12 @@ function surfRange(sf, w) {
 
 async function init() {
   dims = window.DIMS
-  const c = await api.config(); size = c.size || 1; conf = { ...conf, ...c }
-  const l = await api.layout(); if (l) layout = l
-  api.onConfig((c) => { size = c.size || 1; conf = { ...conf, ...c } })
-  api.onLayout((l) => { layout = l })
-  api.onWindows((w) => { wins = w })
-  api.onTimer && api.onTimer(setTimer)
+  const c = await bridge.config(); size = c.size || 1; conf = { ...conf, ...c }
+  const l = await bridge.layout(); if (l) layout = l
+  bridge.onConfig((c) => { size = c.size || 1; conf = { ...conf, ...c } })
+  bridge.onLayout((l) => { layout = l })
+  bridge.onWindows((w) => { wins = w })
+  bridge.onTimer && bridge.onTimer(setTimer)
   await Promise.all(Object.keys(dims.dim).map((n) => new Promise((r) => { const i = new Image(); i.onload = () => { cache[n] = i; r() }; i.onerror = r; i.src = `frames/${n}.webp` })))
   const d = layout.displays[0]
   st.x = d.x + d.w * (0.2 + Math.random() * 0.6); st.surf = { t: 'floor', d: 0 }; st.y = d.floor
@@ -172,7 +172,7 @@ document.addEventListener('mousemove', (e) => {
   mouse.x = e.clientX; mouse.y = e.clientY
   if (drag && !drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 7) { drag.moved = true; st.mode = 'drag'; st.surf = st.surf; stopRing() }
   const over = drag ? true : overCat(e.clientX, e.clientY)
-  if (over !== hover) { hover = over; api.ignore(!over) }
+  if (over !== hover) { hover = over; bridge.ignore(!over) }
 })
 document.addEventListener('mousedown', (e) => { if (hover && overCat(e.clientX, e.clientY)) drag = { sx: e.clientX, sy: e.clientY, moved: false } })
 document.addEventListener('mouseup', () => {
@@ -180,7 +180,7 @@ document.addEventListener('mouseup', () => {
   const was = drag; drag = null
   if (!was.moved) return petCat()
   dropCat()
-  if (!overCat(mouse.x, mouse.y)) { hover = false; api.ignore(true) }
+  if (!overCat(mouse.x, mouse.y)) { hover = false; bridge.ignore(true) }
 })
 
 // 놓은 자리 바로 아래에 있는 면(창 윗부분 또는 모니터 바닥)에 떨어져요
