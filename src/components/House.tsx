@@ -72,7 +72,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
   const shownRef = useRef(shown)
   shownRef.current = shown
   // 두 고양이가 걸어 다니다가 우연히 마주치면 장난쳐요 (일부러 서로를 쫓아가지는 않아요)
-  type Ov = { x: number; key: string; flip: boolean }
+  type Ov = { x: number; y: number; key: string; flip: boolean }
   const [ov, setOv] = useState<{ cat1: Ov | null; cat2: Ov | null }>({ cat1: null, cat2: null })
   const sceneRef = useRef<{ plan: PlayScene; t0: number; leftIs: 'cat1' | 'cat2'; y: number } | null>(null)
   const [placeRuby, setPlaceRuby] = useState<{ x: number; y: number; n: number } | null>(null)
@@ -99,7 +99,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
           return
         }
         const st = cur.plan.at(el)
-        const mk = (s: typeof st.L, pre: string): Ov => ({ x: s.x, key: playKey(pre, s), flip: s.flip })
+        const mk = (s: typeof st.L, pre: string): Ov => ({ x: s.x, y: cur.y, key: playKey(pre, s), flip: s.flip })
         const L = mk(st.L, cur.leftIs === 'cat1' ? '' : 'wh_'), R = mk(st.R, cur.leftIs === 'cat1' ? 'wh_' : '')
         setOv(cur.leftIs === 'cat1' ? { cat1: L, cat2: R } : { cat1: R, cat2: L })
         return

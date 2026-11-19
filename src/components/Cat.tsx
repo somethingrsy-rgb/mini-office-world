@@ -43,7 +43,7 @@ const REST: Pose[] = ['stand', 'sit', 'sit', 'sleep', 'groom']
 const rnd = <T,>(a: T[]) => a[Math.floor(Math.random() * a.length)]
 
 /** 하우스 안을 돌아다니는 아기 고양이. 눌러 주면 애교를 부려요 */
-export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report, frozen = false, ov = null, want, place }: { id: string; /** 다른 고양이와 장난치는 장면 중이면 숨기고 가만히 있어요 */ frozen?: boolean; /** 장난치는 중이면 이 자리·그림으로 그려요 */ ov?: { x: number; key: string; flip: boolean } | null; /** 다른 고양이를 만날 때가 됐으면 그 고양이가 있는 층의 y (아니면 null) */ want?: () => number | null; /** 이 자리에 바로 놓아요 (장난이 끝난 뒤) */ place?: { x: number; y: number; n: number } | null; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number; free: boolean }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
+export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, call, pre = '', name = '루비', side = 75, report, frozen = false, ov = null, want, place }: { id: string; /** 다른 고양이와 장난치는 장면 중이면 숨기고 가만히 있어요 */ frozen?: boolean; /** 장난치는 중이면 이 자리·그림으로 그려요 */ ov?: { x: number; y: number; key: string; flip: boolean } | null; /** 다른 고양이를 만날 때가 됐으면 그 고양이가 있는 층의 y (아니면 null) */ want?: () => number | null; /** 이 자리에 바로 놓아요 (장난이 끝난 뒤) */ place?: { x: number; y: number; n: number } | null; /** 그림 묶음 앞 이름 ('' 루비 / 'wh_' 흰 고양이) */ pre?: string; name?: string; /** 두 번 톡 눌러 불렀을 때 누른 자리에서 떨어져 앉는 거리 */ side?: number; /** 지금 자리를 알려줘요 (다른 고양이가 피할 수 있게) */ report?: (id: string, s: { x: number; y: number; free: boolean }) => void; start: Spot; offset: number; tint?: string; onNear?: (x: number, y: number) => void; /** 지금 아바타들이 서 있는(가는) 자리들: 고양이가 이 자리와 겹치지 않게 피해요 */ avoid?: () => Spot[]; /** 지금 마우스·손가락이 있는 하우스 좌표 (없으면 null) */ pointer?: () => Spot | null; /** 바닥을 두 번 톡 눌러 부른 자리 (n이 바뀔 때마다 새로 불러요) */ call?: { x: number; y: number; n: number } | null }) {
   const FR = FRAME_SETS[pre] ?? FRAMES
   const frozenRef = useRef(frozen)
   frozenRef.current = frozen
@@ -140,6 +140,17 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place?.n])
 
+  // 장난이 시작되면 걷던 길을 멈춰요 (걷다가 층이 바뀌어 혼자 다른 층에서 장난치는 일이 없게)
+  useEffect(() => {
+    if (!frozen) return
+    window.clearTimeout(nextTimer.current)
+    callActive.current = false
+    targetRef.current = { x: cur.current.x, y: cur.current.y }
+    setTarget({ x: cur.current.x, y: cur.current.y })
+    setSt((q) => ({ ...q, dur: 0, moving: false, jump: false }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frozen])
+
   // 안전장치: 걸음이 끝났는데도 걷는 모습이 남아 있으면 멈추고 쉬어요
   const stMoving = useRef(false)
   stMoving.current = st.moving
@@ -235,7 +246,7 @@ export default function Cat({ id, start, offset, tint, onNear, avoid, pointer, c
   const W = d.w * SCALE, H = d.h * SCALE
   const flip = ov ? ov.flip : (pose === 'pounce' ? pounceDir === 'l' : st.face === 'l') && pose !== 'walk' && pose !== 'walkL' // 왼쪽 걷기는 전용 그림이 있어서 뒤집지 않아요
   return (
-    <g className="cat" style={{ transform: `translate(${ov ? ov.x : st.x}px, ${st.y}px)`, transition: ov ? 'none' : `transform ${st.dur}s linear`, pointerEvents: frozen ? 'none' : undefined }} onClick={pet} role="button" aria-label={`${name}(고양이) 쓰다듬기`} cursor="pointer">
+    <g className="cat" style={{ transform: `translate(${ov ? ov.x : st.x}px, ${ov ? ov.y : st.y}px)`, transition: ov ? 'none' : `transform ${st.dur}s linear`, pointerEvents: frozen ? 'none' : undefined }} onClick={pet} role="button" aria-label={`${name}(고양이) 쓰다듬기`} cursor="pointer">
       <ellipse cx="0" cy="3" rx={W * 0.36} ry="6" fill="#5b3a7a" opacity=".16" />
       <g key={st.jump ? st.leg : aegyo ? 'a' + hearts : 'x'} style={st.jump ? { animation: `catarc ${st.dur}s ease-in-out` } : undefined}>
         <g transform={flip ? 'scale(-1 1)' : undefined}>
