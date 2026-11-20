@@ -15,17 +15,24 @@ const ease = (p) => p * p * (3 - 2 * p);
  * @param lo,hi 고양이가 설 수 있는 가로 범위
  */
 function buildScene(acts, xL, xR, u, lo, hi, speed) {
-    // 두 고양이가 겹치지 않도록 그림 폭보다 넉넉하게 떨어져서 놀아요 (너무 가까우면 걸어서 서로 떨어졌다가 마주 봐요)
-    const gap = 1.2 * u;
-    const m = clamp((xL + xR) / 2, lo + gap / 2, hi - gap / 2);
-    let pL = m - gap / 2, pR = m + gap / 2; // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)
+    // 두 고양이 사이 간격(고양이 한 마리 폭 u 기준): 코 인사·앞발 톡톡은 0.6u로 가깝게, 몸이 큰 장난 걸기·뒹굴기·쫓기는 1.2u로 떨어져서 해요
+    const GAP_NEAR = 0.6 * u, GAP_FAR = 1.2 * u;
+    const gapOf = (a) => (a === 'sniff' || a === 'tap' ? GAP_NEAR : GAP_FAR);
+    const m = clamp((xL + xR) / 2, lo + GAP_FAR / 2, hi - GAP_FAR / 2);
+    let pL = xL, pR = xR; // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)
+    let curGap = xR - xL;
     const segs = [];
     const frame = (g, t, loops = 12) => Math.floor(t / FPS[g]) % loops;
     const still = (x, g, flip, f = 0) => ({ g, f, x, flip });
-    // 1) 걷던 모습 그대로 서로에게 다가가다가, 가까워지면 살금살금 걸어요 (갑자기 자세가 바뀌지 않게 걷는 그림부터 이어 써요)
-    {
-        const fromL = xL, fromR = xR, toL = pL, toR = pR;
+    // 걷던 모습 그대로 다음 간격까지 다가가거나 떨어져요 (가는 방향을 보고 걷고, 아주 가까워지면 살금살금 걸어요)
+    const moveTo = (gapNew) => {
+        const toL = m - gapNew / 2, toR = m + gapNew / 2, fromL = pL, fromR = pR;
         const dist = Math.max(Math.abs(toL - fromL), Math.abs(toR - fromR));
+        pL = toL;
+        pR = toR;
+        curGap = gapNew;
+        if (dist < 3)
+            return;
         const dur = Math.max(500, (dist / speed) * 1000);
         segs.push({
             dur,
@@ -40,7 +47,7 @@ function buildScene(acts, xL, xR, u, lo, hi, speed) {
                 return { L: side(fromL, toL, false), R: side(fromR, toR, true) };
             },
         });
-    }
+    };
     // 구간을 만들 때의 자리를 그대로 기억해요 (뒤 구간에서 자리가 바뀌어도 앞 구간은 그대로)
     const both = (g, ms, loops = 1) => {
         const xl = pL, xr = pR, dur = FPS[g] * 12 * loops;
@@ -50,8 +57,9 @@ function buildScene(acts, xL, xR, u, lo, hi, speed) {
         const xl = pL, xr = pR, dur = FPS.tap * 12;
         segs.push({ dur, at: (t) => ({ L: still(xl, 'tap', false, leftTaps ? frame('tap', t) : 0), R: still(xr, 'tap', true, leftTaps ? 0 : frame('tap', t)) }) });
     };
-    // 2) 고른 동작을 차례로 해요
+    // 2) 고른 동작을 차례로 해요 (동작마다 알맞은 간격으로 먼저 맞춰요)
     for (const act of acts) {
+        moveTo(gapOf(act));
         if (act === 'sniff')
             both('sniff', 0);
         else if (act === 'bow')
@@ -74,7 +82,7 @@ function buildScene(acts, xL, xR, u, lo, hi, speed) {
             }
             const fleeIsR = dir > 0; // 오른쪽으로 달리면 오른쪽 고양이가 도망쳐요
             const f0 = fleeIsR ? pR : pL, c0 = fleeIsR ? pL : pR;
-            const f1 = f0 + dir * d, c1 = f1 - dir * Math.max(gap, 0.6 * u);
+            const f1 = f0 + dir * d, c1 = f1 - dir * curGap;
             const dur = 2000, delay = 260;
             segs.push({
                 dur,
