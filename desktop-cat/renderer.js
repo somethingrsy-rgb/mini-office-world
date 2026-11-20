@@ -349,18 +349,66 @@ const catAt = (x, y) => { for (let i = cats.length - 1; i >= 0; i--) if (cats[i]
 function handleMove(x, y) {
   mouse.x = x; mouse.y = y
   if (drag && !drag.moved && Math.hypot(x - drag.sx, y - drag.sy) > 7) { drag.moved = true; drag.cat.st.mode = 'drag'; calmAll() }
-  const over = drag ? true : !!catAt(x, y)
+  const over = drag ? true : (!!catAt(x, y) || onLedEdge(x, y) || inMenu(x, y))
   if (over !== hover) { hover = over; bridge.ignore(!over) }
 }
 document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY))
 bridge.onCursor && bridge.onCursor((c) => handleMove(c.x, c.y))   // 윈도우가 알려 주는 마우스 위치 (이벤트가 안 와도 동작)
-document.addEventListener('mousedown', (e) => { const c = hover ? catAt(e.clientX, e.clientY) : null; if (c) drag = { cat: c, sx: e.clientX, sy: e.clientY, moved: false } })
+document.addEventListener('mousedown', (e) => {
+  if (e.button !== 0) return
+  if (menuEl && !inMenu(e.clientX, e.clientY)) closeMenu()
+  const c0 = hover ? catAt(e.clientX, e.clientY) : null
+  if (!c0 && hover && onLedEdge(e.clientX, e.clientY)) { hideLED(true); handleMove(e.clientX, e.clientY); return }   // 테두리 LED를 누르면 사라져요
+  const c = c0; if (c) drag = { cat: c, sx: e.clientX, sy: e.clientY, moved: false } })
 document.addEventListener('mouseup', () => {
   if (!drag) return
   const was = drag; drag = null
   if (!was.moved) return was.cat.pet()
   was.cat.drop()
   if (!catAt(mouse.x, mouse.y)) { hover = false; bridge.ignore(true) }
+})
+
+// ── 정각 알림 LED: 모니터 테두리가 연두색으로 빛나고, 테두리를 누르면 사라져요 ──
+let ledEls = [], ledTimer = 0, ledRing = false
+const LED_EDGE = 18
+function showLED() {
+  hideLED(false)
+  for (const d of layout.displays) {
+    const e = document.createElement('div'); e.className = 'led'
+    Object.assign(e.style, { left: d.x + 'px', top: d.y + 'px', width: d.w + 'px', height: d.h + 'px' })
+    document.body.appendChild(e); ledEls.push(e)
+  }
+  clearTimeout(ledTimer); ledTimer = setTimeout(() => hideLED(true), 10 * 60 * 1000)   // 아무도 안 눌러도 10분 뒤엔 꺼져요
+}
+function hideLED(stopRing) {
+  ledEls.forEach((e) => e.remove()); ledEls = []; clearTimeout(ledTimer)
+  if (stopRing && ledRing) { ledRing = false; calmAll() }
+}
+const onLedEdge = (x, y) => ledEls.length > 0 && layout.displays.some((d) => x >= d.x && x <= d.x + d.w && y >= d.y && y <= d.y + d.h && (x - d.x < LED_EDGE || d.x + d.w - x < LED_EDGE || y - d.y < LED_EDGE || d.y + d.h - y < LED_EDGE))
+
+// ── 고양이를 오른쪽 클릭하면 타이머를 고르는 작은 메뉴가 떠요 ──
+let menuEl = null, menuTimer = 0
+function closeMenu() { clearTimeout(menuTimer); if (menuEl) { menuEl.remove(); menuEl = null; hover = false; bridge.ignore(true) } }
+const inMenu = (x, y) => { if (!menuEl) return false; const r = menuEl.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom }
+function openMenu(x, y) {
+  closeMenu()
+  menuEl = document.createElement('div'); menuEl.className = 'menu'
+  const t = document.createElement('div'); t.className = 't'; t.textContent = '⏱ 타이머'; menuEl.appendChild(t)
+  for (const m of [5, 10, 20, 30, 60, 0]) {
+    const b = document.createElement('button'); b.textContent = m ? `${m}분` : '타이머 취소'
+    b.addEventListener('click', (e) => { e.stopPropagation(); setTimer(m); closeMenu() })
+    menuEl.appendChild(b)
+  }
+  document.body.appendChild(menuEl)
+  menuEl.style.left = Math.max(4, Math.min(x, layout.w - 140)) + 'px'
+  menuEl.style.top = Math.max(4, Math.min(y, layout.h - menuEl.offsetHeight - 8)) + 'px'
+  hover = true; bridge.ignore(false)
+  menuTimer = setTimeout(closeMenu, 12000)
+}
+document.addEventListener('contextmenu', (e) => {
+  e.preventDefault()
+  if (catAt(e.clientX, e.clientY)) openMenu(e.clientX, e.clientY)
+  else if (!inMenu(e.clientX, e.clientY)) closeMenu()
 })
 
 // ── 알람: 정각 알림, 타이머, 사용자 알람. 정각은 폴짝 한 번, 타이머·알람은 고양이를 누를 때까지 둘이 뛰어다녀요 ──
@@ -384,11 +432,20 @@ function chime() {
 }
 function alert(text) { if (conf.focus) { say(text, 6000); return }   // 집중 모드: 소리·폴짝 없이 말풍선만
   cats.forEach((c) => c.hop()); chime(); say(text) }
-function ring(text) {
+function ring(text, exact) {
   cats.forEach((c) => c.run())
-  say(text + '  (고양이를 눌러 주세요)', 180000)
+  say(exact ? text : text + '  (고양이를 눌러 주세요)', 180000)
   chime(); clearInterval(ringTimer)
   ringTimer = setInterval(() => { if (!cats.some((c) => c.st.mode === 'run')) return clearInterval(ringTimer); chime() }, 8000)
+}
+// 정각: 모니터 테두리 LED. 18시는 LED + 고양이가 뛰어다니며 'e-사람 체크' (LED 테두리나 고양이를 누르면 멈춰요)
+function hourAlert(h) {
+  showLED()
+  if (h === 18) {
+    if (conf.focus) { say('e-사람 체크', 8000); return }   // 집중 모드: 뛰지 않고 말풍선만
+    ledRing = true; ring('e-사람 체크', true); return
+  }
+  alert(hourText(h))
 }
 const hourText = (h) => {
   if (h === 9) return '좋은 아침이에요! 9시 정각이에요'
@@ -419,7 +476,7 @@ setInterval(() => {
   if (key === lastHourKey) return
   if (conf.hours === 'work' && (d.getDay() === 0 || d.getDay() === 6 || d.getHours() < 9 || d.getHours() > 18)) return
   lastHourKey = key
-  alert(hourText(d.getHours()))
+  hourAlert(d.getHours())
 }, 1000)
 function setTimer(min) {
   clearTimeout(timerId)
@@ -427,6 +484,6 @@ function setTimer(min) {
   say(`${min}분 뒤에 알려 드릴게요`, 3000)
   timerId = setTimeout(() => ring(`⏱ ${min}분 타이머가 끝났어요!`), min * 60000)
 }
-window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__force = () => { const [r, c] = cats; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; lastScene = -1e9; cooldown = 0; r.st.mode = c.st.mode = 'stand' }   // 시험용
+window.__hour = hourAlert; window.__led = () => ledEls.length; window.__menu = () => !!menuEl; window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__force = () => { const [r, c] = cats; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; lastScene = -1e9; cooldown = 0; r.st.mode = c.st.mode = 'stand' }   // 시험용
 
 init()
