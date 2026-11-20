@@ -43,22 +43,6 @@ function makeCat(pre, name, x0) {
   const STAND = pre === 'wh_' ? 'wh_stand0' : 'up0'
   const widthRef = () => dims.dim[pre + 'walkR0'].w * SCALE * size
 
-  // ── 화면 옆 가장자리 오르기 ──
-  function startClimb(side, now) {
-    const disp = layout.displays[Math.min(st.surf.d, layout.displays.length - 1)], W0 = dims.dim.walkR0.w * SCALE * size
-    const top = Math.max(W0 / 2 + 20, disp.floor - W0 / 2 - (0.25 + Math.random() * 0.5) * disp.h)
-    Object.assign(st, { mode: 'climb', side, cph: 'up', cy: disp.floor - W0 / 2, cTop: top, until: 1e15, climbCool: now + 25000, after: null })
-  }
-  function endClimb(now) {
-    const [lo, hi] = surfRange(st.surf, dims.dim.walkR0.w * SCALE * size)
-    st.y = surfY(st.surf); st.x = st.side === 'L' ? lo : hi; st.dir = st.side === 'L' ? 1 : -1
-    st.mode = 'stand'; st.until = now + 800
-  }
-  function maybeClimb(side, now) {
-    if (conf.focus || st.surf.t !== 'floor' || now < (st.climbCool || 0) || Math.random() > 0.4) return
-    startClimb(side, now)
-  }
-
   // ── 다음 행동 고르기 ──
   function pick(now) {
     if (conf.focus) { st.mode = rnd(['sit', 'sit', 'sleep']); st.until = now + 4000; return }   // 집중 모드: 구석에서 가만히 쉬어요
@@ -93,7 +77,6 @@ function makeCat(pre, name, x0) {
   function frameFor(now) {
     switch (st.mode) {
       case 'run': return st.dir > 0 ? `${pre}walkR${Math.floor(now / 80) % n('walkR')}` : `${pre}walkL${Math.floor(now / 80) % n('walkL')}`
-      case 'climb': { if (st.cph === 'hang') return STAND; const up = st.cph === 'up'; return ((st.side === 'R') === up ? `${pre}walkR` : `${pre}walkL`) + Math.floor(now / 150) % n('walkR') }
       case 'goto': return st.dir > 0 ? `${pre}walkR${Math.floor(now / 110) % n('walkR')}` : `${pre}walkL${Math.floor(now / 110) % n('walkL')}`
       case 'walk': return st.dir > 0 ? `${pre}walkR${Math.floor(now / 150) % n('walkR')}` : `${pre}walkL${Math.floor(now / 150) % n('walkL')}`
       case 'jump': return `${pre}up${Math.min(n('up') - 1, Math.floor((now - st.jumpT) / 120))}`
@@ -120,7 +103,7 @@ function makeCat(pre, name, x0) {
     } else if (st.surf.t === 'floor' && !['leap', 'drag'].includes(st.mode)) st.y = surfY(st.surf)
 
     // 마우스가 코앞에서 흔들리면 앞발로 잡으려 해요
-    const interactive = !conf.focus && !['pounce', 'aegyo', 'jump', 'run', 'leap', 'drag', 'miss', 'goto', 'climb'].includes(st.mode)
+    const interactive = !conf.focus && !['pounce', 'aegyo', 'jump', 'run', 'leap', 'drag', 'miss', 'goto'].includes(st.mode)
     if (interactive && now > st.cool && !hover && Math.abs(mouse.x - st.x) < 240 * size && mouse.y > st.y - H0 - 100 && mouse.y < st.y + 70) {
       Object.assign(st, { mode: 'pounce', pounceT: now, until: now + 1400, pounceDir: mouse.x < st.x ? -1 : 1, cool: now + 1400 + 6000, mx0: mouse.x, my0: mouse.y })
     }
@@ -139,15 +122,6 @@ function makeCat(pre, name, x0) {
       if (st.after) { st.mode = st.after.mode; st.until = st.after.until; st.after = null } else pick(now)
     }
 
-    if (st.mode === 'climb') {   // 화면 옆 가장자리를 기어서 올라갔다가 잠깐 매달려 있다가 내려와요
-      const disp = layout.displays[Math.min(st.surf.d, layout.displays.length - 1)], sp = 0.32 * W0 * dt, base = disp.floor - W0 / 2
-      if (st.cph === 'up') { st.cy -= sp; if (st.cy <= st.cTop) { st.cy = st.cTop; st.cph = 'hang'; st.cUntil = now + 3000 + Math.random() * 5000 } }
-      else if (st.cph === 'hang') { if (now > st.cUntil) st.cph = 'down' }
-      else if (st.cph === 'down') {
-        st.cy += sp
-        if (st.cy >= base) { endClimb(now) }
-      }
-    }
     if (st.mode === 'goto') {   // 정한 자리까지 걸어가요 (고양이 불러서 놀게 하기·집중 모드 구석으로 가기)
       const d = st.gx - st.x, step = (st.gFast ? 1.2 : 0.5) * W0 * dt
       st.dir = d >= 0 ? 1 : -1
@@ -157,20 +131,9 @@ function makeCat(pre, name, x0) {
       const speed = (st.mode === 'run' ? 1.5 : 0.3) * W0
       st.x += st.dir * speed * dt
       const [lo, hi] = surfRange(st.surf, W0)
-      if (st.x < lo) { st.x = lo; st.dir = 1; maybeClimb('L', now) } else if (st.x > hi) { st.x = hi; st.dir = -1; maybeClimb('R', now) }   // 바닥·창 끝에서는 돌아서 걸어요
+      if (st.x < lo) { st.x = lo; st.dir = 1 } else if (st.x > hi) { st.x = hi; st.dir = -1 }   // 바닥·창 끝에서는 돌아서 걸어요
     }
 
-    if (st.mode === 'climb') {   // 몸을 옆으로 돌려서 발이 화면 가장자리에 닿게 그려요
-      const disp = layout.displays[Math.min(st.surf.d, layout.displays.length - 1)], key = frameFor(now), dd = dims.dim[key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
-      const cx = st.side === 'L' ? disp.x + h / 2 : disp.x + disp.w - h / 2
-      st.x = cx
-      if (img.dataset.k !== key) { img.src = `frames/${key}.webp`; img.dataset.k = key }
-      img.style.width = w + 'px'; img.style.height = h + 'px'
-      img.style.transform = `rotate(${st.side === 'R' ? -90 : 90}deg)`; img.style.transformOrigin = '50% 50%'
-      el.style.transform = `translate(${Math.round(cx - w / 2)}px, ${Math.round(st.cy - h / 2)}px)`
-      st.box = null
-      return
-    }
     const key = frameFor(now), dd = dims.dim[key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     let lift = 0
     if (st.mode === 'run') lift = Math.abs(Math.sin((now - st.runT) / 230)) * 55 * size
@@ -226,14 +189,13 @@ function makeCat(pre, name, x0) {
   // 지정한 모니터 바닥의 x 자리로 걸어가요 (창 위에 있으면 바닥으로 내려와요)
   function goTo(x, d, hold, fast) {
     if (st.mode === 'drag' || st.mode === 'leap') return
-    if (st.mode === 'climb') endClimb(performance.now())
     if (st.surf.t !== 'floor' || st.surf.d !== d) {
       if (dispAt(st.x) !== d) st.x = layout.displays[d].x + layout.displays[d].w * (st.x < layout.displays[d].x ? 0.1 : 0.9)
       st.surf = { t: 'floor', d }; st.y = layout.displays[d].floor
     }
     Object.assign(st, { mode: 'goto', gx: x, gFast: !!fast, gUntil: hold || 1500, until: 1e15, after: null })
   }
-  const toFloor = () => { if (st.mode === 'climb') endClimb(performance.now()); if (st.surf.t === 'win') { const d = dispAt(st.x); st.surf = { t: 'floor', d }; st.y = layout.displays[d].floor } }
+  const toFloor = () => { if (st.surf.t === 'win') { const d = dispAt(st.x); st.surf = { t: 'floor', d }; st.y = layout.displays[d].floor } }
   function hop(delay = 0) {   // 정각 알림: 폴짝 한 번 → 앉아서 기다려요
     endScene(); const now = performance.now() + delay; toFloor()
     st.mode = 'jump'; st.jumpT = now; st.until = now + 1500
@@ -258,7 +220,7 @@ function makeCat(pre, name, x0) {
     st.box = null
   }
 
-  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, goTo, startClimb, name }
+  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, goTo, name }
   return self
 }
 const calmAll = () => { clearInterval(ringTimer); if (bubbleEl && cats.some((c) => c.st.mode === 'run')) { bubbleEl.remove(); bubbleEl = null }; cats.forEach((c) => c.calm()) }
@@ -464,6 +426,6 @@ function setTimer(min) {
   say(`${min}분 뒤에 알려 드릴게요`, 3000)
   timerId = setTimeout(() => ring(`⏱ ${min}분 타이머가 끝났어요!`), min * 60000)
 }
-window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__climb = (i, side) => cats[i].startClimb(side, performance.now()); window.__force = () => { const [r, c] = cats; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; lastScene = -1e9; cooldown = 0; r.st.mode = c.st.mode = 'stand' }   // 시험용
+window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__force = () => { const [r, c] = cats; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; lastScene = -1e9; cooldown = 0; r.st.mode = c.st.mode = 'stand' }   // 시험용
 
 init()
