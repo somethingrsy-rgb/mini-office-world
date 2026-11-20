@@ -18,7 +18,7 @@ if (!app.requestSingleInstanceLock()) { log('이미 실행 중이라 종료해�
 else app.on('second-instance', () => { try { new Notification({ title: '루비는 이미 실행 중이에요', body: '작업표시줄 오른쪽 아래(^ 안쪽)에서 고양이 아이콘을 찾아 보세요.' }).show() } catch { /* 무시 */ } })
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all', alarms: [], ruby: true, crystal: true, focus: false }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
+let cfg = { size: 1, hidden: false, sound: true, hourly: true, hours: 'all', alarms: [], ruby: true, crystal: true, focus: false, perch: true }  // hours: 'all' 하루 종일 / 'work' 평일 9~18시
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
@@ -124,6 +124,7 @@ function buildMenu() {
     { label: '집중 모드 (Ctrl+Alt+F)', type: 'checkbox', checked: !!cfg.focus, click: () => toggleFocus() },
     { type: 'separator' },
     { label: (cfg.hidden ? '루비 보이기' : '루비 숨기기') + ' (Ctrl+Alt+H)', click: () => { cfg.hidden = !cfg.hidden; save(); applyVisible(); tray.setContextMenu(buildMenu()) } },
+    { label: '열려 있는 창 위에 올라가기', type: 'checkbox', checked: cfg.perch !== false, click: (m) => { cfg.perch = m.checked; save(); sendCfg() } },
     { label: '루비 보이기', type: 'checkbox', checked: cfg.ruby !== false, click: (m) => { cfg.ruby = m.checked; save(); sendCfg() } },
     { label: '크리스탈 보이기', type: 'checkbox', checked: cfg.crystal !== false, click: (m) => { cfg.crystal = m.checked; save(); sendCfg() } },
     { label: '크기', submenu: [

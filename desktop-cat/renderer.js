@@ -4,7 +4,7 @@
 //  · 드래그해서 원하는 곳(다른 모니터 포함)에 둘 수 있어요  · 고양이 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
 //  · 정각 알림, 타이머, 사용자 알람 (울리면 계속 뛰어다녀요)
 let dims = null, size = 1, baseSize = 1   // size: 지금 쓰는 크기 (집중 모드에서는 baseSize의 0.6배)
-let conf = { hourly: true, sound: true, hours: 'all', alarms: [], ruby: true, crystal: true, focus: false }
+let conf = { hourly: true, sound: true, hours: 'all', alarms: [], ruby: true, crystal: true, focus: false, perch: true }
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onWindows() {}, onCursor() {}, onPlay() {} }
 const SCALE = 0.8          // 그림 1px이 화면에서 차지하는 크기 (보통 크기일 때 고양이 키 ≈ 100px)
 const rnd = (a) => a[Math.floor(Math.random() * a.length)]
@@ -47,7 +47,7 @@ function makeCat(pre, name, x0) {
   function pick(now) {
     if (conf.focus) { st.mode = rnd(['sit', 'sit', 'sleep']); st.until = now + 4000; return }   // 집중 모드: 구석에서 가만히 쉬어요
     const onWin = st.surf.t === 'win'
-    const cands = wins.filter((w) => w.y > 140 && w.y < layout.displays[dispAt(st.x)].floor - 100 && w.x2 - w.x1 > 240 && !(onWin && w.id === st.surf.id))
+    const cands = conf.perch === false ? [] : wins.filter((w) => w.y > 140 && w.y < layout.displays[dispAt(st.x)].floor - 100 && w.x2 - w.x1 > 240 && !(onWin && w.id === st.surf.id))
     const r = Math.random()
     if (onWin && !winById(st.surf.id)) return fall(now)
     if (onWin && r < 0.3) return fall(now, true)                                  // 창 위에서 한참 있다가 바닥으로 내려와요
@@ -98,7 +98,7 @@ function makeCat(pre, name, x0) {
     // 창 위에 있는데 그 창이 사라졌으면 바닥으로 내려와요 · 창을 옮기면 따라가요
     if (st.surf.t === 'win' && !['leap', 'drag'].includes(st.mode)) {
       const o = winById(st.surf.id)
-      if (!o) fall(now)
+      if (!o || conf.perch === false) fall(now)   // 창이 사라졌거나 '창 위에 올라가기'를 껐으면 바닥으로 내려와요
       else { st.y = o.y; if (st.x < o.x1 + 10 || st.x > o.x2 - 10) st.x = Math.min(Math.max(st.x, o.x1 + 30), o.x2 - 30) }
     } else if (st.surf.t === 'floor' && !['leap', 'drag'].includes(st.mode)) st.y = surfY(st.surf)
 
@@ -220,7 +220,7 @@ function makeCat(pre, name, x0) {
     st.box = null
   }
 
-  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, goTo, name }
+  const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, goTo, comeDown: () => { if (st.surf.t === 'win' && st.mode !== 'drag' && st.mode !== 'leap') fall(performance.now()) }, name }
   return self
 }
 const calmAll = () => { clearInterval(ringTimer); if (bubbleEl && cats.some((c) => c.st.mode === 'run')) { bubbleEl.remove(); bubbleEl = null }; cats.forEach((c) => c.calm()) }
@@ -231,8 +231,9 @@ async function init() {
   const l = await bridge.layout(); if (l) layout = l
   const applyVis = () => { if (cats[0]) cats[0].setHidden(conf.ruby === false); if (cats[1]) cats[1].setHidden(conf.crystal === false) }
   bridge.onConfig((c) => {
-    const wasFocus = !!conf.focus
+    const wasFocus = !!conf.focus, wasPerch = conf.perch !== false
     baseSize = c.size || 1; conf = { ...conf, ...c }; size = baseSize * (conf.focus ? 0.6 : 1); applyVis()
+    if (wasPerch && conf.perch === false) cats.forEach((k) => k.comeDown())   // 창 위에 올라가기를 끄면 창 위에 있던 고양이도 바닥으로 내려와요
     if (conf.focus && !wasFocus) enterFocus()
     else if (!conf.focus && wasFocus) cats.forEach((k) => { if (k.st.mode === 'goto') k.st.until = 0; k.st.until = performance.now() })
   })
