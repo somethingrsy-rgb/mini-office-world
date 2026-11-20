@@ -13,10 +13,11 @@ const ease = (p) => p * p * (3 - 2 * p);
  * @param xL,xR 장면이 시작될 때 왼쪽·오른쪽 고양이 자리
  * @param u     걷기 그림 속 고양이 한 마리의 가로 크기(화면 px)
  * @param lo,hi 고양이가 설 수 있는 가로 범위
+ * @param nearGap 코 인사·앞발 톡톡 때 간격 (u의 배수, 마이미니월드 0.6 / 데스크펫 0.75)
  */
-function buildScene(acts, xL, xR, u, lo, hi, speed) {
+function buildScene(acts, xL, xR, u, lo, hi, speed, nearGap = 0.6) {
     // 두 고양이 사이 간격(고양이 한 마리 폭 u 기준): 코 인사·앞발 톡톡은 0.6u로 가깝게, 몸이 큰 장난 걸기·뒹굴기·쫓기는 1.2u로 떨어져서 해요
-    const GAP_NEAR = 0.6 * u, GAP_FAR = 1.2 * u;
+    const GAP_NEAR = nearGap * u, GAP_FAR = 1.2 * u;
     const gapOf = (a) => (a === 'sniff' || a === 'tap' ? GAP_NEAR : GAP_FAR);
     const m = clamp((xL + xR) / 2, lo + GAP_FAR / 2, hi - GAP_FAR / 2);
     let pL = xL, pR = xR; // 지금 두 고양이 자리 (구간이 끝날 때마다 갱신)

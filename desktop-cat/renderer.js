@@ -311,7 +311,7 @@ function directScenes(now) {
       const unit = dims.dim.walkR0.w * SCALE * size, disp = layout.displays[pp.d]
       for (const c of cats) { c.st.surf = { t: 'floor', d: pp.d }; c.st.y = disp.floor; if (arrived) continue; c.st.x = pp.cx }
       const [lo, hi] = surfRange(a.surf, unit * 1.2)
-      const plan = buildScene(pickActions(), Math.min(a.x, b.x) - (arrived ? 0 : unit * 0.45), Math.max(a.x, b.x) + (arrived ? 0 : unit * 0.45), unit, lo, hi, 0.3 * unit)
+      const plan = buildScene(pickActions(), Math.min(a.x, b.x) - (arrived ? 0 : unit * 0.45), Math.max(a.x, b.x) + (arrived ? 0 : unit * 0.45), unit, lo, hi, 0.3 * unit, 0.75)
       scene = { plan, t0: now, leftIs: a.x <= b.x ? 'ruby' : 'crystal' }
       ruby.setFrozen(true); crystal.setFrozen(true)
     }
@@ -326,7 +326,7 @@ function directScenes(now) {
   const away = (c, o) => c.mode === 'walk' && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
   if (away(a, b) || away(b, a)) return
   const [lo, hi] = surfRange(a.surf, unit * 1.2)
-  const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi, 0.3 * unit)
+  const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), unit, lo, hi, 0.3 * unit, 0.75)
   scene = { plan, t0: now, leftIs: a.x <= b.x ? 'ruby' : 'crystal' }
   b.y = a.y; ruby.setFrozen(true); crystal.setFrozen(true)
 }
