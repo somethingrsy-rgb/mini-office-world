@@ -118,7 +118,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
           const xs = here ? [Math.min(a.x, b.x), Math.max(a.x, b.x)] : [Math.min(Math.max(pc.x - 70, 190), 800), Math.min(Math.max(pc.x + 70, 190), 800)]
           const y = here ? (a.y + b.y) / 2 : pc.y
           const leftIs = here ? (a.x <= b.x ? 'cat1' : 'cat2') : (Math.random() < 0.5 ? 'cat1' : 'cat2')
-          const plan = buildScene(pickActions(), xs[0], xs[1], UNIT, 170, 830, 48)
+          const plan = buildScene(pickActions(), xs[0], xs[1], UNIT, 170, 830, 48, 0.75)
           sceneRef.current = { plan, t0: now, leftIs, y }
           setPlaying(true)
         }
@@ -130,7 +130,7 @@ export default function House({ activities, alerts, cheers, labels, shown, speec
       const away = (c: { x: number; dir?: number }, o: { x: number }) => !!c.dir && Math.sign(c.dir) === Math.sign(c.x - o.x)   // 서로 등지고 걷는 중이면 마주친 게 아니에요
       if (away(a, b) || away(b, a)) return
       const leftIs = a.x <= b.x ? 'cat1' : 'cat2'
-      const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830, 48)
+      const plan = buildScene(pickActions(), Math.min(a.x, b.x), Math.max(a.x, b.x), UNIT, 170, 830, 48, 0.75)
       sceneRef.current = { plan, t0: now, leftIs, y: (a.y + b.y) / 2 }
       setPlaying(true)
     }, 80)
