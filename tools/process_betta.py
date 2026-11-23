@@ -76,5 +76,7 @@ for g, lst in (('swim', sw), ('flare', fl)):
         im.save(os.path.join(OUT, 'frames', f'{g}{k}.webp'), 'WEBP', quality=90, method=6)
         dim[f'{g}{k}'] = {'w': im.width, 'h': im.height}; mask[f'{g}{k}'] = mask_of(im)
 open(os.path.join(OUT, 'dims.js'), 'w').write('window.DIMS = ' + json.dumps({'dim': dim, 'count': count, 'mask': mask}, ensure_ascii=False) + '\n')
-sw[0].save(os.path.join(OUT, 'icon.png'))
+# 아이콘: electron-builder는 256x256 이상의 정사각형이 필요해서 512x512 판 가운데에 크게 놓아요
+ic = sw[0].copy(); k = 440 / max(ic.size); ic = ic.resize((round(ic.width * k), round(ic.height * k)), Image.LANCZOS)
+icon = Image.new('RGBA', (512, 512), (0, 0, 0, 0)); icon.alpha_composite(ic, ((512 - ic.width) // 2, (512 - ic.height) // 2)); icon.save(os.path.join(OUT, 'icon.png'))
 print('swim', sw[0].size, 'flare', fl[0].size, 'scales', round(s1, 3), round(s2, 3))
