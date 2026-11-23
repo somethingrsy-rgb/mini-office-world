@@ -14,6 +14,7 @@ const clamp = (v, a, b) => Math.min(Math.max(v, a), Math.max(a, b))
 let layout = { w: innerWidth, h: innerHeight, displays: [{ x: 0, y: 0, w: innerWidth, h: innerHeight }] }
 const mouse = { x: -999, y: -999 }
 let fishes = [], hover = false
+const imgCache = {}   // 프레임 이름 -> 불러 둔 그림
 
 // ── 프레임마다 미리 만들어 둔 작은 모양 지도(dims.js의 mask)로 판단해요: 투명한 곳은 클릭이 통과 ──
 const maskCache = {}
@@ -24,12 +25,11 @@ function maskOf(key) {
 }
 
 function makeFish(i) {
+  // 물고기는 작은 캔버스에 그려요: 화면 위치는 정수로, 그 안의 그림은 소수점 위치로 그려서 아주 느리게 갈 때도 계단처럼 움찔거리지 않고 부드럽게 움직여요
   const el = document.createElement('div'); el.className = 'fish'
-  // 그림이 바뀔 때 이전 그림 위로 새 그림을 서서히 겹쳐서(크로스페이드) 툭 끊기는 느낌이 없게 해요
-  const imgPrev = document.createElement('img'), img = document.createElement('img')
-  for (const m of [imgPrev, img]) { m.alt = ''; el.appendChild(m) }
-  document.body.appendChild(el)
-  const fade = { cur: '', prev: '', prevFlip: false, t0: 0, dur: 1 }
+  const cv = document.createElement('canvas'); el.appendChild(cv); document.body.appendChild(el)
+  const ctx = cv.getContext('2d'), PAD = 30, DPR = window.devicePixelRatio || 1
+  const fade = { fam: '', layers: [], last: [], t0: 0 }
   const d = layout.displays[Math.floor(Math.random() * layout.displays.length)]
   const st = { x: d.x + rnd(0.2, 0.8) * d.w, y: d.y + rnd(0.25, 0.75) * d.h, vx: 0, vy: 0, tx: 0, ty: 0, wait: rnd(0, 2), face: Math.random() < 0.5 ? -1 : 1, mode: 'swim', flareT: 0, turnT: 0, turnFrom: 1, phase: i * 1.7, box: null }
   const pad = () => dims.dim.swim0.w * SCALE * size * 0.45 + 16
@@ -64,36 +64,46 @@ function makeFish(i) {
     st.vx += (tvx - st.vx) * k; st.vy += (tvy - st.vy) * k
     st.x += st.vx * dt; st.y += st.vy * dt
 
-    let key, flip = st.face < 0
+    // 지금 보여 줄 그림: 그림 장수를 시간으로 나눠 '몇 번째 + 다음 장과 얼마나 섞을지(frac)'를 구해요. 다음 장을 frac만큼 겹쳐 그려서 장면이 부드럽게 이어져요
+    const swimMs = SWIM_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.25)         // 느리게 갈수록 지느러미도 천천히 살랑거려요
+    const idleMs = IDLE_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.15)
+    const seq = (fam, tt, n, loop) => { const i = Math.floor(tt), f = tt - i, a = loop ? i % n : Math.min(i, n - 1), b = loop ? (a + 1) % n : (a + 1 < n ? a + 1 : -1); return { fam, key: `${fam}${a}`, next: b >= 0 ? `${fam}${b}` : null, frac: f } }
+    let pose, flip = st.face < 0
     if (st.mode === 'turn') {
-      const f = Math.floor((now - st.turnT) / TURN_MS)
-      if (f >= dims.count.turn) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0; key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}` }
-      else { key = `turn${f}`; flip = st.turnFrom < 0 }                          // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
+      const tt = (now - st.turnT) / TURN_MS
+      if (tt >= dims.count.turn) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
+      else { pose = seq('turn', tt, dims.count.turn, false); flip = st.turnFrom < 0 }   // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
     } else if (st.mode === 'flare') {
-      const f = Math.floor((now - st.flareT) / FLARE_MS)
-      if (f >= dims.count.flare) { st.mode = 'swim'; key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}` } else key = `flare${f}`
-    } else if (resting || Math.hypot(st.vx, st.vy) < speed * 0.3) key = `idle${Math.floor(now / IDLE_MS) % dims.count.idle}`
-    else key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}`
-    const dd = dims.dim[key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
+      const tt = (now - st.flareT) / FLARE_MS
+      if (tt >= dims.count.flare) st.mode = 'swim'; else pose = seq('flare', tt, dims.count.flare, false)
+    }
+    if (!pose) pose = (resting || Math.hypot(st.vx, st.vy) < speed * 0.3) ? seq('idle', now / idleMs, dims.count.idle, true) : seq('swim', now / swimMs, dims.count.swim, true)
+    const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     const tilt = clamp((st.vy / Math.max(speed, 1)) * 8, -8, 8)
-    if (fade.cur !== key) {
-      const sameFamily = fade.cur.replace(/\d+$/, '') === key.replace(/\d+$/, '')
-      fade.prev = fade.cur; fade.prevFlip = fade.curFlip; fade.cur = key; fade.t0 = now
-      fade.dur = sameFamily ? (key.startsWith('idle') ? IDLE_MS : SWIM_MS) : 200      // 다른 동작으로 바뀔 때는 조금 더 길게 섞어요
-      if (fade.prev) { imgPrev.src = `frames/${fade.prev}.webp`; imgPrev.style.display = '' } else imgPrev.style.display = 'none'
-      img.src = `frames/${key}.webp`
+    // 다른 동작으로 바뀌는 순간에는 직전 모습을 0.2초 동안 남겨서 서서히 바꿔요
+    if (fade.fam !== pose.fam) { fade.last = fade.layers; fade.t0 = now; fade.fam = pose.fam }
+    const p = Math.min(1, (now - fade.t0) / 200)
+    const cur = [{ key: pose.key, a: 1, flip }]; if (pose.next && pose.frac > 0.02) cur.push({ key: pose.next, a: pose.frac, flip })
+    fade.layers = cur
+    // 그리기
+    const W = Math.ceil(w + PAD * 2), H = Math.ceil(h + PAD * 2)
+    if (cv.width !== Math.ceil(W * DPR) || cv.height !== Math.ceil(H * DPR)) { cv.width = Math.ceil(W * DPR); cv.height = Math.ceil(H * DPR); cv.style.width = W + 'px'; cv.style.height = H + 'px' }
+    const x0 = st.x - w / 2, y0 = st.y + bob - h / 2, fx = Math.floor(x0), fy = Math.floor(y0)
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0); ctx.clearRect(0, 0, W, H)
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'
+    const draw = (layers, k) => {
+      for (const L of layers) {
+        const im = imgCache[L.key]; if (!im || !im.complete) continue
+        ctx.save(); ctx.globalAlpha = L.a * k
+        ctx.translate(PAD + w / 2 + (x0 - fx), PAD + h / 2 + (y0 - fy)); ctx.rotate(tilt * Math.PI / 180); ctx.scale(L.flip ? -1 : 1, 1)
+        ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore()
+      }
     }
-    fade.curFlip = flip
-    const p = Math.min(1, (now - fade.t0) / fade.dur)
-    img.style.opacity = p.toFixed(2)
-    if (p >= 1) imgPrev.style.display = 'none'
-    const sz = `position:absolute;left:0;top:0;width:${w}px;height:${h}px;`
-    el.style.width = w + 'px'; el.style.height = h + 'px'
-    imgPrev.style.cssText = sz + `transform:scaleX(${fade.prevFlip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg);display:${p >= 1 ? 'none' : ''}`
-    img.style.cssText = sz + `opacity:${p.toFixed(2)};transform:scaleX(${flip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg)`
-    el.style.transform = `translate(${(st.x - w / 2).toFixed(2)}px, ${(st.y + bob - h / 2).toFixed(2)}px)`   // 소수점 위치 그대로 (정수로 반올림하면 계단처럼 움찔거려요)
-    st.box = { x: st.x - w / 2, y: st.y + bob - h / 2, w, h, key, flip }
+    if (p < 1) draw(fade.last, 1)
+    draw(cur, p < 1 ? p : 1)
+    el.style.transform = `translate(${fx - PAD}px, ${fy - PAD}px)`
+    st.box = { x: x0, y: y0, w, h, key: pose.key, flip }
   }
 
   function overFish(x, y) {
@@ -123,7 +133,7 @@ async function init() {
   const l = await bridge.layout(); if (l) layout = l
   bridge.onConfig((c) => { size = c.size || 1; speedMul = c.speed || 1; setCount(c.count || 1) })
   bridge.onLayout((l) => { layout = l })
-  await Promise.all(Object.keys(dims.dim).map((k) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = `frames/${k}.webp` })))
+  await Promise.all(Object.keys(dims.dim).map((k) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = `frames/${k}.webp`; imgCache[k] = i })))
   setCount(count)
   last = performance.now(); requestAnimationFrame(loop)
 }
