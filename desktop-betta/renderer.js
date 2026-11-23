@@ -1,12 +1,13 @@
 // 베타 물고기: 모든 모니터를 아주 천천히 돌아다니고, 두 번 누르면 꼬리를 활짝 펼쳐요.
-//  · 헤엄(swim) 그림 20장을 돌려 가며 보여 주고, 가는 방향에 따라 좌우로 뒤집고 살짝 기울여요
-//  · 더블클릭하면 꼬리 펼치기(flare) 그림 24장을 한 번 보여 줘요 (그동안은 거의 멈춰서 떠 있어요)
+//  · 헤엄(swim) 16장을 돌려 보여 주고, 쉴 때는 살랑(idle) 8장을 보여 줘요. 그림마다 눈 위치를 맞춰 둬서 몸이 튀지 않아요
+//  · 가려는 방향이 지금 보는 방향과 반대면 도는(turn) 12장을 보여 주고 나서 가요 (좌우를 갑자기 뒤집지 않아요)
+//  · 더블클릭하면 꼬리 펼치기(flare) 24장을 보여 줘요 (그동안에도 보던 방향으로 아주 천천히 계속 헤엄쳐요)
 //  · 물고기 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
 let dims = null, size = 1, speedMul = 1, count = 1
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onCursor() {} }
 const SCALE = 0.8            // 그림 1px이 화면에서 차지하는 크기
 const BASE_SPEED = 16        // 보통 크기에서 초당 이동 px (아주 천천히)
-const SWIM_MS = 120, FLARE_MS = 100
+const SWIM_MS = 85, IDLE_MS = 140, TURN_MS = 95, FLARE_MS = 100
 const rnd = (a, b) => a + Math.random() * (b - a)
 const clamp = (v, a, b) => Math.min(Math.max(v, a), Math.max(a, b))
 
@@ -26,8 +27,8 @@ function makeFish(i) {
   const el = document.createElement('div'); el.className = 'fish'
   const img = document.createElement('img'); img.alt = ''; el.appendChild(img); document.body.appendChild(el)
   const d = layout.displays[Math.floor(Math.random() * layout.displays.length)]
-  const st = { x: d.x + rnd(0.2, 0.8) * d.w, y: d.y + rnd(0.25, 0.75) * d.h, vx: 0, vy: 0, tx: 0, ty: 0, wait: rnd(0, 2), face: Math.random() < 0.5 ? -1 : 1, mode: 'swim', flareT: 0, phase: i * 1.7, box: null }
-  const pad = () => dims.dim.swim0.w * SCALE * size * 0.5 + 24
+  const st = { x: d.x + rnd(0.2, 0.8) * d.w, y: d.y + rnd(0.25, 0.75) * d.h, vx: 0, vy: 0, tx: 0, ty: 0, wait: rnd(0, 2), face: Math.random() < 0.5 ? -1 : 1, mode: 'swim', flareT: 0, turnT: 0, turnFrom: 1, phase: i * 1.7, box: null }
+  const pad = () => dims.dim.swim0.w * SCALE * size * 0.45 + 16
 
   function pickTarget() {   // 모든 모니터 중 하나를 (넓이에 비례해) 골라 그 안의 아무 곳이나 목표로 삼아요
     const tot = layout.displays.reduce((s, d) => s + d.w * d.h, 0)
@@ -41,32 +42,42 @@ function makeFish(i) {
 
   function update(now, dt) {
     const speed = BASE_SPEED * speedMul * size
-    let dx = st.tx - st.x, dy = st.ty - st.y
+    const dx = st.tx - st.x, dy = st.ty - st.y
     const dist = Math.hypot(dx, dy)
-    let want = 1
-    if (st.mode === 'flare') want = 0.15                                 // 꼬리를 펼치는 동안은 거의 멈춰서 떠 있어요
-    else if (st.wait > 0) { st.wait -= dt; want = 0.12 }                  // 목표에 닿으면 잠깐 쉬어요
+    let want = 1, resting = false
+    if (st.mode === 'turn' || st.mode === 'flare') want = 0
+    else if (st.wait > 0) { st.wait -= dt; want = 0.12; resting = true }      // 목표에 닿으면 잠깐 쉬어요
     else if (dist < 18) { st.wait = rnd(1, 4); pickTarget() }
-    else if (dist < 120) want = 0.35 + 0.65 * (dist / 120)               // 닿기 전에 부드럽게 느려져요
+    else if (dist < 120) want = 0.35 + 0.65 * (dist / 120)                    // 닿기 전에 부드럽게 느려져요
+    // 가려는 방향이 보던 방향과 반대(가로로 충분히 멀 때)면 먼저 몸을 돌려요
+    if (st.mode === 'swim' && want > 0 && Math.abs(dx) > 50 && Math.sign(dx) !== st.face) {
+      st.mode = 'turn'; st.turnT = now; st.turnFrom = st.face
+    }
     const nx = dist > 0 ? dx / dist : 0, ny = dist > 0 ? dy / dist : 0
-    const k = Math.min(1, dt * 0.7)                                      // 방향·속도가 천천히 바뀌어요
-    st.vx += (nx * speed * want - st.vx) * k; st.vy += (ny * speed * want - st.vy) * k
+    let tvx = nx * speed * want, tvy = ny * speed * want
+    if (st.mode === 'flare') { tvx = st.face * speed * 0.25; tvy = 0 }          // 꼬리를 펼치는 동안에도 보던 방향으로 아주 천천히 헤엄쳐요
+    const k = Math.min(1, dt * 0.7)                                             // 방향·속도가 천천히 바뀌어요
+    st.vx += (tvx - st.vx) * k; st.vy += (tvy - st.vy) * k
     st.x += st.vx * dt; st.y += st.vy * dt
-    if (Math.abs(st.vx) > speed * 0.12) st.face = st.vx > 0 ? 1 : -1       // 거의 멈춘 때에만 몸을 돌려서 갑자기 뒤집히지 않아요
 
-    let key
-    if (st.mode === 'flare') {
+    let key, flip = st.face < 0
+    if (st.mode === 'turn') {
+      const f = Math.floor((now - st.turnT) / TURN_MS)
+      if (f >= dims.count.turn) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0; key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}` }
+      else { key = `turn${f}`; flip = st.turnFrom < 0 }                          // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
+    } else if (st.mode === 'flare') {
       const f = Math.floor((now - st.flareT) / FLARE_MS)
       if (f >= dims.count.flare) { st.mode = 'swim'; key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}` } else key = `flare${f}`
-    } else key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}`
+    } else if (resting || Math.hypot(st.vx, st.vy) < speed * 0.3) key = `idle${Math.floor(now / IDLE_MS) % dims.count.idle}`
+    else key = `swim${Math.floor(now / SWIM_MS) % dims.count.swim}`
     const dd = dims.dim[key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
-    const bob = Math.sin(now / 1800 + st.phase) * 4 * size
-    const tilt = clamp((st.vy / Math.max(speed, 1)) * 10, -12, 12)
+    const bob = Math.sin(now / 2200 + st.phase) * 3 * size
+    const tilt = clamp((st.vy / Math.max(speed, 1)) * 8, -8, 8)
     if (img.dataset.k !== key) { img.src = `frames/${key}.webp`; img.dataset.k = key }
     img.style.width = w + 'px'; img.style.height = h + 'px'
-    img.style.transform = `scaleX(${st.face}) rotate(${tilt.toFixed(1)}deg)`
+    img.style.transform = `scaleX(${flip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg)`
     el.style.transform = `translate(${Math.round(st.x - w / 2)}px, ${Math.round(st.y + bob - h / 2)}px)`
-    st.box = { x: st.x - w / 2, y: st.y + bob - h / 2, w, h, key, flip: st.face < 0 }
+    st.box = { x: st.x - w / 2, y: st.y + bob - h / 2, w, h, key, flip }
   }
 
   function overFish(x, y) {
@@ -81,7 +92,7 @@ function makeFish(i) {
     }
     return false
   }
-  const flare = () => { if (st.mode !== 'flare') { st.mode = 'flare'; st.flareT = performance.now() } }
+  const flare = () => { if (st.mode === 'swim') { st.mode = 'flare'; st.flareT = performance.now() } }
   return { st, el, update, overFish, flare, remove: () => el.remove() }
 }
 
