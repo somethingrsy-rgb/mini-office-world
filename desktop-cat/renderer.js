@@ -145,7 +145,7 @@ function makeCat(pre, name, x0) {
     img.style.transform = `${flip ? 'scaleX(-1)' : ''} rotate(${tilt}deg)`; img.style.transformOrigin = '50% 90%'
     const ty = st.y - h - lift
     el.style.transform = `translate(${Math.round(st.x - w / 2)}px, ${Math.round(ty)}px)`
-    st.box = { x: st.x - w / 2, y: ty, w, h, key, flip }
+    st.box = { x: st.x - w / 2, y: ty, w, h, key, flip }; st.hb = st.box
   }
 
   function overCat(x, y) {
@@ -217,7 +217,7 @@ function makeCat(pre, name, x0) {
     img.style.width = w + 'px'; img.style.height = h + 'px'
     img.style.transform = o.flip ? 'scaleX(-1)' : ''; img.style.transformOrigin = '50% 90%'
     el.style.transform = `translate(${Math.round(o.x - w / 2)}px, ${Math.round(st.y - h)}px)`
-    st.box = null
+    st.box = null; st.hb = { x: o.x - w / 2, y: st.y - h, w, h }
   }
 
   const self = { st, el, update, overCat, drop, pet, hop, run, calm, setHidden, setFrozen, goTo, comeDown: () => { if (st.surf.t === 'win' && st.mode !== 'drag' && st.mode !== 'leap') fall(performance.now()) }, name }
@@ -336,10 +336,11 @@ function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now
   for (const c of cats) c.update(now, dt)
   directScenes(now)
+  updateTimerTags(now)
   if (bubbleEl) {
-    const b = cats[0] && cats[0].st.box
+    const b = cats[0] && (cats[0].st.box || cats[0].st.hb)
     if (now > bubbleUntil || !b) { bubbleEl.remove(); bubbleEl = null }
-    else { bubbleEl.style.left = Math.round(Math.min(Math.max(b.x + b.w / 2, 140), layout.w - 140)) + 'px'; bubbleEl.style.top = Math.max(4, Math.round(b.y - bubbleEl.offsetHeight - 14)) + 'px' }
+    else { bubbleEl.style.left = Math.round(Math.min(Math.max(b.x + b.w / 2, 140), layout.w - 140)) + 'px'; bubbleEl.style.top = Math.max(4, Math.round(b.y - bubbleEl.offsetHeight - 14 - (timers.has(cats[0]) ? 30 : 0))) + 'px' }
   }
   requestAnimationFrame(loop)
 }
@@ -390,13 +391,14 @@ const onLedEdge = (x, y) => ledEls.length > 0 && layout.displays.some((d) => x >
 let menuEl = null, menuTimer = 0
 function closeMenu() { clearTimeout(menuTimer); if (menuEl) { menuEl.remove(); menuEl = null; hover = false; bridge.ignore(true) } }
 const inMenu = (x, y) => { if (!menuEl) return false; const r = menuEl.getBoundingClientRect(); return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom }
-function openMenu(x, y) {
+function openMenu(cat, x, y) {
   closeMenu()
   menuEl = document.createElement('div'); menuEl.className = 'menu'
-  const t = document.createElement('div'); t.className = 't'; t.textContent = '⏱ 타이머'; menuEl.appendChild(t)
+  const t = document.createElement('div'); t.className = 't'; t.textContent = '⏱ ' + cat.name + ' 타이머'; menuEl.appendChild(t)
   for (const m of [5, 10, 20, 30, 60, 0]) {
-    const b = document.createElement('button'); b.textContent = m ? `${m}분` : '타이머 취소'
-    b.addEventListener('click', (e) => { e.stopPropagation(); setTimer(m); closeMenu() })
+    if (!m && !timers.has(cat)) continue
+    const b = document.createElement('button'); b.textContent = m ? `${m}분` : `타이머 취소 (${fmt(timers.get(cat).end - performance.now())})`
+    b.addEventListener('click', (e) => { e.stopPropagation(); setTimer(m, cat); closeMenu() })
     menuEl.appendChild(b)
   }
   document.body.appendChild(menuEl)
@@ -407,12 +409,13 @@ function openMenu(x, y) {
 }
 document.addEventListener('contextmenu', (e) => {
   e.preventDefault()
-  if (catAt(e.clientX, e.clientY)) openMenu(e.clientX, e.clientY)
+  const cc = catAt(e.clientX, e.clientY)
+  if (cc) openMenu(cc, e.clientX, e.clientY)
   else if (!inMenu(e.clientX, e.clientY)) closeMenu()
 })
 
 // ── 알람: 정각 알림, 타이머, 사용자 알람. 정각은 폴짝 한 번, 타이머·알람은 고양이를 누를 때까지 둘이 뛰어다녀요 ──
-let bubbleEl = null, bubbleUntil = 0, timerId = 0, ringTimer = 0
+let bubbleEl = null, bubbleUntil = 0, ringTimer = 0
 function say(text, ms = 8000) {
   if (bubbleEl) bubbleEl.remove()
   bubbleEl = document.createElement('div'); bubbleEl.className = 'bubble'; bubbleEl.textContent = text
@@ -478,11 +481,30 @@ setInterval(() => {
   lastHourKey = key
   hourAlert(d.getHours())
 }, 1000)
-function setTimer(min) {
-  clearTimeout(timerId)
-  if (!min) { say('타이머를 취소했어요', 3000); return }
-  say(`${min}분 뒤에 알려 드릴게요`, 3000)
-  timerId = setTimeout(() => ring(`⏱ ${min}분 타이머가 끝났어요!`), min * 60000)
+// 타이머는 고양이마다 따로예요: 오른쪽 클릭한 고양이 머리 위에만 남은 시간이 보여요 (트레이·설정 창에서 시작하면 보이는 첫 고양이가 맡아요)
+const timers = new Map()   // 고양이 -> { end, min, id, el }
+const fmt = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60; return (h ? h + ':' + String(m).padStart(2, '0') : String(m)) + ':' + String(r).padStart(2, '0') }
+function cancelTimer(cat) { const t = timers.get(cat); if (!t) return; clearTimeout(t.id); t.el.remove(); timers.delete(cat) }
+function setTimer(min, cat) {
+  if (!cat) {
+    if (!min) { const had = timers.size > 0; [...timers.keys()].forEach(cancelTimer); say(had ? '타이머를 모두 취소했어요' : '타이머를 취소했어요', 3000); return }
+    cat = cats.find((c, i) => (i === 0 ? conf.ruby !== false : conf.crystal !== false)) || cats[0]
+  }
+  cancelTimer(cat)
+  if (!min) { say(`${cat.name} 타이머를 취소했어요`, 3000); return }
+  say(`${cat.name}: ${min}분 뒤에 알려 드릴게요`, 3000)
+  const el = document.createElement('div'); el.className = 'ttag'; document.body.appendChild(el)
+  const id = setTimeout(() => { cancelTimer(cat); ring(`⏱ ${cat.name}의 ${min}분 타이머가 끝났어요!`) }, min * 60000)
+  timers.set(cat, { end: performance.now() + min * 60000, min, id, el })
+}
+function updateTimerTags(now) {
+  for (const [cat, t] of timers) {
+    const b = cat.st.box || cat.st.hb
+    if (!b || cat.el.style.display === 'none') { t.el.style.display = 'none'; continue }
+    t.el.style.display = ''; t.el.textContent = '⏱ ' + fmt(t.end - now)
+    t.el.style.left = Math.round(Math.min(Math.max(b.x + b.w / 2, 50), layout.w - 50)) + 'px'
+    t.el.style.top = Math.max(4, Math.round(b.y - 28)) + 'px'
+  }
 }
 window.__hour = hourAlert; window.__led = () => ledEls.length; window.__menu = () => !!menuEl; window.__alert = alert; window.__timer = setTimer; window.__ring = ring; window.__cats = cats; window.__scene = () => scene; window.__force = () => { const [r, c] = cats; c.st.surf = r.st.surf; c.st.x = r.st.x - 150; lastScene = -1e9; cooldown = 0; r.st.mode = c.st.mode = 'stand' }   // 시험용
 
