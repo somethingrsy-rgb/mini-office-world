@@ -14,7 +14,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'desktop-betta')
 PRE = {'orange': 'o_', 'purple': 'p_'}.get(sys.argv[1] if sys.argv[1:] else '', '')   # 주황 베타는 그림 이름 앞에 o_ 가 붙어요
 SHEETS = [('swim', 4, 4), ('turn', 4, 3), ('flare', 6, 4), ('idle', 4, 2)]
-if PRE == 'p_': SHEETS = [('swim', 4, 4)]   # 보라 베타는 지금 헤엄 그림 16장만 있어요 (나머지는 헤엄 그림으로 대신 써요)
 FISH_W = 200            # 헤엄 그림에서 물고기(지느러미 포함) 가로 크기 목표(px, 보통 크기)
 MASK_COLS = 56
 
@@ -52,10 +51,11 @@ def extract(name, cols, rows):
 raw = {n: extract(n, c, r) for n, c, r in SHEETS}
 # 몸 크기를 맞춰요: 그림마다 고양이처럼 그려진 크기가 달라서, 오른쪽을 보는 처음 몇 장의 분홍 몸(머리·몸통) 넓이가 헤엄 그림과 같아지게 배율을 정해요
 ref_n = {'swim': 16, 'turn': 3, 'flare': 2, 'idle': 8}
-pink_ref = float(np.median([f['pink'] for f in raw['swim']]))
+K = 'area' if PRE == 'p_' else 'pink'   # 보라 베타는 몸이 흰빛이라 분홍 픽셀로 크기를 못 재서, 전체 넓이로 재요
+pink_ref = float(np.median([f[K] for f in raw['swim']]))
 swim_w = float(np.median([f['bbox'][2] - f['bbox'][0] for f in raw['swim']]))
 s0 = FISH_W / swim_w
-scale = {n: s0 * (pink_ref / float(np.median([f['pink'] for f in raw[n][:ref_n[n]]]))) ** 0.5 for n in raw}
+scale = {n: s0 * (pink_ref / float(np.median([f[K] for f in raw[n][:ref_n[n]]]))) ** 0.5 for n in raw}
 
 # 눈을 기준으로 한 모든 프레임의 가장 큰 범위 → 모든 그림이 같은 크기의 판을 써요 (좌우로 뒤집어도 몸이 제자리)
 hw = hh = 0
