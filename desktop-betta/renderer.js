@@ -25,7 +25,11 @@ function maskOf(key) {
 
 function makeFish(i) {
   const el = document.createElement('div'); el.className = 'fish'
-  const img = document.createElement('img'); img.alt = ''; el.appendChild(img); document.body.appendChild(el)
+  // 그림이 바뀔 때 이전 그림 위로 새 그림을 서서히 겹쳐서(크로스페이드) 툭 끊기는 느낌이 없게 해요
+  const imgPrev = document.createElement('img'), img = document.createElement('img')
+  for (const m of [imgPrev, img]) { m.alt = ''; el.appendChild(m) }
+  document.body.appendChild(el)
+  const fade = { cur: '', prev: '', prevFlip: false, t0: 0, dur: 1 }
   const d = layout.displays[Math.floor(Math.random() * layout.displays.length)]
   const st = { x: d.x + rnd(0.2, 0.8) * d.w, y: d.y + rnd(0.25, 0.75) * d.h, vx: 0, vy: 0, tx: 0, ty: 0, wait: rnd(0, 2), face: Math.random() < 0.5 ? -1 : 1, mode: 'swim', flareT: 0, turnT: 0, turnFrom: 1, phase: i * 1.7, box: null }
   const pad = () => dims.dim.swim0.w * SCALE * size * 0.45 + 16
@@ -73,9 +77,21 @@ function makeFish(i) {
     const dd = dims.dim[key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     const tilt = clamp((st.vy / Math.max(speed, 1)) * 8, -8, 8)
-    if (img.dataset.k !== key) { img.src = `frames/${key}.webp`; img.dataset.k = key }
-    img.style.width = w + 'px'; img.style.height = h + 'px'
-    img.style.transform = `scaleX(${flip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg)`
+    if (fade.cur !== key) {
+      const sameFamily = fade.cur.replace(/\d+$/, '') === key.replace(/\d+$/, '')
+      fade.prev = fade.cur; fade.prevFlip = fade.curFlip; fade.cur = key; fade.t0 = now
+      fade.dur = sameFamily ? (key.startsWith('idle') ? IDLE_MS : SWIM_MS) : 200      // 다른 동작으로 바뀔 때는 조금 더 길게 섞어요
+      if (fade.prev) { imgPrev.src = `frames/${fade.prev}.webp`; imgPrev.style.display = '' } else imgPrev.style.display = 'none'
+      img.src = `frames/${key}.webp`
+    }
+    fade.curFlip = flip
+    const p = Math.min(1, (now - fade.t0) / fade.dur)
+    img.style.opacity = p.toFixed(2)
+    if (p >= 1) imgPrev.style.display = 'none'
+    const sz = `position:absolute;left:0;top:0;width:${w}px;height:${h}px;`
+    el.style.width = w + 'px'; el.style.height = h + 'px'
+    imgPrev.style.cssText = sz + `transform:scaleX(${fade.prevFlip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg);display:${p >= 1 ? 'none' : ''}`
+    img.style.cssText = sz + `opacity:${p.toFixed(2)};transform:scaleX(${flip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg)`
     el.style.transform = `translate(${Math.round(st.x - w / 2)}px, ${Math.round(st.y + bob - h / 2)}px)`
     st.box = { x: st.x - w / 2, y: st.y + bob - h / 2, w, h, key, flip }
   }
