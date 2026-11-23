@@ -1,0 +1,23 @@
+{
+  "name": "betta-desktop-pet",
+  "version": "1.0.0",
+  "description": "바탕화면을 천천히 헤엄치는 베타 물고기",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable zip --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "local.betta.desktoppet",
+    "productName": "베타 물고기",
+    "icon": "icon.png",
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "dims.js", "icon.png", "frames/**"],
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "Betta-Fish-folder.${ext}" },
+    "portable": { "artifactName": "Betta-Fish.exe" },
+    "directories": { "output": "dist" }
+  }
+}

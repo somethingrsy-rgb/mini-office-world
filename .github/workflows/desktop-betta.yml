@@ -1,0 +1,31 @@
+name: Desktop betta (Windows)
+
+# 바탕화면 베타 물고기 프로그램(Betta-Fish.exe)을 만들어요. Actions 탭에서 Run workflow를 누르세요.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop-betta
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --no-audit --no-fund
+      - run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Betta-Fish
+          path: |
+            desktop-betta/dist/Betta-Fish.exe
+            desktop-betta/dist/Betta-Fish-folder.zip
+          if-no-files-found: error
