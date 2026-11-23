@@ -3,7 +3,7 @@
 //  · 가려는 방향이 지금 보는 방향과 반대면 도는(turn) 12장을 보여 주고 나서 가요 (좌우를 갑자기 뒤집지 않아요)
 //  · 더블클릭하면 꼬리 펼치기(flare) 24장을 보여 줘요 (그동안에도 보던 방향으로 아주 천천히 계속 헤엄쳐요)
 //  · 물고기 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
-let dims = null, size = 1, speedMul = 1, count = 1
+let dims = null, size = 1, speedMul = 1, count = 2, species = 'pink'   // species: pink 분홍 / orange 주황 / both 같이(번갈아)
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onCursor() {} }
 const SCALE = 0.8            // 그림 1px이 화면에서 차지하는 크기
 const BASE_SPEED = 16        // 보통 크기에서 초당 이동 px (아주 천천히)
@@ -24,7 +24,7 @@ function maskOf(key) {
   return (maskCache[key] = { cols, rows, bits: BigInt('0x' + hex).toString(2).padStart(n, '0') })
 }
 
-function makeFish(i) {
+function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그림 이름 앞에 붙어요)
   // 물고기는 작은 캔버스에 그려요: 화면 위치는 정수로, 그 안의 그림은 소수점 위치로 그려서 아주 느리게 갈 때도 계단처럼 움찔거리지 않고 부드럽게 움직여요
   const el = document.createElement('div'); el.className = 'fish'
   const cv = document.createElement('canvas'); el.appendChild(cv); document.body.appendChild(el)
@@ -32,7 +32,7 @@ function makeFish(i) {
   const fade = { fam: '', layers: [], last: [], t0: 0 }
   const d = layout.displays[Math.floor(Math.random() * layout.displays.length)]
   const st = { x: d.x + rnd(0.2, 0.8) * d.w, y: d.y + rnd(0.25, 0.75) * d.h, vx: 0, vy: 0, tx: 0, ty: 0, wait: rnd(0, 2), face: Math.random() < 0.5 ? -1 : 1, mode: 'swim', flareT: 0, turnT: 0, turnFrom: 1, phase: i * 1.7, box: null }
-  const pad = () => dims.dim.swim0.w * SCALE * size * 0.45 + 16
+  const pad = () => dims.dim[pre + 'swim0'].w * SCALE * size * 0.45 + 16
 
   function pickTarget() {   // 모든 모니터 중 하나를 (넓이에 비례해) 골라 그 안의 아무 곳이나 목표로 삼아요
     const tot = layout.displays.reduce((s, d) => s + d.w * d.h, 0)
@@ -59,7 +59,7 @@ function makeFish(i) {
     }
     const nx = dist > 0 ? dx / dist : 0, ny = dist > 0 ? dy / dist : 0
     let tvx = nx * speed * want, tvy = ny * speed * want
-    if (st.mode === 'flare') { tvx = st.face * speed * 0.25; tvy = 0 }          // 꼬리를 펼치는 동안에도 보던 방향으로 아주 천천히 헤엄쳐요
+    if (st.mode === 'flare') { tvx = st.flareStill ? 0 : st.face * speed * 0.25; tvy = st.flareStill ? 0 : tvy * 0 }          // 꼬리를 펼치는 동안에도 보던 방향으로 아주 천천히 헤엄쳐요
     const k = Math.min(1, dt * 0.7)                                             // 방향·속도가 천천히 바뀌어요
     st.vx += (tvx - st.vx) * k; st.vy += (tvy - st.vy) * k
     st.x += st.vx * dt; st.y += st.vy * dt
@@ -67,17 +67,18 @@ function makeFish(i) {
     // 지금 보여 줄 그림: 그림 장수를 시간으로 나눠 '몇 번째 + 다음 장과 얼마나 섞을지(frac)'를 구해요. 다음 장을 frac만큼 겹쳐 그려서 장면이 부드럽게 이어져요
     const swimMs = SWIM_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.25)         // 느리게 갈수록 지느러미도 천천히 살랑거려요
     const idleMs = IDLE_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.15)
-    const seq = (fam, tt, n, loop) => { const i = Math.floor(tt), f = tt - i, a = loop ? i % n : Math.min(i, n - 1), b = loop ? (a + 1) % n : (a + 1 < n ? a + 1 : -1); return { fam, key: `${fam}${a}`, next: b >= 0 ? `${fam}${b}` : null, frac: f } }
+    const cnt = (fam) => dims.count[pre + fam]
+    const seq = (fam, tt, n, loop) => { const i = Math.floor(tt), f = tt - i, a = loop ? i % n : Math.min(i, n - 1), b = loop ? (a + 1) % n : (a + 1 < n ? a + 1 : -1); return { fam, key: `${pre}${fam}${a}`, next: b >= 0 ? `${pre}${fam}${b}` : null, frac: f } }
     let pose, flip = st.face < 0
     if (st.mode === 'turn') {
       const tt = (now - st.turnT) / TURN_MS
-      if (tt >= dims.count.turn) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
-      else { pose = seq('turn', tt, dims.count.turn, false); flip = st.turnFrom < 0 }   // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
+      if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
+      else { pose = seq('turn', tt, cnt('turn'), false); flip = st.turnFrom < 0 }   // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
     } else if (st.mode === 'flare') {
       const tt = (now - st.flareT) / FLARE_MS
-      if (tt >= dims.count.flare) st.mode = 'swim'; else pose = seq('flare', tt, dims.count.flare, false)
+      if (tt >= cnt('flare')) { st.mode = 'swim'; st.flareStill = false } else pose = seq('flare', tt, cnt('flare'), false)
     }
-    if (!pose) pose = (resting || Math.hypot(st.vx, st.vy) < speed * 0.3) ? seq('idle', now / idleMs, dims.count.idle, true) : seq('swim', now / swimMs, dims.count.swim, true)
+    if (!pose) pose = (resting || Math.hypot(st.vx, st.vy) < speed * 0.3) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     const tilt = clamp((st.vy / Math.max(speed, 1)) * 8, -8, 8)
@@ -118,30 +119,50 @@ function makeFish(i) {
     }
     return false
   }
-  const flare = () => { if (st.mode === 'swim') { st.mode = 'flare'; st.flareT = performance.now() } }
+  const flare = (still) => { if (st.mode === 'swim') { st.mode = 'flare'; st.flareT = performance.now(); st.flareStill = !!still } }
   return { st, el, update, overFish, flare, remove: () => el.remove() }
 }
 
+// 몇 마리를 어떤 종류로 띄울지: 분홍·주황 번갈아면 분홍, 주황, 분홍… 순서예요
+const preOf = (i) => (species === 'orange' ? 'o_' : species === 'pink' ? '' : i % 2 === 0 ? '' : 'o_')
+let builtKey = ''
 function setCount(n) {
+  const key = `${n}|${species}`
+  if (key !== builtKey) { while (fishes.length) fishes.pop().remove(); builtKey = key }
   while (fishes.length > n) fishes.pop().remove()
-  while (fishes.length < n) fishes.push(makeFish(fishes.length))
+  while (fishes.length < n) fishes.push(makeFish(fishes.length, preOf(fishes.length)))
 }
 
 async function init() {
   dims = window.DIMS
-  const c = await bridge.config(); size = c.size || 1; speedMul = c.speed || 1; count = c.count || 1
+  const c = await bridge.config(); size = c.size || 1; speedMul = c.speed || 1; count = c.count || 1; species = c.species || 'pink'
   const l = await bridge.layout(); if (l) layout = l
-  bridge.onConfig((c) => { size = c.size || 1; speedMul = c.speed || 1; setCount(c.count || 1) })
+  bridge.onConfig((c) => { size = c.size || 1; speedMul = c.speed || 1; species = c.species || 'pink'; setCount(c.count || 1) })
   bridge.onLayout((l) => { layout = l })
   await Promise.all(Object.keys(dims.dim).map((k) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = `frames/${k}.webp`; imgCache[k] = i })))
   setCount(count)
   last = performance.now(); requestAnimationFrame(loop)
 }
 
+// ── 두 마리가 돌아다니다 우연히 '얼굴과 얼굴이 마주치면' 둘 다 꼬리를 크게 펼쳐요 (서로 마주 보고 가까울 때만, 일부러 찾아가진 않아요) ──
+let lastMeet = 0
+function checkMeet(now) {
+  if (fishes.length < 2 || now - lastMeet < 30000) return
+  for (let i = 0; i < fishes.length; i++) for (let j = i + 1; j < fishes.length; j++) {
+    const a = fishes[i].st, b = fishes[j].st
+    if (a.mode !== 'swim' || b.mode !== 'swim') continue
+    const [l, r] = a.x <= b.x ? [a, b] : [b, a]
+    if (l.face !== 1 || r.face !== -1) continue                            // 서로를 마주 보고 있어야 해요
+    if (r.x - l.x > 150 * size || Math.abs(a.y - b.y) > 75 * size) continue    // 눈과 눈이 150px 안쪽 = 코끼리 서로 닿을 만큼
+    fishes[i].flare(true); fishes[j].flare(true); lastMeet = now; return
+  }
+}
+
 let last = 0
 function loop(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now
   for (const f of fishes) f.update(now, dt)
+  checkMeet(now)
   requestAnimationFrame(loop)
 }
 
@@ -155,6 +176,6 @@ function handleMove(x, y) {
 document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY))
 bridge.onCursor && bridge.onCursor((c) => handleMove(c.x, c.y))   // 윈도우가 알려 주는 마우스 위치 (이벤트가 안 와도 동작)
 document.addEventListener('dblclick', (e) => { const f = fishAt(e.clientX, e.clientY); if (f) f.flare() })   // 두 번 누르면 꼬리를 활짝 펼쳐요
-window.__fishes = fishes   // 시험용
+window.__fishes = fishes; window.__resetMeet = () => { lastMeet = -1e9 }   // 시험용
 
 init()

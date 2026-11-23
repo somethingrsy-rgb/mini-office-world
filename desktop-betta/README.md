@@ -12,10 +12,12 @@
 - 헤엄칠 때는 16장 순환 그림, 쉴 때는 살랑거리는 8장 그림을 보여 줘요. 그림마다 눈 위치를 맞춰 둬서 몸이 튀지 않고 지느러미만 움직여요.
 - 가려는 방향이 보던 방향과 반대면 몸을 돌리는 12장 그림(오른쪽 → 정면 → 왼쪽)을 보여 준 뒤에 가요. 좌우가 갑자기 뒤집히지 않아요.
 - **물고기를 더블클릭**하면 꼬리를 활짝 펼쳐요 (24장, 약 2.4초). 접힌 모습 → 활짝 → 유지 → 다시 접힘 순서이고, 그동안에도 보던 방향으로 아주 천천히 계속 헤엄쳐요.
+- **두 마리가 돌아다니다 우연히 얼굴과 얼굴이 마주치면**(서로 마주 보고 눈과 눈이 150px 안쪽) 둘 다 꼬리를 크게 펼쳐요. 일부러 찾아가진 않고, 30초에 한 번까지만 해요.
 - 물고기 모양이 있는 곳만 클릭돼요. 나머지는 뒤 창으로 통과해서 업무에 방해되지 않아요.
 
 ## 트레이 메뉴
 - 베타 숨기기/보이기 (`Ctrl+Alt+B`)
+- 물고기 종류: 분홍 베타 / 주황 베타 / 분홍 + 주황 같이
 - 마리 수: 1 / 2 / 3마리
 - 크기: 작게 / 보통 / 크게
 - 헤엄 속도: 아주 천천히(기본) / 조금 느리게 / 보통
@@ -24,7 +26,8 @@
 - 종료
 
 ## 만든 방법
-- 그림: `tools/src_art/betta_swim.png`(헤엄 16장), `betta_turn.png`(방향 바꾸기 12장), `betta_flare.png`(꼬리 펼치기 24장), `betta_idle.png`(쉴 때 8장)
+- 그림(분홍): `tools/src_art/betta_swim.png`(헤엄 16장), `betta_turn.png`(방향 바꾸기 12장), `betta_flare.png`(꼬리 펼치기 24장), `betta_idle.png`(쉴 때 8장)
+- 주황 베타: `betta_o_swim.png`, `betta_o_turn.png`, `betta_o_flare.png`, `betta_o_idle.png` (`python3 tools/process_betta.py orange`, 프레임 이름 앞에 `o_`)
 - `python3 tools/process_betta.py` → `frames/*.webp`와 `dims.js`(그림 크기, 클릭 판정용 모양 지도)를 만들어요. 눈을 기준점으로 맞추고, 그림마다 몸 크기를 헤엄 그림에 맞춰요.
 - 실행해 보기: `npm install` 후 `npx electron .` / exe 만들기: `npm run dist`
 - 안 뜰 때는 `%APPDATA%\betta-desktop-pet\betta.log`를 확인해 보세요.

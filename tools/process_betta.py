@@ -4,21 +4,22 @@
   betta_flare.png 6x4=24장  꼬리 펼치기 (접힘 → 활짝 → 유지 → 접힘)
   betta_idle.png  4x2=8장   가만히 떠 있을 때의 살랑거림
 눈(검은 점)을 기준점으로 맞춰서 프레임이 바뀌어도 몸이 튀지 않고, 네 그림 모두 같은 크기의 판 가운데에 눈이 오게 해요.
-사용법: python3 tools/process_betta.py"""
-import json, os
+사용법: python3 tools/process_betta.py [orange]   (인자 없으면 분홍 베타, orange면 주황 베타: tools/src_art/betta_o_*.png → 프레임 이름 앞에 o_)"""
+import json, os, sys, re
 import numpy as np
 from PIL import Image
 import scipy.ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'desktop-betta')
+PRE = 'o_' if sys.argv[1:] == ['orange'] else ''   # 주황 베타는 그림 이름 앞에 o_ 가 붙어요
 SHEETS = [('swim', 4, 4), ('turn', 4, 3), ('flare', 6, 4), ('idle', 4, 2)]
 FISH_W = 200            # 헤엄 그림에서 물고기(지느러미 포함) 가로 크기 목표(px, 보통 크기)
 MASK_COLS = 56
 
 
 def extract(name, cols, rows):
-    im = Image.open(os.path.join(ROOT, f'tools/src_art/betta_{name}.png')).convert('RGBA')
+    im = Image.open(os.path.join(ROOT, f'tools/src_art/betta_{PRE}{name}.png')).convert('RGBA')
     rgb = np.asarray(im)[:, :, :3].astype(int); a = np.asarray(im)[:, :, 3]; H, W = a.shape
     lab, n = ndi.label(a > 128); sizes = ndi.sum(a > 128, lab, range(1, n + 1))
     items = []
@@ -129,12 +130,20 @@ print('머리 크기 보정 범위:', round(min(ks.values()), 2), '~', round(max
 print('머리 맞춤 이동량(px) 최대:', max(max(abs(v[0]), abs(v[1])) for v in shifts.values()), '평균:', round(float(np.mean([abs(v[0]) + abs(v[1]) for v in shifts.values()])), 2))
 
 os.makedirs(os.path.join(OUT, 'frames'), exist_ok=True)
-for f in os.listdir(os.path.join(OUT, 'frames')): os.remove(os.path.join(OUT, 'frames', f))
-dim, mask, count = {}, {}, {n: len(l) for n, l in raw.items()}
+mine = re.compile(r'^o_(swim|turn|flare|idle)\d+\.webp$' if PRE else r'^(swim|turn|flare|idle)\d+\.webp$')
+for f in os.listdir(os.path.join(OUT, 'frames')):
+    if mine.match(f): os.remove(os.path.join(OUT, 'frames', f))
+dims_path = os.path.join(OUT, 'dims.js')
+old = json.loads(open(dims_path).read().split('=', 1)[1]) if os.path.exists(dims_path) else {'dim': {}, 'count': {}, 'mask': {}}
+for sec in old.values():
+    for k in [k for k in sec if (k.startswith('o_') if PRE else not k.startswith('o_'))]: del sec[k]
+dim, mask, count = old['dim'], old['mask'], old['count']
+for n, l in raw.items(): count[PRE + n] = len(l)
 for (n, k), canvas in canv.items():
-    canvas.save(os.path.join(OUT, 'frames', f'{n}{k}.webp'), 'WEBP', quality=90, method=6)
-    dim[f'{n}{k}'] = {'w': CW, 'h': CH}; mask[f'{n}{k}'] = mask_of(canvas)
-open(os.path.join(OUT, 'dims.js'), 'w').write('window.DIMS = ' + json.dumps({'dim': dim, 'count': count, 'mask': mask}, ensure_ascii=False) + '\n')
+    canvas.save(os.path.join(OUT, 'frames', f'{PRE}{n}{k}.webp'), 'WEBP', quality=90, method=6)
+    dim[f'{PRE}{n}{k}'] = {'w': CW, 'h': CH}; mask[f'{PRE}{n}{k}'] = mask_of(canvas)
+open(dims_path, 'w').write('window.DIMS = ' + json.dumps({'dim': dim, 'count': count, 'mask': mask}, ensure_ascii=False) + '\n')
+if PRE: sys.exit(print('판 크기', CW, CH, '배율', {n: round(v, 3) for n, v in scale.items()}))
 ic = Image.open(os.path.join(OUT, 'frames', 'swim0.webp')); ic = ic.crop(ic.getchannel('A').getbbox())
 k = 440 / max(ic.size); ic = ic.resize((round(ic.width * k), round(ic.height * k)), Image.LANCZOS)
 icon = Image.new('RGBA', (512, 512), (0, 0, 0, 0)); icon.alpha_composite(ic, ((512 - ic.width) // 2, (512 - ic.height) // 2)); icon.save(os.path.join(OUT, 'icon.png'))

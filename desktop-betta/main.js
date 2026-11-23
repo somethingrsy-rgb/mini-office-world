@@ -15,7 +15,7 @@ if (!app.requestSingleInstanceLock()) { app.quit() }
 else app.on('second-instance', () => { try { new Notification({ title: '베타는 이미 실행 중이에요', body: '작업표시줄 오른쪽 아래(^ 안쪽)에서 물고기 아이콘을 찾아 보세요.' }).show() } catch { /* 무시 */ } })
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { size: 1, hidden: false, count: 1, speed: 1, behind: true }   // speed: 1 = 아주 천천히(기본)
+let cfg = { size: 1, hidden: false, count: 2, speed: 1, behind: true, species: 'pink' }   // speed: 1 = 아주 천천히(기본)
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
@@ -82,6 +82,7 @@ function buildMenu() {
   const radio = (k, items) => items.map(([label, v]) => ({ label, type: 'radio', checked: cfg[k] === v, click: set(k, v) }))
   return Menu.buildFromTemplate([
     { label: (cfg.hidden ? '베타 보이기' : '베타 숨기기') + ' (Ctrl+Alt+B)', click: toggleHidden },
+    { label: '물고기 종류', submenu: radio('species', [['분홍 베타', 'pink'], ['주황 베타', 'orange'], ['분홍 + 주황 같이', 'both']]) },
     { label: '마리 수', submenu: radio('count', [['1마리', 1], ['2마리', 2], ['3마리', 3]]) },
     { label: '크기', submenu: radio('size', [['작게', 0.7], ['보통', 1], ['크게', 1.5]]) },
     { label: '헤엄 속도', submenu: radio('speed', [['아주 천천히', 1], ['조금 느리게', 1.7], ['보통', 3]]) },
