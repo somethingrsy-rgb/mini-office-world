@@ -68,9 +68,14 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     const swimMs = SWIM_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.25)         // 느리게 갈수록 지느러미도 천천히 살랑거려요
     const idleMs = IDLE_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.15)
     const cnt = (fam) => dims.count[pre + fam]
+    const has = (fam) => cnt(fam) > 0          // 보라 베타는 지금 헤엄 그림만 있어서, 없는 동작은 헤엄 그림으로 대신해요
     const seq = (fam, tt, n, loop) => { const i = Math.floor(tt), f = tt - i, a = loop ? i % n : Math.min(i, n - 1), b = loop ? (a + 1) % n : (a + 1 < n ? a + 1 : -1); return { fam, key: `${pre}${fam}${a}`, next: b >= 0 ? `${pre}${fam}${b}` : null, frac: f } }
     let pose, flip = st.face < 0
-    if (st.mode === 'turn') {
+    if (st.mode === 'turn' && !has('turn')) {      // 돌기 그림이 없으면: 몸을 가로로 좁혔다가 반대로 펴서 돌아요
+      const tt = (now - st.turnT) / 650
+      if (tt >= 1) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
+      else { pose = seq('swim', now / swimMs, cnt('swim'), true); flip = (tt < 0.5 ? st.turnFrom : -st.turnFrom) < 0; pose.sx = Math.max(0.12, Math.abs(Math.cos(Math.PI * tt))) }
+    } else if (st.mode === 'turn') {
       const tt = (now - st.turnT) / TURN_MS
       if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
       else { pose = seq('turn', tt, cnt('turn'), false); flip = st.turnFrom < 0 }   // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
@@ -78,14 +83,15 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       const tt = (now - st.flareT) / FLARE_MS
       if (tt >= cnt('flare')) { st.mode = 'swim'; st.flareStill = false } else pose = seq('flare', tt, cnt('flare'), false)
     }
-    if (!pose) pose = (resting || Math.hypot(st.vx, st.vy) < speed * 0.3) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
+    if (!pose) pose = (has('idle') && (resting || Math.hypot(st.vx, st.vy) < speed * 0.3)) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     const tilt = clamp((st.vy / Math.max(speed, 1)) * 8, -8, 8)
     // 다른 동작으로 바뀌는 순간에는 직전 모습을 0.2초 동안 남겨서 서서히 바꿔요
     if (fade.fam !== pose.fam) { fade.last = fade.layers; fade.t0 = now; fade.fam = pose.fam }
     const p = Math.min(1, (now - fade.t0) / 200)
-    const cur = [{ key: pose.key, a: 1, flip }]; if (pose.next && pose.frac > 0.02) cur.push({ key: pose.next, a: pose.frac, flip })
+    const sx = pose.sx || 1
+    const cur = [{ key: pose.key, a: 1, flip, sx }]; if (pose.next && pose.frac > 0.02) cur.push({ key: pose.next, a: pose.frac, flip, sx })
     fade.layers = cur
     // 그리기
     const W = Math.ceil(w + PAD * 2), H = Math.ceil(h + PAD * 2)
@@ -97,7 +103,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       for (const L of layers) {
         const im = imgCache[L.key]; if (!im || !im.complete) continue
         ctx.save(); ctx.globalAlpha = L.a * k
-        ctx.translate(PAD + w / 2 + (x0 - fx), PAD + h / 2 + (y0 - fy)); ctx.rotate(tilt * Math.PI / 180); ctx.scale(L.flip ? -1 : 1, 1)
+        ctx.translate(PAD + w / 2 + (x0 - fx), PAD + h / 2 + (y0 - fy)); ctx.rotate(tilt * Math.PI / 180); ctx.scale((L.flip ? -1 : 1) * (L.sx || 1), 1)
         ctx.drawImage(im, -w / 2, -h / 2, w, h); ctx.restore()
       }
     }
@@ -119,12 +125,12 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     }
     return false
   }
-  const flare = (still) => { if (st.mode === 'swim') { st.mode = 'flare'; st.flareT = performance.now(); st.flareStill = !!still } }
+  const flare = (still) => { if (st.mode === 'swim' && dims.count[pre + 'flare'] > 0) { st.mode = 'flare'; st.flareT = performance.now(); st.flareStill = !!still } }
   return { st, el, update, overFish, flare, remove: () => el.remove() }
 }
 
 // 몇 마리를 어떤 종류로 띄울지: 분홍·주황 번갈아면 분홍, 주황, 분홍… 순서예요
-const preOf = (i) => (species === 'orange' ? 'o_' : species === 'pink' ? '' : i % 2 === 0 ? '' : 'o_')
+const preOf = (i) => (species === 'orange' ? 'o_' : species === 'purple' ? 'p_' : species === 'pink' ? '' : ['', 'o_', 'p_'][i % 3])   // 모두 같이: 분홍, 주황, 보라 순서
 let builtKey = ''
 function setCount(n) {
   const key = `${n}|${species}`

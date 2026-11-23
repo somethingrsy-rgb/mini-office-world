@@ -82,7 +82,7 @@ function buildMenu() {
   const radio = (k, items) => items.map(([label, v]) => ({ label, type: 'radio', checked: cfg[k] === v, click: set(k, v) }))
   return Menu.buildFromTemplate([
     { label: (cfg.hidden ? '베타 보이기' : '베타 숨기기') + ' (Ctrl+Alt+B)', click: toggleHidden },
-    { label: '물고기 종류', submenu: radio('species', [['분홍 베타', 'pink'], ['주황 베타', 'orange'], ['분홍 + 주황 같이', 'both']]) },
+    { label: '물고기 종류', submenu: radio('species', [['분홍 베타', 'pink'], ['주황 베타', 'orange'], ['보라 베타', 'purple'], ['모두 같이', 'both']]) },
     { label: '마리 수', submenu: radio('count', [['1마리', 1], ['2마리', 2], ['3마리', 3]]) },
     { label: '크기', submenu: radio('size', [['작게', 0.7], ['보통', 1], ['크게', 1.5]]) },
     { label: '헤엄 속도', submenu: radio('speed', [['아주 천천히', 1], ['조금 느리게', 1.7], ['보통', 3]]) },

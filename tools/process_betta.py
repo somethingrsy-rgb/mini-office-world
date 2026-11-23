@@ -12,8 +12,9 @@ import scipy.ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'desktop-betta')
-PRE = 'o_' if sys.argv[1:] == ['orange'] else ''   # 주황 베타는 그림 이름 앞에 o_ 가 붙어요
+PRE = {'orange': 'o_', 'purple': 'p_'}.get(sys.argv[1] if sys.argv[1:] else '', '')   # 주황 베타는 그림 이름 앞에 o_ 가 붙어요
 SHEETS = [('swim', 4, 4), ('turn', 4, 3), ('flare', 6, 4), ('idle', 4, 2)]
+if PRE == 'p_': SHEETS = [('swim', 4, 4)]   # 보라 베타는 지금 헤엄 그림 16장만 있어요 (나머지는 헤엄 그림으로 대신 써요)
 FISH_W = 200            # 헤엄 그림에서 물고기(지느러미 포함) 가로 크기 목표(px, 보통 크기)
 MASK_COLS = 56
 
@@ -62,7 +63,7 @@ for n, lst in raw.items():
     for f in lst:
         ex, ey = f['eye']; b = f['bbox']; s = scale[n]
         hw = max(hw, (ex - b[0]) * s, (b[2] - ex) * s); hh = max(hh, (ey - b[1]) * s, (b[3] - ey) * s)
-CW, CH = int(np.ceil(hw)) * 2 + 4, int(np.ceil(hh)) * 2 + 4
+CW, CH = int(np.ceil(hw * 1.12)) * 2 + 8, int(np.ceil(hh * 1.12)) * 2 + 8   # 머리 크기·위치 보정으로 커질 몫까지 여유를 둬요 (안 그러면 가장자리가 잘려요)
 
 
 def mask_of(img):
@@ -130,13 +131,13 @@ print('머리 크기 보정 범위:', round(min(ks.values()), 2), '~', round(max
 print('머리 맞춤 이동량(px) 최대:', max(max(abs(v[0]), abs(v[1])) for v in shifts.values()), '평균:', round(float(np.mean([abs(v[0]) + abs(v[1]) for v in shifts.values()])), 2))
 
 os.makedirs(os.path.join(OUT, 'frames'), exist_ok=True)
-mine = re.compile(r'^o_(swim|turn|flare|idle)\d+\.webp$' if PRE else r'^(swim|turn|flare|idle)\d+\.webp$')
+mine = re.compile(rf'^{PRE}(swim|turn|flare|idle)\d+\.webp$' if PRE else r'^(swim|turn|flare|idle)\d+\.webp$')
 for f in os.listdir(os.path.join(OUT, 'frames')):
     if mine.match(f): os.remove(os.path.join(OUT, 'frames', f))
 dims_path = os.path.join(OUT, 'dims.js')
 old = json.loads(open(dims_path).read().split('=', 1)[1]) if os.path.exists(dims_path) else {'dim': {}, 'count': {}, 'mask': {}}
 for sec in old.values():
-    for k in [k for k in sec if (k.startswith('o_') if PRE else not k.startswith('o_'))]: del sec[k]
+    for k in [k for k in sec if (k.startswith(PRE) if PRE else not k.startswith(('o_', 'p_')))]: del sec[k]
 dim, mask, count = old['dim'], old['mask'], old['count']
 for n, l in raw.items(): count[PRE + n] = len(l)
 for (n, k), canvas in canv.items():
