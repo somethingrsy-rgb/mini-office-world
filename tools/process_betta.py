@@ -72,19 +72,68 @@ def mask_of(img):
     return [cols, rows, '%x' % int(bits, 2), cols * rows]
 
 
-os.makedirs(os.path.join(OUT, 'frames'), exist_ok=True)
-for f in os.listdir(os.path.join(OUT, 'frames')): os.remove(os.path.join(OUT, 'frames', f))
-dim, mask, count = {}, {}, {}
+canv = {}
 for n, lst in raw.items():
-    count[n] = len(lst); s = scale[n]
+    s = scale[n]
     for k, f in enumerate(lst):
         b = f['bbox']; crop = f['img'].crop(b)
         crop = crop.resize((max(1, round(crop.width * s)), max(1, round(crop.height * s))), Image.LANCZOS)
         ex, ey = (f['eye'][0] - b[0]) * s, (f['eye'][1] - b[1]) * s
         canvas = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
         canvas.alpha_composite(crop, (int(round(CW / 2 - ex)), int(round(CH / 2 - ey))))
-        canvas.save(os.path.join(OUT, 'frames', f'{n}{k}.webp'), 'WEBP', quality=90, method=6)
-        dim[f'{n}{k}'] = {'w': CW, 'h': CH}; mask[f'{n}{k}'] = mask_of(canvas)
+        canv[(n, k)] = canvas
+
+
+# ── 머리 모양으로 한 번 더 맞춰요: 눈 점 하나만으로는 프레임마다 몇 px씩 흔들려서 '지진 난 것처럼' 보여서,
+#    기준 프레임(swim0)의 머리·앞몸통 모양과 가장 잘 겹치는 위치로 미세하게 옮겨요 ──
+def feat(img, roi):
+    a = np.asarray(img.crop(roi)).astype(float); al = a[:, :, 3] > 128
+    pinkness = np.clip(a[:, :, 0] - a[:, :, 1], 0, 80); dark = np.clip(170 - a[:, :, :3].max(axis=2), 0, 120) * 0.7
+    return np.where(al, pinkness + dark, 0.0)
+
+
+def best_shift(ref, img, rad=12):
+    f1 = ref - ref.mean(); f2 = img - img.mean()
+    h, w = ref.shape
+    corr = np.fft.irfft2(np.fft.rfft2(f1, s=(2 * h, 2 * w)) * np.conj(np.fft.rfft2(f2, s=(2 * h, 2 * w))), s=(2 * h, 2 * w))
+    sub_c = corr[np.arange(-rad, rad + 1)[:, None] % (2 * h), np.arange(-rad, rad + 1)[None, :] % (2 * w)]
+    iy, ix = np.unravel_index(np.argmax(sub_c), sub_c.shape); dy, dx = iy - rad, ix - rad; score = float(sub_c[iy, ix]) / (np.linalg.norm(f1) * np.linalg.norm(f2) + 1e-9)
+    def sub(c0, c1, c2): d = c0 - 2 * c1 + c2; return 0.0 if abs(d) < 1e-9 else 0.5 * (c0 - c2) / d
+    cx = lambda x, y: corr[y % (2 * h), x % (2 * w)]
+    return dx + sub(cx(dx - 1, dy), cx(dx, dy), cx(dx + 1, dy)), dy + sub(cx(dx, dy - 1), cx(dx, dy), cx(dx, dy + 1)), score
+
+
+def scaled(im, k):
+    """눈 자리(판 가운데)를 중심으로 k배 키우거나 줄여요"""
+    cx, cy = CW / 2, CH / 2
+    return im.transform(im.size, Image.AFFINE, (1 / k, 0, cx - cx / k, 0, 1 / k, cy - cy / k), resample=Image.BICUBIC)
+
+
+from PIL import ImageOps
+ROI = (CW // 2 - 80, CH // 2 - 62, CW // 2 + 60, CH // 2 + 62)   # 눈에서 몸 쪽(왼쪽)으로 조금 더 넓게
+ROI_M = (CW - ROI[2], ROI[1], CW - ROI[0], ROI[3])               # 거울에 비친 구역
+ref = feat(canv[('swim', 0)], ROI); refm = feat(ImageOps.mirror(canv[('swim', 0)]), ROI_M)
+shifts, ks = {}, {}
+for (n, k), im in list(canv.items()):
+    if n == 'turn' and 4 <= k <= 7: continue                    # 몸이 정면·옆을 향한 장면은 모양이 달라서 눈 위치만 믿어요
+    left = n == 'turn' and k >= 8                               # 왼쪽을 보는 장면은 거울 상과 맞춰요
+    best = None
+    for kk in [0.80 + 0.02 * i for i in range(24)]:             # 머리 크기도 맞춰요 (그림마다 몸이 조금씩 커졌다 작아져서 크기가 막 바뀌어 보였어요)
+        dx, dy, sc = best_shift(refm if left else ref, feat(scaled(im, kk), ROI_M if left else ROI))
+        if best is None or sc > best[0]: best = (sc, kk, dx, dy)
+    sc, kk, dx, dy = best
+    shifts[(n, k)] = (round(dx, 1), round(dy, 1)); ks[(n, k)] = kk
+    out = scaled(im, kk)
+    canv[(n, k)] = out.transform(out.size, Image.AFFINE, (1, 0, -dx, 0, 1, -dy), resample=Image.BICUBIC)
+print('머리 크기 보정 범위:', round(min(ks.values()), 2), '~', round(max(ks.values()), 2))
+print('머리 맞춤 이동량(px) 최대:', max(max(abs(v[0]), abs(v[1])) for v in shifts.values()), '평균:', round(float(np.mean([abs(v[0]) + abs(v[1]) for v in shifts.values()])), 2))
+
+os.makedirs(os.path.join(OUT, 'frames'), exist_ok=True)
+for f in os.listdir(os.path.join(OUT, 'frames')): os.remove(os.path.join(OUT, 'frames', f))
+dim, mask, count = {}, {}, {n: len(l) for n, l in raw.items()}
+for (n, k), canvas in canv.items():
+    canvas.save(os.path.join(OUT, 'frames', f'{n}{k}.webp'), 'WEBP', quality=90, method=6)
+    dim[f'{n}{k}'] = {'w': CW, 'h': CH}; mask[f'{n}{k}'] = mask_of(canvas)
 open(os.path.join(OUT, 'dims.js'), 'w').write('window.DIMS = ' + json.dumps({'dim': dim, 'count': count, 'mask': mask}, ensure_ascii=False) + '\n')
 ic = Image.open(os.path.join(OUT, 'frames', 'swim0.webp')); ic = ic.crop(ic.getchannel('A').getbbox())
 k = 440 / max(ic.size); ic = ic.resize((round(ic.width * k), round(ic.height * k)), Image.LANCZOS)

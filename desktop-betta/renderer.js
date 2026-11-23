@@ -92,7 +92,7 @@ function makeFish(i) {
     el.style.width = w + 'px'; el.style.height = h + 'px'
     imgPrev.style.cssText = sz + `transform:scaleX(${fade.prevFlip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg);display:${p >= 1 ? 'none' : ''}`
     img.style.cssText = sz + `opacity:${p.toFixed(2)};transform:scaleX(${flip ? -1 : 1}) rotate(${tilt.toFixed(1)}deg)`
-    el.style.transform = `translate(${Math.round(st.x - w / 2)}px, ${Math.round(st.y + bob - h / 2)}px)`
+    el.style.transform = `translate(${(st.x - w / 2).toFixed(2)}px, ${(st.y + bob - h / 2).toFixed(2)}px)`   // 소수점 위치 그대로 (정수로 반올림하면 계단처럼 움찔거려요)
     st.box = { x: st.x - w / 2, y: st.y + bob - h / 2, w, h, key, flip }
   }
 
