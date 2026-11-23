@@ -37,7 +37,15 @@ def extract(name, cols, rows):
         # 눈: 몸 안의 아주 어두운 점들 중 큰 것들의 평균 위치
         dark = body & (rgb.max(axis=2) < 70)
         dl, dn = ndi.label(dark)
-        if dn:
+        if dn and PRE == 'p_':   # 보라 베타: 턱 밑 검은 선이 눈과 섞이지 않게, 가장 동그란 어두운 점 하나를 눈으로 써요
+            best = None
+            for k, sl in enumerate(ndi.find_objects(dl), start=1):
+                n_px = int((dl[sl] == k).sum()); hh, ww = sl[0].stop - sl[0].start, sl[1].stop - sl[1].start
+                if n_px < 25: continue
+                roundness = n_px / (hh * ww) * min(hh, ww) / max(hh, ww)
+                if best is None or roundness * np.sqrt(n_px) > best[0]: best = (roundness * np.sqrt(n_px), k)
+            ys, xs = np.nonzero(dl == best[1]); eye = (xs.mean(), ys.mean())
+        elif dn:
             ds = ndi.sum(dark, dl, range(1, dn + 1)); keep = [k + 1 for k, s in enumerate(ds) if s >= 0.4 * ds.max() and s >= 25]
             ys, xs = np.nonzero(np.isin(dl, keep)); eye = (xs.mean(), ys.mean())
         else:
@@ -124,11 +132,11 @@ for (n, k), im in list(canv.items()):
         dx, dy, sc = best_shift(refm if left else ref, feat(scaled(im, kk), ROI_M if left else ROI))
         if best is None or sc > best[0]: best = (sc, kk, dx, dy)
     sc, kk, dx, dy = best
+    if PRE == 'p_': dx = dy = 0.0                               # 보라 베타: 머리 크기만 맞추고 위치는 눈 기준 그대로 (머리 모양 맞춤으로 옮기면 오히려 흔들려요)
     shifts[(n, k)] = (round(dx, 1), round(dy, 1)); ks[(n, k)] = kk
     out = scaled(im, kk)
     canv[(n, k)] = out.transform(out.size, Image.AFFINE, (1, 0, -dx, 0, 1, -dy), resample=Image.BICUBIC)
-print('머리 크기 보정 범위:', round(min(ks.values()), 2), '~', round(max(ks.values()), 2))
-print('머리 맞춤 이동량(px) 최대:', max(max(abs(v[0]), abs(v[1])) for v in shifts.values()), '평균:', round(float(np.mean([abs(v[0]) + abs(v[1]) for v in shifts.values()])), 2))
+print('머리 크기 보정 범위:', (round(min(ks.values()), 2), round(max(ks.values()), 2)) if ks else '없음(눈 위치로만 맞춤)')
 
 os.makedirs(os.path.join(OUT, 'frames'), exist_ok=True)
 mine = re.compile(rf'^{PRE}(swim|turn|flare|idle)\d+\.webp$' if PRE else r'^(swim|turn|flare|idle)\d+\.webp$')
