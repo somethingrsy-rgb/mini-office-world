@@ -1,0 +1,17 @@
+{
+  "name": "betta-screensaver",
+  "version": "1.0.0",
+  "description": "바닷속을 헤엄치는 베타 물고기 화면 보호기",
+  "main": "main.js",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win portable --x64" },
+  "devDependencies": { "electron": "^33.2.0", "electron-builder": "^25.1.8" },
+  "build": {
+    "appId": "local.betta.screensaver",
+    "productName": "베타 화면 보호기",
+    "icon": "icon.png",
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "dims.js", "icon.png", "bg.webp", "frames/**"],
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }] },
+    "portable": { "artifactName": "Betta-Screensaver.exe" },
+    "directories": { "output": "dist" }
+  }
+}
