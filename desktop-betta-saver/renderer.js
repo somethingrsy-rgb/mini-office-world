@@ -120,6 +120,11 @@ function makeFish(i, pre, sizeMul) {   // pre: '' 분홍 베타, 'o_' 주황 베
 async function init() {
   dims = window.DIMS
   const l = await bridge.layout(); if (l) layout = l
+  for (const d of layout.displays) {   // 모니터마다 바닷속 그림을 한 장씩 깔아요 (두 화면에 걸쳐 늘어나지 않게)
+    const bg = document.createElement('div'); bg.className = 'bg'
+    Object.assign(bg.style, { left: d.x + 'px', top: d.y + 'px', width: d.w + 'px', height: d.h + 'px' })
+    document.body.insertBefore(bg, document.body.firstChild)
+  }
   uiScale = Math.max(0.8, Math.max(...layout.displays.map((d) => d.h)) / 900)
   await Promise.all(Object.keys(dims.dim).map((k) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = `frames/${k}.webp`; imgCache[k] = i })))
   FISH.forEach(([pre, sz], i) => fishes.push(makeFish(i, pre, sz)))
