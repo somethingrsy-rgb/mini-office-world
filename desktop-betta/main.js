@@ -15,8 +15,18 @@ if (!app.requestSingleInstanceLock()) { app.quit() }
 else app.on('second-instance', () => { try { new Notification({ title: '베타는 이미 실행 중이에요', body: '작업표시줄 오른쪽 아래(^ 안쪽)에서 물고기 아이콘을 찾아 보세요.' }).show() } catch { /* 무시 */ } })
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { size: 1, hidden: false, count: 2, speed: 1, behind: true, species: 'pink' }   // speed: 1 = 아주 천천히(기본)
-try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
+// 물고기 종류마다 따로: show 보이기, count 마리 수(1~5), size 크기, speed 속도(1 = 아주 천천히)
+const defFish = () => ({ pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 } })
+let cfg = { hidden: false, behind: true, fish: defFish() }
+try {
+  const saved = JSON.parse(fs.readFileSync(cfgFile(), 'utf8'))
+  cfg = { ...cfg, ...saved, fish: { ...defFish(), ...(saved.fish || {}) } }
+  if (!saved.fish && (saved.species || saved.count)) {   // 이전 버전 설정(종류 하나 + 공통 마리 수·크기·속도)을 새 방식으로 옮겨요
+    const old = { size: saved.size || 1, speed: saved.speed || 1, count: saved.count || 2 }
+    const kinds = saved.species === 'both' ? ['pink', 'orange', 'purple'] : [saved.species || 'pink']
+    for (const k of ['pink', 'orange', 'purple']) cfg.fish[k] = { show: kinds.includes(k), count: old.count, size: old.size, speed: old.speed }
+  }
+} catch { /* 처음 실행 */ }
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
 let win = null, tray = null, bottomProc = null
@@ -77,15 +87,21 @@ function createWindow() {
 const sendCfg = () => win && win.webContents.send('config', cfg)
 function toggleHidden() { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : (win.showInactive(), applyLayer()); tray && tray.setContextMenu(buildMenu()) }
 
+const KINDS = [['pink', '분홍'], ['orange', '주황'], ['purple', '보라']]
 function buildMenu() {
-  const set = (k, v) => () => { cfg[k] = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
-  const radio = (k, items) => items.map(([label, v]) => ({ label, type: 'radio', checked: cfg[k] === v, click: set(k, v) }))
+  const setFish = (k, key, v) => () => { cfg.fish[k][key] = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
   return Menu.buildFromTemplate([
     { label: (cfg.hidden ? '베타 보이기' : '베타 숨기기') + ' (Ctrl+Alt+B)', click: toggleHidden },
-    { label: '물고기 종류', submenu: radio('species', [['분홍 베타', 'pink'], ['주황 베타', 'orange'], ['보라 베타', 'purple'], ['모두 같이', 'both']]) },
-    { label: '마리 수', submenu: radio('count', [['1마리', 1], ['2마리', 2], ['3마리', 3]]) },
-    { label: '크기', submenu: radio('size', [['작게', 0.7], ['보통', 1], ['크게', 1.5]]) },
-    { label: '헤엄 속도', submenu: radio('speed', [['아주 천천히', 1], ['조금 느리게', 1.7], ['보통', 3]]) },
+    { type: 'separator' },
+    ...KINDS.flatMap(([k, name]) => [
+      { label: `${name} 베타 ${cfg.fish[k].show ? '숨기기' : '보이기'}`, click: () => { cfg.fish[k].show = !cfg.fish[k].show; save(); sendCfg(); tray.setContextMenu(buildMenu()) } },
+      { label: `${name} 베타 설정`, submenu: [
+        { label: '마리 수', submenu: [1, 2, 3, 4, 5].map((n) => ({ label: `${n}마리`, type: 'radio', checked: cfg.fish[k].count === n, click: setFish(k, 'count', n) })) },
+        { label: '크기', submenu: [['아주 작게', 0.5], ['작게', 0.7], ['보통', 1], ['크게', 1.5], ['아주 크게', 2]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].size === v, click: setFish(k, 'size', v) })) },
+        { label: '헤엄 속도', submenu: [['아주 천천히', 1], ['조금 느리게', 1.7], ['보통', 3]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].speed === v, click: setFish(k, 'speed', v) })) },
+      ] },
+    ]),
+    { type: 'separator' },
     { label: '열린 창 뒤에서만 헤엄치기 (바탕화면에만 보여요)', type: 'checkbox', checked: cfg.behind !== false, click: (m) => { cfg.behind = m.checked; save(); applyLayer() } },
     { label: '시작할 때 자동 실행', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (m) => app.setLoginItemSettings({ openAtLogin: m.checked }) },
     { type: 'separator' },

@@ -3,7 +3,11 @@
 //  · 가려는 방향이 지금 보는 방향과 반대면 도는(turn) 12장을 보여 주고 나서 가요 (좌우를 갑자기 뒤집지 않아요)
 //  · 더블클릭하면 꼬리 펼치기(flare) 24장을 보여 줘요 (그동안에도 보던 방향으로 아주 천천히 계속 헤엄쳐요)
 //  · 물고기 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
-let dims = null, size = 1, speedMul = 1, count = 2, species = 'pink'   // species: pink 분홍 / orange 주황 / both 같이(번갈아)
+let dims = null, size = 1   // size: 가장 마지막으로 계산한 물고기의 크기 (만남 거리 계산용, 마리마다 따로 있어요)
+// 종류마다 따로: show 보이기, count 마리 수, size 크기, speed 속도. pre 는 그림 이름 앞(''분홍 / o_ 주황 / p_ 보라)
+const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_']]
+let fishConf = { pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 } }
+const kindOf = (pre) => KINDS.find((k) => k[1] === pre)[0]
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onCursor() {} }
 const SCALE = 0.8            // 그림 1px이 화면에서 차지하는 크기
 const BASE_SPEED = 16        // 보통 크기에서 초당 이동 px (아주 천천히)
@@ -32,7 +36,8 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
   const fade = { fam: '', layers: [], last: [], t0: 0 }
   const d = layout.displays[Math.floor(Math.random() * layout.displays.length)]
   const st = { x: d.x + rnd(0.2, 0.8) * d.w, y: d.y + rnd(0.25, 0.75) * d.h, vx: 0, vy: 0, tx: 0, ty: 0, wait: rnd(0, 2), face: Math.random() < 0.5 ? -1 : 1, mode: 'swim', flareT: 0, turnT: 0, turnFrom: 1, phase: i * 1.7, box: null }
-  const pad = () => dims.dim[pre + 'swim0'].w * SCALE * size * 0.45 + 16
+  const fc = () => fishConf[kindOf(pre)]
+  const pad = () => dims.dim[pre + 'swim0'].w * SCALE * fc().size * 0.45 + 16
 
   function pickTarget() {   // 모든 모니터 중 하나를 (넓이에 비례해) 골라 그 안의 아무 곳이나 목표로 삼아요
     const tot = layout.displays.reduce((s, d) => s + d.w * d.h, 0)
@@ -45,6 +50,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
   pickTarget()
 
   function update(now, dt) {
+    const size = fc().size, speedMul = fc().speed
     const speed = BASE_SPEED * speedMul * size
     const dx = st.tx - st.x, dy = st.ty - st.y
     const dist = Math.hypot(dx, dy)
@@ -131,27 +137,31 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     return false
   }
   const flare = (still) => { if (st.mode === 'swim' && dims.count[pre + 'flare'] > 0) { st.mode = 'flare'; st.flareT = performance.now(); st.flareStill = !!still } }
-  return { st, el, update, overFish, flare, remove: () => el.remove() }
+  return { st, el, pre, update, overFish, flare, remove: () => el.remove() }
 }
 
 // 몇 마리를 어떤 종류로 띄울지: 분홍·주황 번갈아면 분홍, 주황, 분홍… 순서예요
-const preOf = (i) => (species === 'orange' ? 'o_' : species === 'purple' ? 'p_' : species === 'pink' ? '' : ['', 'o_', 'p_'][i % 3])   // 모두 같이: 분홍, 주황, 보라 순서
-let builtKey = ''
-function setCount(n) {
-  const key = `${n}|${species}`
-  if (key !== builtKey) { while (fishes.length) fishes.pop().remove(); builtKey = key }
-  while (fishes.length > n) fishes.pop().remove()
-  while (fishes.length < n) fishes.push(makeFish(fishes.length, preOf(fishes.length)))
+// 종류마다 보이기/마리 수대로 물고기를 늘리거나 줄여요 (크기·속도는 물고기가 매번 읽어서 바로 반영돼요)
+function syncFish() {
+  for (const [kind, pre] of KINDS) {
+    const want = fishConf[kind].show ? fishConf[kind].count : 0
+    const mine = fishes.filter((f) => f.pre === pre)
+    for (let i = mine.length; i > want; i--) { const f = mine[i - 1]; f.remove(); fishes.splice(fishes.indexOf(f), 1) }
+    for (let i = mine.length; i < want; i++) fishes.push(makeFish(i, pre))
+  }
+}
+const mergeConf = (c) => {
+  if (c && c.fish) for (const [k] of KINDS) fishConf[k] = { ...fishConf[k], ...(c.fish[k] || {}) }
 }
 
 async function init() {
   dims = window.DIMS
-  const c = await bridge.config(); size = c.size || 1; speedMul = c.speed || 1; count = c.count || 1; species = c.species || 'pink'
+  const c = await bridge.config(); mergeConf(c)
   const l = await bridge.layout(); if (l) layout = l
-  bridge.onConfig((c) => { size = c.size || 1; speedMul = c.speed || 1; species = c.species || 'pink'; setCount(c.count || 1) })
+  bridge.onConfig((c) => { mergeConf(c); syncFish() })
   bridge.onLayout((l) => { layout = l })
   await Promise.all(Object.keys(dims.dim).map((k) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = `frames/${k}.webp`; imgCache[k] = i })))
-  setCount(count)
+  syncFish()
   last = performance.now(); requestAnimationFrame(loop)
 }
 
@@ -164,7 +174,8 @@ function checkMeet(now) {
     if (a.mode !== 'swim' || b.mode !== 'swim') continue
     const [l, r] = a.x <= b.x ? [a, b] : [b, a]
     if (l.face !== 1 || r.face !== -1) continue                            // 서로를 마주 보고 있어야 해요
-    if (r.x - l.x > 150 * size || Math.abs(a.y - b.y) > 75 * size) continue    // 눈과 눈이 150px 안쪽 = 코끼리 서로 닿을 만큼
+    const sz = (fishConf[kindOf(fishes[i].pre)].size + fishConf[kindOf(fishes[j].pre)].size) / 2
+    if (r.x - l.x > 150 * sz || Math.abs(a.y - b.y) > 75 * sz) continue    // 눈과 눈이 150px 안쪽 = 코끼리 서로 닿을 만큼
     fishes[i].flare(true); fishes[j].flare(true); lastMeet = now; return
   }
 }
