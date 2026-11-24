@@ -37,14 +37,20 @@ def extract(name, cols, rows):
         # 눈: 몸 안의 아주 어두운 점들 중 큰 것들의 평균 위치
         dark = body & (rgb.max(axis=2) < 70)
         dl, dn = ndi.label(dark)
-        if dn and PRE == 'p_':   # 보라 베타: 턱 밑 검은 선이 눈과 섞이지 않게, 가장 동그란 어두운 점 하나를 눈으로 써요
-            best = None
-            for k, sl in enumerate(ndi.find_objects(dl), start=1):
-                n_px = int((dl[sl] == k).sum()); hh, ww = sl[0].stop - sl[0].start, sl[1].stop - sl[1].start
-                if n_px < 25: continue
-                roundness = n_px / (hh * ww) * min(hh, ww) / max(hh, ww)
-                if best is None or roundness * np.sqrt(n_px) > best[0]: best = (roundness * np.sqrt(n_px), k)
-            ys, xs = np.nonzero(dl == best[1]); eye = (xs.mean(), ys.mean())
+        en = None
+        if dn and PRE == 'p_':   # 보라 베타: 어두운 점 중 가장 큰 덩어리가 눈이에요 (턱 밑 검은 선은 더 작아요). 눈에서 코끝까지의 거리도 재요
+            ds = ndi.sum(dark, dl, range(1, dn + 1)); j = int(np.argmax(ds)) + 1
+            # 눈은 머리(몸의 오른쪽 끝 쪽)에서 가장 위에 있는 어두운 점이에요. 가장 큰 점은 아가미·턱 밑 선일 수 있어서 크기로 고르지 않아요
+            ys_b, xs_b = np.nonzero(body); x_lo = xs_b.min() + 0.55 * (xs_b.max() - xs_b.min()); best = None
+            for kk in range(1, dn + 1):
+                if ds[kk - 1] < max(20, 0.15 * ds.max()): continue
+                cy_k, cx_k = ndi.center_of_mass(dl == kk)
+                if cx_k < x_lo: continue
+                if best is None or cy_k < best[0]: best = (cy_k, kk)
+            j = best[1] if best else j
+            ys, xs = np.nonzero(dl == j); eye = (xs.mean(), ys.mean())
+            ys_b, xs_b = np.nonzero(body); band = body[int(eye[1]) - 15:int(eye[1]) + 16, :]
+            en = float(np.nonzero(band.any(axis=0))[0].max() - eye[0])
         elif dn:
             ds = ndi.sum(dark, dl, range(1, dn + 1)); keep = [k + 1 for k, s in enumerate(ds) if s >= 0.4 * ds.max() and s >= 25]
             ys, xs = np.nonzero(np.isin(dl, keep)); eye = (xs.mean(), ys.mean())
@@ -52,7 +58,7 @@ def extract(name, cols, rows):
             ys, xs = np.nonzero(body); eye = (xs.mean(), ys.mean())
         pink = body & (rgb[:, :, 0] > 200) & (rgb[:, :, 0] - rgb[:, :, 1] > 45)
         ys2, xs2 = np.nonzero(body); bb = (xs2.min(), ys2.min(), xs2.max() + 1, ys2.max() + 1)
-        frames.append({'img': Image.fromarray(np.dstack([rgb.astype(np.uint8), al]), 'RGBA'), 'eye': eye, 'bbox': bb, 'pink': int(pink.sum()), 'area': int(body.sum())})
+        frames.append({'img': Image.fromarray(np.dstack([rgb.astype(np.uint8), al]), 'RGBA'), 'eye': eye, 'bbox': bb, 'pink': int(pink.sum()), 'area': int(body.sum()), 'en': en})
     return frames
 
 
@@ -65,11 +71,26 @@ swim_w = float(np.median([f['bbox'][2] - f['bbox'][0] for f in raw['swim']]))
 s0 = FISH_W / swim_w
 scale = {n: s0 * (pink_ref / float(np.median([f[K] for f in raw[n][:ref_n[n]]]))) ** 0.5 for n in raw}
 
+fscale = {n: [scale[n]] * len(lst) for n, lst in raw.items()}
+if PRE == 'p_':   # 보라 베타: 눈~코끝 거리가 같아지도록 그림마다, 프레임마다(앞뒤 5장 중앙값으로 부드럽게) 배율을 정해요
+    T = float(np.median([f['en'] for f in raw['swim']])) * scale['swim']
+    for n, lst in raw.items():
+        m = len(lst); idx = list(range(4)) if n == 'turn' else list(range(m))
+        meds = {i: lst[i]['en'] for i in idx}
+        fam = T / float(np.median(list(meds.values())))
+        out = []
+        for i in range(m):
+            if n == 'turn' or i not in meds: out.append(fam); continue
+            win = [meds[(i + o) % m] for o in (-2, -1, 0, 1, 2) if (i + o) % m in meds]
+            out.append(T / float(np.median(win)))
+        fscale[n] = out
+        print('보라', n, '배율', round(min(out), 3), '~', round(max(out), 3))
+
 # 눈을 기준으로 한 모든 프레임의 가장 큰 범위 → 모든 그림이 같은 크기의 판을 써요 (좌우로 뒤집어도 몸이 제자리)
 hw = hh = 0
 for n, lst in raw.items():
-    for f in lst:
-        ex, ey = f['eye']; b = f['bbox']; s = scale[n]
+    for fi, f in enumerate(lst):
+        ex, ey = f['eye']; b = f['bbox']; s = fscale[n][fi]
         hw = max(hw, (ex - b[0]) * s, (b[2] - ex) * s); hh = max(hh, (ey - b[1]) * s, (b[3] - ey) * s)
 CW, CH = int(np.ceil(hw * 1.12)) * 2 + 8, int(np.ceil(hh * 1.12)) * 2 + 8   # 머리 크기·위치 보정으로 커질 몫까지 여유를 둬요 (안 그러면 가장자리가 잘려요)
 
@@ -84,8 +105,8 @@ def mask_of(img):
 
 canv = {}
 for n, lst in raw.items():
-    s = scale[n]
     for k, f in enumerate(lst):
+        s = fscale[n][k]
         b = f['bbox']; crop = f['img'].crop(b)
         crop = crop.resize((max(1, round(crop.width * s)), max(1, round(crop.height * s))), Image.LANCZOS)
         ex, ey = (f['eye'][0] - b[0]) * s, (f['eye'][1] - b[1]) * s
@@ -125,6 +146,7 @@ ROI_M = (CW - ROI[2], ROI[1], CW - ROI[0], ROI[3])               # 거울에 비
 ref = feat(canv[('swim', 0)], ROI); refm = feat(ImageOps.mirror(canv[('swim', 0)]), ROI_M)
 shifts, ks = {}, {}
 for (n, k), im in list(canv.items()):
+    if PRE == 'p_': continue                                    # 보라 베타: 눈 기준 + 눈~코끝 배율만 써요 (머리 모양 맞춤은 흰 몸에서 오히려 흔들려요)
     if n == 'turn' and 4 <= k <= 7: continue                    # 몸이 정면·옆을 향한 장면은 모양이 달라서 눈 위치만 믿어요
     left = n == 'turn' and k >= 8                               # 왼쪽을 보는 장면은 거울 상과 맞춰요
     best = None

@@ -32,7 +32,7 @@ def scaled(im, k):
     return im.transform(im.size, Image.AFFINE, (1 / k, 0, cx - cx / k, 0, 1 / k, cy - cy / k), resample=Image.BICUBIC)
 
 
-for pre in ('', 'o_', 'p_'):
+for pre in ('', 'o_'):   # 보라 베타는 process_betta.py 에서 이미 눈~코끝 기준으로 맞춰서 여기서는 건드리지 않아요
     ims = {f: [Image.open(os.path.join(FR, f'{pre}{f}{i}.webp')).convert('RGBA') for i in range(n)] for f, n in FAM.items()}
     d = {f: [nose(im) for im in lst] for f, lst in ims.items()}
     target = float(np.median([x for x in d['swim'] if x]))
