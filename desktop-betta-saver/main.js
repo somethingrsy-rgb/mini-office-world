@@ -22,7 +22,7 @@ function layout() {
 
 app.whenReady().then(() => {
   if (mode === 'p') return app.quit()
-  if (mode === 'c') { dialog.showMessageBoxSync({ type: 'info', title: '베타 화면 보호기', message: '설정할 항목이 없어요.', detail: '바닷속에서 분홍 베타 3마리와 보라 베타 3마리가 헤엄쳐요. 마우스를 움직이거나 아무 키나 누르면 끝나요.' }); return app.quit() }
+  if (mode === 'c') { dialog.showMessageBoxSync({ type: 'info', title: '베타 화면 보호기', message: '설정할 항목이 없어요.', detail: '바닷속에서 분홍 베타 1마리와 보라 베타 1마리가 헤엄쳐요. 마우스를 움직이거나 아무 키나 누르면 끝나요.' }); return app.quit() }
   const l = layout()
   const win = new BrowserWindow({
     x: l.origin.x, y: l.origin.y, width: l.w, height: l.h, frame: false, resizable: false, movable: false, skipTaskbar: true, show: false,

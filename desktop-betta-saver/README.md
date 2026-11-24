@@ -1,6 +1,6 @@
 # 🐟 베타 화면 보호기
 
-바닷속 그림 위를 분홍 베타 3마리와 보라 베타 3마리(모두 6마리)가 헤엄쳐요. 듀얼 모니터면 두 화면에 걸쳐서 나와요.
+바닷속 그림 위를 분홍 베타 1마리와 보라 베타 1마리가 헤엄쳐요. 듀얼 모니터면 두 화면에 걸쳐서 나와요.
 
 ## 설치 (윈도우)
 1. 깃허브 **Actions → Desktop betta screensaver (Windows) → Run workflow**, 끝나면 Artifacts의 `Betta-Screensaver`를 받아요.
