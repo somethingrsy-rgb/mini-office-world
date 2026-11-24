@@ -33,7 +33,8 @@ function makeFish(i, pre, sizeMul) {   // pre: '' 분홍 베타, 'o_' 주황 베
     for (const d of layout.displays) { r -= d.w * d.h; if (r <= 0) { disp = d; break } }
     const p = pad()
     st.tx = clamp(disp.x + rnd(0, disp.w), disp.x + p, disp.x + disp.w - p)
-    st.ty = clamp(disp.y + rnd(0.14, 0.72) * disp.h, disp.y + 0.12 * disp.h + p * 0.2, disp.y + 0.74 * disp.h)   // 위쪽 물빛과 아래 모래 사이에서만 헤엄쳐요
+    const lo = 0.14, hi = disp.h > disp.w ? 0.64 : 0.72   // 세로형은 아래쪽 산호·모래가 더 높이 올라와서 헤엄 영역을 위쪽으로 좁혀요
+    st.ty = clamp(disp.y + rnd(lo, hi) * disp.h, disp.y + 0.12 * disp.h + p * 0.2, disp.y + (hi + 0.02) * disp.h)   // 위쪽 물빛과 아래 모래 사이에서만 헤엄쳐요
   }
   pickTarget()
 
@@ -122,10 +123,11 @@ async function init() {
   const l = await bridge.layout(); if (l) layout = l
   for (const d of layout.displays) {   // 모니터마다 바닷속 그림을 한 장씩 깔아요 (두 화면에 걸쳐 늘어나지 않게)
     const bg = document.createElement('div'); bg.className = 'bg'
+    if (d.h > d.w) bg.style.backgroundImage = 'url(bg-portrait.webp)'   // 세로로 세운 모니터는 세로형 그림
     Object.assign(bg.style, { left: d.x + 'px', top: d.y + 'px', width: d.w + 'px', height: d.h + 'px' })
     document.body.insertBefore(bg, document.body.firstChild)
   }
-  uiScale = Math.max(0.8, Math.max(...layout.displays.map((d) => d.h)) / 900)
+  uiScale = Math.max(0.8, Math.max(...layout.displays.map((d) => Math.min(d.w, d.h))) / 900)   // 세로 모니터도 짧은 쪽 기준으로 같은 크기
   await Promise.all(Object.keys(dims.dim).map((k) => new Promise((r) => { const i = new Image(); i.onload = r; i.onerror = r; i.src = `frames/${k}.webp`; imgCache[k] = i })))
   FISH.forEach(([pre, sz], i) => fishes.push(makeFish(i, pre, sz)))
   last = performance.now(); requestAnimationFrame(loop)

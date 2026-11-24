@@ -9,7 +9,7 @@
     "appId": "local.betta.screensaver",
     "productName": "베타 화면 보호기",
     "icon": "icon.png",
-    "files": ["main.js", "preload.js", "index.html", "renderer.js", "dims.js", "icon.png", "bg.webp", "frames/**"],
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "dims.js", "icon.png", "bg.webp", "bg-portrait.webp", "frames/**"],
     "win": { "target": [{ "target": "portable", "arch": ["x64"] }] },
     "portable": { "artifactName": "Betta-Screensaver.exe" },
     "directories": { "output": "dist" }
