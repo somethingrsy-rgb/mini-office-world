@@ -16,8 +16,8 @@ else app.on('second-instance', () => { try { new Notification({ title: '베타�
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
 // 물고기 종류마다 따로: show 보이기, count 마리 수(1~5), size 크기, speed 속도(1 = 아주 천천히)
-const defFish = () => ({ pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 } })
-let cfg = { hidden: false, behind: true, fish: defFish() }
+const defFish = () => ({ pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 } })
+let cfg = { hidden: false, behind: true, hourly: true, fish: defFish() }
 try {
   const saved = JSON.parse(fs.readFileSync(cfgFile(), 'utf8'))
   cfg = { ...cfg, ...saved, fish: { ...defFish(), ...(saved.fish || {}) } }
@@ -84,23 +84,56 @@ function createWindow() {
   screen.on('display-metrics-changed', () => win && fit())
 }
 
+// ── 알림 LED: 모니터마다 테두리 네 변에 얇은 막대 창을 맨 위에 띄워요 (베타 창은 열린 창 뒤에 있어서 따로 만들어요). 누르면 사라져요 ──
+const LED_COLORS = { timer: '#7fd8ff', hour: '#c9a8ff' }   // 타이머 끝: 하늘색 / 정각: 연보라색
+let ledWins = [], ledTimeout = 0, timerEnd = 0, timerTimeout = 0, lastHour = new Date().getHours()
+function hideLED() {
+  clearTimeout(ledTimeout); ledWins.forEach((w) => { try { w.destroy() } catch { /* 무시 */ } }); ledWins = []
+}
+function showLED(kind) {
+  hideLED()
+  const T = 14, color = LED_COLORS[kind]
+  for (const d of screen.getAllDisplays()) {
+    const { x, y, width: w, height: h } = d.bounds
+    for (const b of [{ x, y, width: w, height: T }, { x, y: y + h - T, width: w, height: T }, { x, y: y + T, width: T, height: h - 2 * T }, { x: x + w - T, y: y + T, width: T, height: h - 2 * T }]) {
+      const lw = new BrowserWindow({ ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false, skipTaskbar: true, fullscreenable: false, show: false, alwaysOnTop: true, webPreferences: { preload: path.join(__dirname, 'led-preload.js'), contextIsolation: true, nodeIntegration: false } })
+      lw.setAlwaysOnTop(true, 'screen-saver')
+      lw.loadFile('led.html', { query: { c: color } })
+      lw.once('ready-to-show', () => lw.showInactive())
+      ledWins.push(lw)
+    }
+  }
+  ledTimeout = setTimeout(hideLED, 10 * 60 * 1000)   // 아무도 안 눌러도 10분 뒤엔 꺼져요
+}
+function startTimer(min) {
+  clearTimeout(timerTimeout); timerEnd = 0
+  if (min > 0) { timerEnd = Date.now() + min * 60000; timerTimeout = setTimeout(() => { timerEnd = 0; showLED('timer'); tray && tray.setContextMenu(buildMenu()) }, min * 60000) }
+  if (tray) { tray.setToolTip(min > 0 ? `니모 타이머 ${min}분` : '베타 물고기'); tray.setContextMenu(buildMenu()) }
+}
+// 정각 알림: 시(hour)가 바뀌는 순간을 알아채요 (컴퓨터가 잠들었다 깨어나도 한 번만)
+setInterval(() => { const h = new Date().getHours(); if (h !== lastHour) { lastHour = h; if (cfg.hourly !== false) showLED('hour') } }, 1000)
+ipcMain.on('led-click', hideLED)
+// 트레이 메뉴를 열 때 남은 타이머 시간을 새로 보여 줘요
 const sendCfg = () => win && win.webContents.send('config', cfg)
 function toggleHidden() { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : (win.showInactive(), applyLayer()); tray && tray.setContextMenu(buildMenu()) }
 
-const KINDS = [['pink', '분홍'], ['orange', '주황'], ['purple', '보라']]
+const KINDS = [['pink', '분홍 베타'], ['orange', '주황 베타'], ['purple', '보라 베타'], ['nemo', '니모']]
 function buildMenu() {
   const setFish = (k, key, v) => () => { cfg.fish[k][key] = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
   return Menu.buildFromTemplate([
     { label: (cfg.hidden ? '베타 보이기' : '베타 숨기기') + ' (Ctrl+Alt+B)', click: toggleHidden },
     { type: 'separator' },
     ...KINDS.flatMap(([k, name]) => [
-      { label: `${name} 베타 ${cfg.fish[k].show ? '숨기기' : '보이기'}`, click: () => { cfg.fish[k].show = !cfg.fish[k].show; save(); sendCfg(); tray.setContextMenu(buildMenu()) } },
-      { label: `${name} 베타 설정`, submenu: [
+      { label: `${name} ${cfg.fish[k].show ? '숨기기' : '보이기'}`, click: () => { cfg.fish[k].show = !cfg.fish[k].show; save(); sendCfg(); tray.setContextMenu(buildMenu()) } },
+      { label: `${name} 설정`, submenu: [
         { label: '마리 수', submenu: [1, 2, 3, 4, 5].map((n) => ({ label: `${n}마리`, type: 'radio', checked: cfg.fish[k].count === n, click: setFish(k, 'count', n) })) },
         { label: '크기', submenu: [['아주 작게', 0.5], ['작게', 0.7], ['보통', 1], ['크게', 1.5], ['아주 크게', 2]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].size === v, click: setFish(k, 'size', v) })) },
         { label: '헤엄 속도', submenu: [['아주 천천히', 1], ['조금 느리게', 1.7], ['보통', 3]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].speed === v, click: setFish(k, 'speed', v) })) },
       ] },
     ]),
+    { type: 'separator' },
+    { label: timerEnd ? `타이머 (남은 ${Math.max(1, Math.ceil((timerEnd - Date.now()) / 60000))}분)` : '타이머', submenu: [10, 15, 20, 25, 30, 60].map((n) => ({ label: `${n}분`, click: () => startTimer(n) })).concat([{ type: 'separator' }, { label: '타이머 취소', enabled: !!timerEnd, click: () => startTimer(0) }]) },
+    { label: '정각 알림 (연보라 LED)', type: 'checkbox', checked: cfg.hourly !== false, click: (m) => { cfg.hourly = m.checked; save() } },
     { type: 'separator' },
     { label: '열린 창 뒤에서만 헤엄치기 (바탕화면에만 보여요)', type: 'checkbox', checked: cfg.behind !== false, click: (m) => { cfg.behind = m.checked; save(); applyLayer() } },
     { label: '시작할 때 자동 실행', type: 'checkbox', checked: app.getLoginItemSettings().openAtLogin, click: (m) => app.setLoginItemSettings({ openAtLogin: m.checked }) },
@@ -118,7 +151,7 @@ app.whenReady().then(() => {
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 32 }))
   tray.setToolTip('베타 물고기')
   tray.setContextMenu(buildMenu())
-  tray.on('click', () => tray.popUpContextMenu())
+  tray.on('click', () => { tray.setContextMenu(buildMenu()); tray.popUpContextMenu() })
   globalShortcut.register('CommandOrControl+Alt+B', toggleHidden)
 })
 
