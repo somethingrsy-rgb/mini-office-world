@@ -16,7 +16,7 @@ else app.on('second-instance', () => { try { new Notification({ title: '베타�
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
 // 물고기 종류마다 따로: show 보이기, count 마리 수(1~5), size 크기, speed 속도(1 = 아주 천천히)
-const defFish = () => ({ pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 }, guppy: { show: true, count: 1, size: 1, speed: 1 } })
+const defFish = () => ({ pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 } })
 let cfg = { hidden: false, behind: true, hourly: true, fish: defFish() }
 try {
   const saved = JSON.parse(fs.readFileSync(cfgFile(), 'utf8'))
@@ -27,6 +27,7 @@ try {
     for (const k of ['pink', 'orange', 'purple']) cfg.fish[k] = { show: kinds.includes(k), count: old.count, size: old.size, speed: old.speed }
   }
 } catch { /* 처음 실행 */ }
+if (!cfg.sizeV2) { for (const k of Object.keys(cfg.fish)) cfg.fish[k].size = 0.5; cfg.sizeV2 = true }   // 예전의 가장 작은 크기(0.5)가 이제 기본 크기예요: 저장된 크기를 한 번만 새 기본으로 맞춰요
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
 let win = null, tray = null, bottomProc = null
@@ -140,8 +141,8 @@ function buildMenu() {
     ...KINDS.flatMap(([k, name]) => [
       { label: `${name} ${cfg.fish[k].show ? '숨기기' : '보이기'}`, click: () => { cfg.fish[k].show = !cfg.fish[k].show; save(); sendCfg(); tray.setContextMenu(buildMenu()) } },
       { label: `${name} 설정`, submenu: [
-        { label: '마리 수', submenu: [1, 2, 3, 4, 5].map((n) => ({ label: `${n}마리`, type: 'radio', checked: cfg.fish[k].count === n, click: setFish(k, 'count', n) })) },
-        { label: '크기', submenu: [['아주 작게', 0.5], ['작게', 0.7], ['보통', 1], ['크게', 1.5], ['아주 크게', 2]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].size === v, click: setFish(k, 'size', v) })) },
+        { label: '마리 수', submenu: [1, 2, 4, 5, 6, 8, 10].map((n) => ({ label: `${n}마리`, type: 'radio', checked: cfg.fish[k].count === n, click: setFish(k, 'count', n) })) },
+        { label: '크기', submenu: [['가장 작게', 0.2], ['아주 작게', 0.3], ['작게', 0.4], ['보통 (기본)', 0.5], ['조금 크게', 0.7], ['크게', 1], ['아주 크게', 1.5], ['가장 크게', 2]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].size === v, click: setFish(k, 'size', v) })) },
         { label: '헤엄 속도', submenu: [['아주 천천히', 1], ['조금 느리게', 1.7], ['보통', 3]].map(([l, v]) => ({ label: l, type: 'radio', checked: cfg.fish[k].speed === v, click: setFish(k, 'speed', v) })) },
       ] },
     ]),

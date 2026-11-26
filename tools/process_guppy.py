@@ -56,6 +56,8 @@ for fam, src, n in SHEETS:
         f = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
         r = rs[i]
         ox, oy = CX - cx * b, CY - cy * b
+        if fam in ('swim', 'idle'):   # 구피는 꼬리가 크고 무거워서 꼬리가 아래로 휘면 몸 전체가 오뚜기처럼 위아래로 흔들려 보였어요. 프레임마다 몸 전체의 무게중심 높이를 같게 맞춰서, 꼬리는 움직이되 몸이 시소처럼 흔들리지 않게 해요
+            oy = CY - stats(r)[2]
         if fam == 'turn':   # 돌기: 몸 모양이 바뀌면서 무게중심이 위아래로 흔들려 튀었어요. 가로는 시작 자리에서 끝 자리(좌우 반대)로 부드럽게, 세로는 항상 같은 높이에 두어요
             _, tx, ty = stats(r)
             t = i / (len(rs) - 1); want_x = CX + (CW - CX - CX) * (t * t * (3 - 2 * t))

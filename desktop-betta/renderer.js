@@ -6,7 +6,10 @@
 let dims = null, size = 1   // size: 가장 마지막으로 계산한 물고기의 크기 (만남 거리 계산용, 마리마다 따로 있어요)
 // 종류마다 따로: show 보이기, count 마리 수, size 크기, speed 속도. pre 는 그림 이름 앞(''분홍 / o_ 주황 / p_ 보라)
 const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_']]
-let fishConf = { pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 }, guppy: { show: true, count: 1, size: 1, speed: 1 } }
+let fishConf = { pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 } }
+// 종류별 움직임: horiz 가로로 쭉 가는 비율, vert 세로로 쭉 가는 비율(누적 기준 아님, 나머지는 비스듬히), maxAng 위/아래로 갈 때 기울어지는 최대 각도
+const MOVE = { g_: { horiz: 0.8, vert: 0.06, maxAng: 10 } }   // 구피는 주로 가로로 헤엄쳐요
+const moveOf = (pre) => MOVE[pre] || { horiz: 0.45, vert: 0.3, maxAng: 20 }
 const ACTIVE = (pre) => pre === 'n_' || pre === 'g_'   // 니모·구피: 활발해서 방향을 빨리 돌고, 가끔 저절로 지느러미를 펼쳐요
 const kindOf = (pre) => KINDS.find((k) => k[1] === pre)[0]
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onCursor() {} }
@@ -45,12 +48,12 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     let r = Math.random() * tot, disp = layout.displays[0]
     for (const d of layout.displays) { r -= d.w * d.h; if (r <= 0) { disp = d; break } }
     const p = pad()
-    // 가로로 쭉, 세로로 쭉 헤엄치는 구간을 늘려요: 45%는 거의 수평으로 멀리, 30%는 거의 수직으로 멀리, 나머지 25%만 비스듬히 가요 (너무 자주 방향을 바꾸지 않아요)
+    // 가로로 쭉, 세로로 쭉 헤엄치는 구간을 늘려요: 보통 45%는 거의 수평으로 멀리, 30%는 거의 수직으로 멀리, 나머지 25%만 비스듬히 가요 (구피는 80% 가로, 6% 세로)
     const far = (cur, lo, hi, minD) => { let v = rnd(lo, hi); if (Math.abs(v - cur) < minD) v = cur - lo > hi - cur ? rnd(lo, Math.max(lo, cur - minD)) : rnd(Math.min(hi, cur + minD), hi); return v }
-    const mode = Math.random()
+    const mv = moveOf(pre), mode = Math.random()
     const xlo = disp.x + p, xhi = disp.x + disp.w - p, ylo = disp.y + p * 0.6, yhi = disp.y + disp.h - p * 0.6
-    if (mode < 0.45) { st.tx = far(st.x, xlo, xhi, disp.w * 0.3); st.ty = clamp(st.y + rnd(-25, 25), ylo, yhi) }
-    else if (mode < 0.75) { st.tx = clamp(st.x + rnd(-25, 25), xlo, xhi); st.ty = far(st.y, ylo, yhi, disp.h * 0.25) }
+    if (mode < mv.horiz) { st.tx = far(st.x, xlo, xhi, disp.w * (mv.horiz > 0.6 ? 0.4 : 0.3)); st.ty = clamp(st.y + rnd(-25, 25), ylo, yhi) }
+    else if (mode < mv.horiz + mv.vert) { st.tx = clamp(st.x + rnd(-25, 25), xlo, xhi); st.ty = far(st.y, ylo, yhi, disp.h * 0.25) }
     else { st.tx = clamp(disp.x + rnd(0, disp.w), xlo, xhi); st.ty = clamp(disp.y + rnd(0, disp.h), ylo, yhi) }
   }
   pickTarget()
@@ -60,7 +63,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     // 니모·구피는 헤엄치다가 가끔(30~80초에 한 번) 저절로 지느러미를 펼쳐요 (더블클릭하지 않아도 보여요)
     if (ACTIVE(pre) && st.mode === 'swim' && st.wait <= 0 && now > st.nextFlare) { flare(false, now); st.nextFlare = now + rnd(30000, 80000) }
     const size = fc().size, speedMul = fc().speed
-    const speed = BASE_SPEED * speedMul * size
+    const speed = BASE_SPEED * speedMul * Math.max(size, 0.5)   // 작은 크기여도 기본 크기보다 느려지지 않아요
     const dx = st.tx - st.x, dy = st.ty - st.y
     const dist = Math.hypot(dx, dy)
     let want = 1, resting = false
@@ -108,7 +111,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
     const moving = pose.fam === 'swim' && Math.hypot(st.vx, st.vy) > speed * 0.25
     let wantAng = 0
-    if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -20, 20) * (flip ? -1 : 1) }
+    if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -moveOf(pre).maxAng, moveOf(pre).maxAng) * (flip ? -1 : 1) }
     st.ang = (st.ang || 0) + (wantAng - (st.ang || 0)) * Math.min(1, dt * 1.6)         // 천천히 부드럽게 기울어져요
     const tilt = st.ang
     // 다른 동작으로 바뀌는 순간에는 직전 모습을 0.2초 동안 남겨서 서서히 바꿔요
