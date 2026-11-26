@@ -44,12 +44,14 @@ def mask_of(img):
 REF = {'swim': None, 'idle': None, 'flare': 2, 'turn': 2}   # 편안한 자세로 재는 장수 (돌기·펼치기는 처음 2장)
 for fam, src, n in SHEETS:
     cs = cells(src, n)
+    if fam in ('swim', 'idle'):   # 헤엄 그림 16장은 꼬리가 천천히 위아래로 크게 휘어서(한 바퀴에 꼬리 끝이 약 8px) 몸이 오뚜기처럼 흔들려 보였어요. 꼬리 움직임이 가장 작은 앞 7장(꼬리 높이 차이 약 2px)만 앞뒤로 오가며 써서 지느러미만 살랑이게 해요
+        cs = [cs[i] for i in list(range(0, 7)) + list(range(5, 0, -1))]
     # 편안한 자세(옆모습) 장들의 물고기 길이가 모든 그림에서 같아지게 크기를 맞춰요 (돌기·펼치기는 처음 2장과 끝 2장)
     ref_cells = cs if REF[fam] is None else cs[:REF[fam]] + cs[-REF[fam]:]
     st = [stats(c) for c in ref_cells]
     length, cx, cy = (float(np.median([x[k] for x in st])) for k in range(3))
     b = TARGET_W / length
-    D['count'][f'g_{fam}'] = n
+    D['count'][f'g_{fam}'] = len(cs)
     rs = [c.resize((round(c.width * b), round(c.height * b)), Image.LANCZOS) for c in cs]
     txs = [stats(r)[1] for r in rs]
     for i, c in enumerate(cs):

@@ -60,8 +60,8 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
   st.nextFlare = performance.now() + rnd(8000, 20000)   // 처음엔 조금 일찍 한 번 보여 줘요
 
   function update(now, dt) {
-    // 니모·구피는 헤엄치다가 가끔(30~80초에 한 번) 저절로 지느러미를 펼쳐요 (더블클릭하지 않아도 보여요)
-    if (ACTIVE(pre) && st.mode === 'swim' && st.wait <= 0 && now > st.nextFlare) { flare(false, now); st.nextFlare = now + rnd(30000, 80000) }
+    // 니모는 헤엄치다가 가끔(30~80초에 한 번) 저절로 지느러미를 펼쳐요 (더블클릭하지 않아도 보여요)
+    if (pre === 'n_' && st.mode === 'swim' && st.wait <= 0 && now > st.nextFlare) { flare(false, now); st.nextFlare = now + rnd(30000, 80000) }
     const size = fc().size, speedMul = fc().speed
     const speed = BASE_SPEED * speedMul * Math.max(size, 0.5)   // 작은 크기여도 기본 크기보다 느려지지 않아요
     const dx = st.tx - st.x, dy = st.ty - st.y
@@ -95,7 +95,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       else { pose = seq('swim', now / swimMs, cnt('swim'), true); flip = (tt < 0.5 ? st.turnFrom : -st.turnFrom) < 0; pose.sx = Math.max(0.12, Math.abs(Math.cos(Math.PI * tt))) }
     } else if (st.mode === 'turn') {
       const pace = dims.pace && dims.pace[pre + 'turn']   // 장마다 머무는 시간 배율 (없으면 모두 같은 시간)
-      const turnMs = ACTIVE(pre) ? 40 : TURN_MS   // 니모·구피는 활발해서 더 빨리 돌아요
+      const turnMs = ACTIVE(pre) ? 65 : TURN_MS   // 니모·구피는 한 장에 65ms로 돌아요
       let tt = (now - st.turnT) / turnMs
       if (pace) { let el = (now - st.turnT) / turnMs, i = 0; while (i < pace.length && el >= pace[i]) { el -= pace[i]; i++ } tt = i >= pace.length ? pace.length : i + el / pace[i] }
       if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
@@ -106,7 +106,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     }
     if (!pose) pose = (has('idle') && resting) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
-    const bob = Math.sin(now / 2200 + st.phase) * 3 * size
+    const bob = ACTIVE(pre) ? 0 : Math.sin(now / 2200 + st.phase) * 3 * size   // 니모·구피는 천천히 위아래로 출렁이는 움직임을 없앴어요
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
     const moving = pose.fam === 'swim' && Math.hypot(st.vx, st.vy) > speed * 0.25
