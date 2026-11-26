@@ -91,21 +91,21 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       const tt = (now - st.flareT) / FLARE_MS
       if (tt >= cnt('flare')) { st.mode = 'swim'; st.flareStill = false } else pose = seq('flare', tt, cnt('flare'), false)
     }
-    if (!pose) pose = (has('idle') && (resting || Math.hypot(st.vx, st.vy) < speed * 0.3)) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
+    if (!pose) pose = (has('idle') && resting) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 25도), 내려갈 때는 얼굴이 4시 방향쯤(30도) 아래로. 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
     // 기울기는 '위아래로 얼마나 빠르게 가는지(vy)'에 비례해서 서서히 바뀌어요: 위로 가다 아래로 바뀔 때 vy가 0을 지나며 기울기도 0(수평)을 지나 반대쪽으로 부드럽게 넘어가요.
     // 또 기울기가 바뀌는 속도에 상한(초당 28도)을 둬서 방향이 바뀌어도 '뚝' 꺾이지 않아요.
     let wantAng = 0
-    if (pose.fam === 'swim') {
-      const sp = Math.hypot(st.vx, st.vy), go = clamp((sp / speed - 0.1) / 0.3, 0, 1)   // 거의 멈춰 있으면 수평으로
+    if (pose.fam === 'swim' || pose.fam === 'idle') {
+      const sp = Math.hypot(st.vx, st.vy), go = clamp((sp / speed - 0.05) / 0.2, 0, 1)   // 거의 멈춰 있으면 수평으로, 움직이기 시작하면 바로 기울기 시작
       wantAng = clamp(st.vy / speed * 50, -25, 30) * go * (flip ? -1 : 1)
     }
     if (st.lastFlip !== undefined && st.lastFlip !== flip) st.ang = -(st.ang || 0)   // 좌우가 뒤집히는 순간 기울기 부호도 뒤집어서, 위로 보던 코가 아래로 튀지 않고 그대로 이어져요
     st.lastFlip = flip
-    const a0 = st.ang || 0, lim = (pose.fam === 'turn' ? 60 : 28) * dt
-    st.ang = a0 + clamp((wantAng - a0) * Math.min(1, dt * (pose.fam === 'turn' ? 5 : 1.6)), -lim, lim)   // 돌 때는 빨리 수평으로 돌아와요
+    const a0 = st.ang || 0, lim = (pose.fam === 'turn' ? 60 : 50) * dt
+    st.ang = a0 + clamp((wantAng - a0) * Math.min(1, dt * (pose.fam === 'turn' ? 5 : 2.6)), -lim, lim)   // 돌 때는 빨리 수평으로 돌아와요
     const tilt = st.ang
     // 다른 동작으로 바뀌는 순간에는 직전 모습을 0.2초 동안 남겨서 서서히 바꿔요
     if (fade.fam !== pose.fam) { fade.last = fade.layers; fade.t0 = now; fade.fam = pose.fam }

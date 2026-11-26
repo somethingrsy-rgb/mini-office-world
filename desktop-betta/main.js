@@ -92,7 +92,7 @@ function hideLED() {
 }
 function showLED(kind) {
   hideLED()
-  const T = kind === 'timer' ? 26 : 14, color = LED_COLORS[kind]   // 타이머는 더 두껍게
+  const T = kind === 'timer' ? 10 : 14, color = LED_COLORS[kind]   // 타이머 LED는 얇게
   for (const d of screen.getAllDisplays()) {
     const { x, y, width: w, height: h } = d.bounds
     for (const b of [{ x, y, width: w, height: T }, { x, y: y + h - T, width: w, height: T }, { x, y: y + T, width: T, height: h - 2 * T }, { x: x + w - T, y: y + T, width: T, height: h - 2 * T }]) {
