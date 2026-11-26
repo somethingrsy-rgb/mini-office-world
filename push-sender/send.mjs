@@ -20,13 +20,18 @@ const subs = subsFile?.json?.subs ?? []
 if (!data) { console.log('업무 파일이 아직 없어요.'); process.exit(0) }
 if (subs.length === 0) { console.log('알림을 켠 기기가 없어요.'); process.exit(0) }
 
-const msgs = buildMessages(data.json.tasks ?? [])
+// 시험 전송(TEST=true): 업무·일정과 상관없이 '테스트 알림' 한 개를 보내요. 같은 종류 알림에 덮어써지지 않게 매번 다른 tag를 써요
+const msgs = process.env.TEST === 'true'
+  ? [{ tag: 'test-' + Date.now(), title: '테스트 알림', body: '이 알림이 보이면 휴대폰으로 푸시가 잘 오는 거예요 (' + new Intl.DateTimeFormat('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()) + ')' }]
+  : buildMessages(data.json.tasks ?? [])
 console.log(`보낼 알림 ${msgs.length}개, 기기 ${subs.length}대`)
 const dead = new Set()
 for (const m of msgs) {
   await Promise.all(subs.map(async (s) => {
-    try { await webpush.sendNotification(s.sub, JSON.stringify(m), { TTL: 6 * 3600 }) }
-    catch (e) { if ([400, 401, 403, 404, 410].includes(e.statusCode)) dead.add(s.sub.endpoint); else console.error('전송 실패', e.statusCode) }
+    // 어느 푸시 서비스(애플·구글·모질라)가 몇 번 응답을 줬는지만 남겨요 (기기 주소·업무 제목은 남기지 않아요). 201이면 푸시 서비스는 받았다는 뜻이에요
+    let host = '?'; try { host = new URL(s.sub.endpoint).host } catch { /* 무시 */ }
+    try { const r = await webpush.sendNotification(s.sub, JSON.stringify(m), { TTL: 6 * 3600, urgency: 'high' }); console.log(`전송 ${m.tag}: ${host} → ${r.statusCode}`) }
+    catch (e) { console.error(`전송 실패 ${m.tag}: ${host} → ${e.statusCode}`); if ([400, 401, 403, 404, 410].includes(e.statusCode)) dead.add(s.sub.endpoint) }
   }))
 }
 if (dead.size && subsFile) {

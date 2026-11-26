@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '0 0 * * 1-5'
   workflow_dispatch:
+    inputs:
+      test:
+        description: '테스트 알림 한 개만 보내기 (업무·일정과 상관없이)'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -24,3 +29,4 @@ jobs:
           DATA_TOKEN: ${{ secrets.DATA_TOKEN }}
           VAPID_PUBLIC: ${{ secrets.VAPID_PUBLIC }}
           VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+          TEST: ${{ inputs.test }}
