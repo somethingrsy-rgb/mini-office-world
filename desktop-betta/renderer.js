@@ -153,7 +153,18 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     return false
   }
   const flare = (still, t) => { if (st.mode === 'swim' && dims.count[pre + 'flare'] > 0) { st.mode = 'flare'; st.flareT = t === undefined ? performance.now() : t; st.flareStill = !!still } }
-  return { st, el, pre, update, overFish, flare, remove: () => el.remove() }
+  // 더블클릭: 반대 방향으로 돌아서 헤엄쳐요 (니모·구피). 반대쪽에 새 목표를 잡아 주면 평소의 방향 돌기가 알아서 일어나요
+  function turnAround() {
+    if (st.mode !== 'swim') return
+    const d = layout.displays.find((q) => st.x >= q.x && st.x < q.x + q.w && st.y >= q.y && st.y < q.y + q.h) || layout.displays[0]
+    const p = pad(), lo = d.x + p, hi = d.x + d.w - p
+    let dir = -st.face
+    if ((dir > 0 ? hi - st.x : st.x - lo) < 120) dir = -dir   // 반대쪽에 자리가 없으면 그대로 가요
+    st.tx = clamp(st.x + dir * rnd(300, 700), lo, hi)
+    st.ty = clamp(st.y + rnd(-25, 25), d.y + p * 0.6, d.y + d.h - p * 0.6)
+    st.wait = 0
+  }
+  return { st, el, pre, update, overFish, flare, turnAround, remove: () => el.remove() }
 }
 
 // 몇 마리를 어떤 종류로 띄울지: 분홍·주황 번갈아면 분홍, 주황, 분홍… 순서예요
@@ -213,7 +224,7 @@ function handleMove(x, y) {
 }
 document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY))
 bridge.onCursor && bridge.onCursor((c) => handleMove(c.x, c.y))   // 윈도우가 알려 주는 마우스 위치 (이벤트가 안 와도 동작)
-document.addEventListener('dblclick', (e) => { const f = fishAt(e.clientX, e.clientY); if (f) f.flare() })   // 두 번 누르면 꼬리를 활짝 펼쳐요
+document.addEventListener('dblclick', (e) => { const f = fishAt(e.clientX, e.clientY); if (f) (ACTIVE(f.pre) ? f.turnAround() : f.flare()) })   // 두 번 누르면: 베타는 꼬리를 활짝 펼치고, 니모·구피는 반대 방향으로 돌아요
 document.addEventListener('contextmenu', (e) => { if (fishAt(e.clientX, e.clientY)) { e.preventDefault(); bridge.fishMenu && bridge.fishMenu() } })   // 오른쪽 클릭: 타이머 메뉴
 window.__fishes = fishes; window.__resetMeet = () => { lastMeet = -1e9 }   // 시험용
 
