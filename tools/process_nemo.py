@@ -47,7 +47,13 @@ for fam, src, n in SHEETS:
     D['count'][f'n_{fam}'] = n
     for i, c in enumerate(cs):
         f = Image.new('RGBA', (CW, CH), (0, 0, 0, 0))
-        f.alpha_composite(c.resize((round(c.width * b), round(c.height * b)), Image.LANCZOS), (round(CX - cx * b), round(CY - cy * b)))
+        r = c.resize((round(c.width * b), round(c.height * b)), Image.LANCZOS)
+        ox, oy = CX - cx * b, CY - cy * b
+        if fam == 'turn':   # 돌기: 몸 모양이 바뀌면서 무게중심이 위아래로 흔들려 방향을 바꿀 때 튀었어요. 가로는 시작 자리에서 끝 자리(좌우 반대)로 부드럽게, 세로는 항상 같은 높이에 두어요
+            _, tx, ty = stats(c.resize(r.size, Image.LANCZOS))
+            t = i / (n - 1); want_x = CX + (CW - CX - CX) * (t * t * (3 - 2 * t))   # 시작: CX, 끝: 거울 위치(CW-CX)
+            ox, oy = want_x - tx, CY - ty
+        f.alpha_composite(r, (round(ox), round(oy)))
         f.save(os.path.join(FR, f'n_{fam}{i}.webp'), 'WEBP', quality=90, method=6)
         D['dim'][f'n_{fam}{i}'] = {'w': CW, 'h': CH}; D['mask'][f'n_{fam}{i}'] = mask_of(f)
 open(os.path.join(OUT, 'dims.js'), 'w').write('window.DIMS = ' + json.dumps(D))
