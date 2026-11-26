@@ -14,7 +14,7 @@ OUT = os.path.join(ROOT, 'desktop-betta'); FR = os.path.join(OUT, 'frames')
 SHEETS = [('swim', 'swim', 16), ('idle', 'swim', 16), ('flare', 'flare', 12), ('turn', 'turn', 16)]   # 쉬기는 헤엄 그림을 그대로 써요: 멈췄다 출발할 때 그림이 달라 튀는 일이 없어요
 MASK_COLS = 56
 CW, CH = 249, 166            # 판 크기
-TARGET_AREA, CX, CY = 11700.0, 126.0, 84.0   # 모든 그림의 편안한 자세 몸 넓이(px²)·무게중심
+TARGET_W, CX, CY = 200.0, 126.0, 84.0   # 모든 그림의 편안한 자세 물고기 길이(코끝~꼬리 끝, px)·무게중심
 D = json.loads(open(os.path.join(OUT, 'dims.js')).read().split('=', 1)[1])
 for k in [k for k in D['dim'] if k.startswith('n_')]: D['dim'].pop(k); D['mask'].pop(k)
 for f in os.listdir(FR):
@@ -23,7 +23,7 @@ for f in os.listdir(FR):
 
 def stats(cell):
     a = np.asarray(cell)[:, :, 3] > 128; ys, xs = np.nonzero(a)
-    return float(a.sum()), xs.mean(), ys.mean()
+    return float(xs.max() - xs.min() + 1), xs.mean(), ys.mean()   # (물고기 길이, 무게중심 x, y)
 
 
 def cells(src, n):
@@ -43,9 +43,11 @@ def mask_of(img):
 REF = {'swim': None, 'idle': None, 'flare': 2, 'turn': 2}   # 편안한 자세로 재는 장수 (돌기·펼치기는 처음 2장)
 for fam, src, n in SHEETS:
     cs = cells(src, n)
-    st = [stats(c) for c in cs[:REF[fam]]]
-    area, cx, cy = (float(np.median([x[k] for x in st])) for k in range(3))
-    b = (TARGET_AREA / area) ** 0.5
+    # 편안한 자세(옆모습) 장들의 물고기 길이가 모든 그림에서 같아지게 크기를 맞춰요 (돌기·펼치기는 처음 2장과 끝 2장)
+    ref_cells = cs if REF[fam] is None else cs[:REF[fam]] + cs[-REF[fam]:]
+    st = [stats(c) for c in ref_cells]
+    length, cx, cy = (float(np.median([x[k] for x in st])) for k in range(3))
+    b = TARGET_W / length
     D['count'][f'n_{fam}'] = n
     rs = [c.resize((round(c.width * b), round(c.height * b)), Image.LANCZOS) for c in cs]
     txs = [stats(r)[1] for r in rs]
