@@ -85,20 +85,20 @@ function createWindow() {
 }
 
 // ── 알림 LED: 모니터마다 테두리 네 변에 얇은 막대 창을 맨 위에 띄워요 (베타 창은 열린 창 뒤에 있어서 따로 만들어요). 누르면 사라져요 ──
-const LED_COLORS = { timer: '#7fd8ff', hour: '#c9a8ff' }   // 타이머 끝: 하늘색 / 정각: 연보라색
+const LED_COLORS = { timer: '#0a5cff', hour: '#c9a8ff' }   // 타이머 끝: 진한 파란색 / 정각: 연보라색
 let ledWins = [], ledTimeout = 0, timerEnd = 0, timerTimeout = 0, lastHour = new Date().getHours()
 function hideLED() {
   clearTimeout(ledTimeout); ledWins.forEach((w) => { try { w.destroy() } catch { /* 무시 */ } }); ledWins = []
 }
 function showLED(kind) {
   hideLED()
-  const T = 14, color = LED_COLORS[kind]
+  const T = kind === 'timer' ? 26 : 14, color = LED_COLORS[kind]   // 타이머는 더 두껍게
   for (const d of screen.getAllDisplays()) {
     const { x, y, width: w, height: h } = d.bounds
     for (const b of [{ x, y, width: w, height: T }, { x, y: y + h - T, width: w, height: T }, { x, y: y + T, width: T, height: h - 2 * T }, { x: x + w - T, y: y + T, width: T, height: h - 2 * T }]) {
       const lw = new BrowserWindow({ ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false, skipTaskbar: true, fullscreenable: false, show: false, alwaysOnTop: true, webPreferences: { preload: path.join(__dirname, 'led-preload.js'), contextIsolation: true, nodeIntegration: false } })
       lw.setAlwaysOnTop(true, 'screen-saver')
-      lw.loadFile('led.html', { query: { c: color } })
+      lw.loadFile('led.html', { query: { c: color, k: kind } })
       lw.once('ready-to-show', () => lw.showInactive())
       ledWins.push(lw)
     }
