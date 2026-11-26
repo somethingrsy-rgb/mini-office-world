@@ -8,7 +8,7 @@ let dims = null, size = 1   // size: 가장 마지막으로 계산한 물고기�
 const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_']]
 let fishConf = { pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 } }
 // 종류별 움직임: horiz 가로로 쭉 가는 비율, vert 세로로 쭉 가는 비율(누적 기준 아님, 나머지는 비스듬히), maxAng 위/아래로 갈 때 기울어지는 최대 각도
-const MOVE = { g_: { horiz: 0.8, vert: 0.06, maxAng: 10 } }   // 구피는 주로 가로로 헤엄쳐요
+const MOVE = { g_: { horiz: 0.7, vert: 0, slant: 20, maxAng: 20 } }   // 구피: 70%는 가로로 쭉, 30%는 위나 아래로 20도 비스듬히(몸도 20도 기울어서 가는 방향과 몸 방향이 같아요). 수직으로 곧장 오르내리지 않아요
 const moveOf = (pre) => MOVE[pre] || { horiz: 0.45, vert: 0.3, maxAng: 20 }
 const ACTIVE = (pre) => pre === 'n_' || pre === 'g_'   // 니모·구피: 활발해서 방향을 빨리 돌고, 가끔 저절로 지느러미를 펼쳐요
 const kindOf = (pre) => KINDS.find((k) => k[1] === pre)[0]
@@ -53,6 +53,16 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     const mv = moveOf(pre), mode = Math.random()
     const xlo = disp.x + p, xhi = disp.x + disp.w - p, ylo = disp.y + p * 0.6, yhi = disp.y + disp.h - p * 0.6
     if (mode < mv.horiz) { st.tx = far(st.x, xlo, xhi, disp.w * (mv.horiz > 0.6 ? 0.4 : 0.3)); st.ty = clamp(st.y + rnd(-25, 25), ylo, yhi) }
+    else if (mv.slant && mode >= mv.horiz + mv.vert) {   // 위/아래로 slant도 비스듬히: 가는 길과 몸 기울기가 같은 각도
+      const k = Math.tan(mv.slant * Math.PI / 180)
+      let dirX = Math.random() < 0.5 ? -1 : 1
+      if ((dirX > 0 ? xhi - st.x : st.x - xlo) < 150) dirX = -dirX
+      let up = Math.random() < 0.5 ? -1 : 1
+      if ((up > 0 ? yhi - st.y : st.y - ylo) < 40) up = -up
+      let dx = rnd(0.5, 1) * Math.min(dirX > 0 ? xhi - st.x : st.x - xlo, disp.w * 0.5)
+      dx = Math.min(dx, (up > 0 ? yhi - st.y : st.y - ylo) / k)   // 위/아래 자리가 모자라면 가로 거리도 줄여서 각도를 지켜요
+      st.tx = st.x + dirX * Math.max(dx, 1); st.ty = st.y + up * Math.max(dx, 1) * k
+    }
     else if (mode < mv.horiz + mv.vert) { st.tx = clamp(st.x + rnd(-25, 25), xlo, xhi); st.ty = far(st.y, ylo, yhi, disp.h * 0.25) }
     else { st.tx = clamp(disp.x + rnd(0, disp.w), xlo, xhi); st.ty = clamp(disp.y + rnd(0, disp.h), ylo, yhi) }
   }
