@@ -79,11 +79,13 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     let pose, flip = st.face < 0
     if (st.mode === 'turn' && !has('turn')) {      // 돌기 그림이 없으면: 몸을 가로로 좁혔다가 반대로 펴서 돌아요
       const tt = (now - st.turnT) / 650
-      if (tt >= 1) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
+      if (tt >= 1) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0; st.ang = -(st.ang || 0) }
       else { pose = seq('swim', now / swimMs, cnt('swim'), true); flip = (tt < 0.5 ? st.turnFrom : -st.turnFrom) < 0; pose.sx = Math.max(0.12, Math.abs(Math.cos(Math.PI * tt))) }
     } else if (st.mode === 'turn') {
-      const tt = (now - st.turnT) / TURN_MS
-      if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
+      const pace = dims.pace && dims.pace[pre + 'turn']   // 장마다 머무는 시간 배율 (없으면 모두 같은 시간)
+      let tt = (now - st.turnT) / TURN_MS
+      if (pace) { let el = (now - st.turnT) / TURN_MS, i = 0; while (i < pace.length && el >= pace[i]) { el -= pace[i]; i++ } tt = i >= pace.length ? pace.length : i + el / pace[i] }
+      if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0; st.ang = -(st.ang || 0) }
       else { pose = seq('turn', tt, cnt('turn'), false); flip = st.turnFrom < 0 }   // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
     } else if (st.mode === 'flare') {
       const tt = (now - st.flareT) / FLARE_MS
@@ -93,10 +95,15 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 25도), 내려갈 때는 얼굴이 4시 방향쯤(30도) 아래로. 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
-    const moving = pose.fam === 'swim' && Math.hypot(st.vx, st.vy) > speed * 0.25
+    // 기울기는 '위아래로 얼마나 빠르게 가는지(vy)'에 비례해서 서서히 바뀌어요: 위로 가다 아래로 바뀔 때 vy가 0을 지나며 기울기도 0(수평)을 지나 반대쪽으로 부드럽게 넘어가요.
+    // 또 기울기가 바뀌는 속도에 상한(초당 28도)을 둬서 방향이 바뀌어도 '뚝' 꺾이지 않아요.
     let wantAng = 0
-    if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -25, 30) * (flip ? -1 : 1) }
-    st.ang = (st.ang || 0) + (wantAng - (st.ang || 0)) * Math.min(1, dt * 1.6)         // 천천히 부드럽게 기울어져요
+    if (pose.fam === 'swim') {
+      const sp = Math.hypot(st.vx, st.vy), go = clamp((sp / speed - 0.1) / 0.3, 0, 1)   // 거의 멈춰 있으면 수평으로
+      wantAng = clamp(st.vy / speed * 50, -25, 30) * go * (flip ? -1 : 1)
+    }
+    const a0 = st.ang || 0, lim = (pose.fam === 'turn' ? 60 : 28) * dt
+    st.ang = a0 + clamp((wantAng - a0) * Math.min(1, dt * (pose.fam === 'turn' ? 5 : 1.6)), -lim, lim)   // 돌 때는 빨리 수평으로 돌아와요
     const tilt = st.ang
     // 다른 동작으로 바뀌는 순간에는 직전 모습을 0.2초 동안 남겨서 서서히 바꿔요
     if (fade.fam !== pose.fam) { fade.last = fade.layers; fade.t0 = now; fade.fam = pose.fam }

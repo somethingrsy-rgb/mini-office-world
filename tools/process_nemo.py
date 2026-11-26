@@ -56,5 +56,10 @@ for fam, src, n in SHEETS:
         f.alpha_composite(r, (round(ox), round(oy)))
         f.save(os.path.join(FR, f'n_{fam}{i}.webp'), 'WEBP', quality=90, method=6)
         D['dim'][f'n_{fam}{i}'] = {'w': CW, 'h': CH}; D['mask'][f'n_{fam}{i}'] = mask_of(f)
+# 돌기 속도 조절: 앞뒤 장 사이에 모양이 많이 바뀌는 곳(몸을 휙 돌리는 구간)은 오래, 조금 바뀌는 곳은 짧게 보여 줘서 '뚝뚝' 끊기지 않게 해요 (장마다 머무는 시간 배율)
+tf = [np.asarray(Image.open(os.path.join(FR, f'n_turn{i}.webp')).convert('RGBA').getchannel('A')).astype(float) / 255 for i in range(D['count']['n_turn'])]
+df = [np.abs(tf[i + 1] - tf[i]).sum() / max(1.0, tf[i].sum()) for i in range(len(tf) - 1)]
+med = float(np.median(df))
+D.setdefault('pace', {})['n_turn'] = [round(min(3.0, max(0.8, d / med)), 2) for d in df] + [1.0]
 open(os.path.join(OUT, 'dims.js'), 'w').write('window.DIMS = ' + json.dumps(D))
 print('니모 프레임', sum(n for *_, n in SHEETS), '장,', CW, 'x', CH)
