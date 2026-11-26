@@ -93,8 +93,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 25도), 내려갈 때는 얼굴이 4시 방향쯤(30도) 아래로. 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
-    const moving = pre !== 'n_' && pose.fam === 'swim' &&   // 니모 헤엄 그림은 위아래 기울기가 그림 안에 이미 있어서 따로 기울이지 않아요
-       Math.hypot(st.vx, st.vy) > speed * 0.25
+    const moving = pose.fam === 'swim' && Math.hypot(st.vx, st.vy) > speed * 0.25
     let wantAng = 0
     if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -25, 30) * (flip ? -1 : 1) }
     st.ang = (st.ang || 0) + (wantAng - (st.ang || 0)) * Math.min(1, dt * 1.6)         // 천천히 부드럽게 기울어져요
