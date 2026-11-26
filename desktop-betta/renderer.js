@@ -79,13 +79,13 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     let pose, flip = st.face < 0
     if (st.mode === 'turn' && !has('turn')) {      // 돌기 그림이 없으면: 몸을 가로로 좁혔다가 반대로 펴서 돌아요
       const tt = (now - st.turnT) / 650
-      if (tt >= 1) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0; st.ang = -(st.ang || 0) }
+      if (tt >= 1) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
       else { pose = seq('swim', now / swimMs, cnt('swim'), true); flip = (tt < 0.5 ? st.turnFrom : -st.turnFrom) < 0; pose.sx = Math.max(0.12, Math.abs(Math.cos(Math.PI * tt))) }
     } else if (st.mode === 'turn') {
       const pace = dims.pace && dims.pace[pre + 'turn']   // 장마다 머무는 시간 배율 (없으면 모두 같은 시간)
       let tt = (now - st.turnT) / TURN_MS
       if (pace) { let el = (now - st.turnT) / TURN_MS, i = 0; while (i < pace.length && el >= pace[i]) { el -= pace[i]; i++ } tt = i >= pace.length ? pace.length : i + el / pace[i] }
-      if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0; st.ang = -(st.ang || 0) }
+      if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
       else { pose = seq('turn', tt, cnt('turn'), false); flip = st.turnFrom < 0 }   // 오른쪽→왼쪽은 그대로, 왼쪽→오른쪽은 좌우를 뒤집어서 보여 줘요
     } else if (st.mode === 'flare') {
       const tt = (now - st.flareT) / FLARE_MS
@@ -102,6 +102,8 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       const sp = Math.hypot(st.vx, st.vy), go = clamp((sp / speed - 0.1) / 0.3, 0, 1)   // 거의 멈춰 있으면 수평으로
       wantAng = clamp(st.vy / speed * 50, -25, 30) * go * (flip ? -1 : 1)
     }
+    if (st.lastFlip !== undefined && st.lastFlip !== flip) st.ang = -(st.ang || 0)   // 좌우가 뒤집히는 순간 기울기 부호도 뒤집어서, 위로 보던 코가 아래로 튀지 않고 그대로 이어져요
+    st.lastFlip = flip
     const a0 = st.ang || 0, lim = (pose.fam === 'turn' ? 60 : 28) * dt
     st.ang = a0 + clamp((wantAng - a0) * Math.min(1, dt * (pose.fam === 'turn' ? 5 : 1.6)), -lim, lim)   // 돌 때는 빨리 수평으로 돌아와요
     const tilt = st.ang

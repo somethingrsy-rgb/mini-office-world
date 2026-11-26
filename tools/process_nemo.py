@@ -2,7 +2,6 @@
   nemo_swim.png   16장  헤엄(몸은 수평, 꼬리·지느러미만 살짝 움직임)  → n_swim
   nemo_sleep.png  12장  가만히 떠 있을 때            → n_idle
   nemo_happy.png  12장  신나서 꼬리 흔들기(더블클릭)  → n_flare
-  nemo_turn.png   16장  방향 바꾸기(오른쪽 → 정면 → 왼쪽) → n_turn
 그림마다 몸 넓이·무게중심을 같게 맞춰서(동작이 바뀔 때 커졌다 작아지거나 튀지 않게) 같은 크기의 판에 놓아요. 그림 하나 안의 움직임은 그대로예요.
 사용법: python3 tools/process_nemo.py   (다른 베타 프레임은 건드리지 않아요)"""
 import json, os
@@ -11,7 +10,7 @@ from PIL import Image
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'desktop-betta'); FR = os.path.join(OUT, 'frames')
-SHEETS = [('swim', 'swim', 16), ('idle', 'sleep', 12), ('flare', 'happy', 12), ('turn', 'turn', 16)]
+SHEETS = [('swim', 'swim', 16), ('idle', 'sleep', 12), ('flare', 'happy', 12)]   # 방향 바꾸기(돌기) 그림은 쓰지 않아요: 정면을 보는 장면이 '놀라는 동작'처럼 보여서, 몸을 좁혔다가 반대로 펴는 방식(renderer의 대체 돌기)으로 돌아요
 MASK_COLS = 56
 CW, CH = 249, 166            # 판 크기
 TARGET_AREA, CX, CY = 11700.0, 126.0, 84.0   # 모든 그림의 편안한 자세 몸 넓이(px²)·무게중심
@@ -38,7 +37,7 @@ def mask_of(img):
     return [MASK_COLS, rows, '%x' % int(bits, 2), MASK_COLS * rows]
 
 
-REF = {'swim': None, 'idle': None, 'flare': 2, 'turn': 2}   # 편안한 자세로 재는 장수 (돌기·펼치기는 처음 2장)
+REF = {'swim': None, 'idle': None, 'flare': 2}   # 편안한 자세로 재는 장수 (돌기·펼치기는 처음 2장)
 for fam, src, n in SHEETS:
     cs = cells(src, n)
     st = [stats(c) for c in cs[:REF[fam]]]
@@ -56,10 +55,10 @@ for fam, src, n in SHEETS:
         f.alpha_composite(r, (round(ox), round(oy)))
         f.save(os.path.join(FR, f'n_{fam}{i}.webp'), 'WEBP', quality=90, method=6)
         D['dim'][f'n_{fam}{i}'] = {'w': CW, 'h': CH}; D['mask'][f'n_{fam}{i}'] = mask_of(f)
-# 돌기 속도 조절: 앞뒤 장 사이에 모양이 많이 바뀌는 곳(몸을 휙 돌리는 구간)은 오래, 조금 바뀌는 곳은 짧게 보여 줘서 '뚝뚝' 끊기지 않게 해요 (장마다 머무는 시간 배율)
-tf = [np.asarray(Image.open(os.path.join(FR, f'n_turn{i}.webp')).convert('RGBA').getchannel('A')).astype(float) / 255 for i in range(D['count']['n_turn'])]
-df = [np.abs(tf[i + 1] - tf[i]).sum() / max(1.0, tf[i].sum()) for i in range(len(tf) - 1)]
-med = float(np.median(df))
-D.setdefault('pace', {})['n_turn'] = [round(min(3.0, max(0.8, d / med)), 2) for d in df] + [1.0]
+D['count']['n_turn'] = 0
+D.get('pace', {}).pop('n_turn', None)
+for f in os.listdir(FR):
+    if f.startswith('n_turn'): os.remove(os.path.join(FR, f))
+for k in [k for k in D['dim'] if k.startswith('n_turn')]: D['dim'].pop(k); D['mask'].pop(k)
 open(os.path.join(OUT, 'dims.js'), 'w').write('window.DIMS = ' + json.dumps(D))
 print('니모 프레임', sum(n for *_, n in SHEETS), '장,', CW, 'x', CH)
