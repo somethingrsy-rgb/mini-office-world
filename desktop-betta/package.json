@@ -16,8 +16,8 @@
     "productName": "베타 물고기",
     "icon": "icon.png",
     "files": ["main.js", "preload.js", "index.html", "renderer.js", "dims.js", "icon.png", "bottom.ps1", "led.html", "led-preload.js", "frames/**"],
-    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "Betta-Fish-folder.${ext}" },
-    "portable": { "artifactName": "Betta-Fish.exe" },
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "Fish-folder.${ext}", "executableName": "fish" },
+    "portable": { "artifactName": "Fish.exe" },
     "directories": { "output": "dist" }
   }
 }

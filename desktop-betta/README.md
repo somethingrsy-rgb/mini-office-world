@@ -3,8 +3,8 @@
 모니터 전체를 아주 천천히 헤엄치는 베타 물고기예요. 인터넷이 없어도 실행돼요.
 
 ## 쓰는 법 (윈도우)
-1. 깃허브 **Actions → Desktop betta (Windows) → Run workflow**로 exe를 만들고, 맨 아래 Artifacts의 `Betta-Fish`를 받아요.
-2. 압축을 풀고 `Betta-Fish.exe`를 더블클릭해요. (설치가 필요 없어요)
+1. 깃허브 **Actions → Desktop betta (Windows) → Run workflow**로 exe를 만들고, 맨 아래 Artifacts의 `Fish`를 받아요.
+2. 압축을 풀고 `Fish.exe`를 더블클릭해요. (설치가 필요 없어요)
 3. 작업표시줄 오른쪽 아래(`^` 안쪽)의 **물고기 아이콘**을 누르면 설정 메뉴가 나와요.
 
 ## 동작

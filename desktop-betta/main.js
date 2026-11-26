@@ -119,7 +119,7 @@ function showLED(kind) {
 function startTimer(min) {
   clearTimeout(timerTimeout); timerEnd = 0
   if (min > 0) { timerEnd = Date.now() + min * 60000; timerTimeout = setTimeout(() => { timerEnd = 0; showLED('timer'); tray && tray.setContextMenu(buildMenu()) }, min * 60000) }
-  if (tray) { tray.setToolTip(min > 0 ? `니모 타이머 ${min}분` : '베타 물고기'); tray.setContextMenu(buildMenu()) }
+  if (tray) { tray.setToolTip(min > 0 ? `fish 타이머 ${min}분` : 'fish'); tray.setContextMenu(buildMenu()) }
 }
 // 정각 알림: 시(hour)가 바뀌는 순간을 알아채요 (컴퓨터가 잠들었다 깨어나도 한 번만)
 setInterval(() => { const h = new Date().getHours(); if (h !== lastHour) { lastHour = h; if (cfg.hourly !== false) showLED('hour') } }, 1000)
@@ -163,7 +163,7 @@ app.whenReady().then(() => {
   win.webContents.on('console-message', (_e, lv, m) => { if (lv >= 2) log('화면 오류: ' + m) })
   try { new Notification({ title: '베타가 시작됐어요 🐟', body: '화면을 천천히 헤엄쳐요. 베타를 두 번 누르면 꼬리를 활짝 펼쳐요. 설정은 작업표시줄 오른쪽 아래 물고기 아이콘에서 해요.' }).show() } catch { /* 무시 */ }
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 32 }))
-  tray.setToolTip('베타 물고기')
+  tray.setToolTip('fish')
   tray.setContextMenu(buildMenu())
   tray.on('click', () => { tray.setContextMenu(buildMenu()); tray.popUpContextMenu() })
   globalShortcut.register('CommandOrControl+Alt+B', toggleHidden)
