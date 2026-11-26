@@ -81,6 +81,7 @@ function handleWins(raw) {
   win.webContents.send('windows', list)
 }
 
+let pollStarted = false
 function createWindow() {
   win = new BrowserWindow({
     transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false,
@@ -88,12 +89,14 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   })
   win.setAlwaysOnTop(true, 'floating')
-  win.setIgnoreMouseEvents(true, { forward: true })
+  win.setIgnoreMouseEvents(true)   // forward 옵션은 쓰지 않아요: 윈도우 전역 마우스 훅을 만들어서 빠르게 더블클릭하면 멈추는 원인이 될 수 있어요. 마우스 위치는 아래 50ms 주기로 직접 보내요
   fit()
   win.loadFile('index.html')
   win.once('ready-to-show', () => { if (!cfg.hidden) win.showInactive() })
   watchWindows()
   // 마우스 위치는 윈도우 쪽에서 직접 읽어서 보내요 (투명 창이 마우스 이벤트를 무시하는 동안에도 고양이가 알아챌 수 있게)
+  if (pollStarted) return
+  pollStarted = true
   let lastC = ''
   setInterval(() => {
     if (!win || win.isDestroyed() || !win.isVisible()) return
@@ -147,12 +150,20 @@ function buildMenu() {
   ])
 }
 
+// 창 이벤트 연결: 화면 프로세스가 죽으면 앱이 꺼지지 않고 다시 불러와요 (원인은 기록 파일에 남겨요)
+function hookWin() {
+  const w = win, wc = w.webContents
+  wc.on('did-fail-load', (_e, c, d) => log('화면 불러오기 실패: ' + c + ' ' + d))
+  wc.on('render-process-gone', (_e, d) => { log('화면 프로세스 종료: ' + JSON.stringify(d)); try { if (!w.isDestroyed()) w.reload() } catch (e) { log('다시 불러오기 실패: ' + e) } })
+  wc.on('unresponsive', () => log('화면이 응답하지 않아요'))
+  wc.on('responsive', () => log('화면이 다시 응답해요'))
+  wc.on('console-message', (_e, lv, msg) => { if (lv >= 2) log('화면 오류: ' + msg) })
+  w.on('closed', () => log('창이 닫혔어요'))
+}
+
 app.whenReady().then(() => {
   log('시작: ' + app.getVersion() + ' / ' + process.platform + ' / 화면 ' + screen.getAllDisplays().length + '개')
-  createWindow()
-  win.webContents.on('did-fail-load', (_e, c, d) => log('화면 불러오기 실패: ' + c + ' ' + d))
-  win.webContents.on('render-process-gone', (_e, d) => log('화면 프로세스 종료: ' + JSON.stringify(d)))
-  win.webContents.on('console-message', (_e, lv, m) => { if (lv >= 2) log('화면 오류: ' + m) })
+  createWindow(); hookWin()
   try { new Notification({ title: '루비가 시작됐어요 🐱', body: '화면 아래쪽을 돌아다녀요. 작업표시줄 오른쪽 아래 고양이 아이콘으로 설정해요.' }).show() } catch { /* 무시 */ }
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 32, height: 32 }))
   tray.setToolTip('루비 (바탕화면 고양이)')
@@ -165,11 +176,16 @@ app.whenReady().then(() => {
 })
 
 // 고양이 위에서는 마우스를 받고(쓰다듬기), 그 밖에서는 클릭이 뒤 창으로 통과해요
-ipcMain.on('ignore', (_e, ignore) => { win && win.setIgnoreMouseEvents(ignore, { forward: true }) })
+ipcMain.on('ignore', (_e, ignore) => { win && win.setIgnoreMouseEvents(!!ignore) })
 ipcMain.handle('config', () => cfg)
 ipcMain.handle('layout', () => layout())
 // 설정 창에서: 알람 목록 저장, 타이머 시작·취소
 ipcMain.on('alarms', (_e, list) => { cfg.alarms = Array.isArray(list) ? list.slice(0, 50) : []; save(); sendCfg() })
 ipcMain.on('timer', (_e, m) => { win && win.webContents.send('timer', Number(m) || 0) })
-app.on('window-all-closed', () => app.quit())
+let quitting = false
+app.on('before-quit', () => { quitting = true })
+app.on('window-all-closed', () => {
+  if (quitting) return app.quit()
+  log('창이 닫혀서 다시 만들어요'); try { createWindow(); hookWin() } catch (e) { log('창 다시 만들기 실패: ' + e); app.quit() }
+})
 app.on('will-quit', () => { globalShortcut.unregisterAll(); try { psProc && psProc.kill() } catch { /* 무시 */ } })

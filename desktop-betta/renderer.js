@@ -77,7 +77,8 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     const dx = st.tx - st.x, dy = st.ty - st.y
     const dist = Math.hypot(dx, dy)
     let want = 1, resting = false
-    if (st.mode === 'turn' || st.mode === 'flare') want = 0
+    if (st.mode === 'drag') { want = 0; st.vx = st.vy = 0 }
+    else if (st.mode === 'turn' || st.mode === 'flare') want = 0
     else if (st.wait > 0) { st.wait -= dt; want = 0.12; resting = true }      // 목표에 닿으면 잠깐 쉬어요
     else if (dist < 18) { st.wait = rnd(3, 9); pickTarget() }   // 목표에 닿으면 가만히 떠서 쉬는 시간을 길게 가져요
     else if (dist < 120) want = 0.35 + 0.65 * (dist / 120)                    // 닿기 전에 부드럽게 느려져요
@@ -174,7 +175,11 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     st.ty = clamp(st.y + rnd(-25, 25), d.y + p * 0.6, d.y + d.h - p * 0.6)
     st.wait = 0
   }
-  return { st, el, pre, update, overFish, flare, turnAround, remove: () => el.remove() }
+  // 마우스로 잡아서 옮기기: 잡은 동안은 커서를 따라오고, 놓으면 그 자리에서 다시 헤엄쳐요
+  function grab(x, y) { st.flareStill = false; st.mode = 'drag'; st.dragDx = st.x - x; st.dragDy = st.y - y; st.vx = st.vy = 0 }
+  function dragTo(x, y) { st.x = x + st.dragDx; st.y = y + st.dragDy; st.vx = st.vy = 0 }
+  function drop() { st.mode = 'swim'; st.vx = st.vy = 0; st.wait = rnd(0.5, 1.5); pickTarget() }
+  return { st, el, pre, update, overFish, flare, turnAround, grab, dragTo, drop, remove: () => el.remove() }
 }
 
 // 몇 마리를 어떤 종류로 띄울지: 분홍·주황 번갈아면 분홍, 주황, 분홍… 순서예요
@@ -227,11 +232,20 @@ function loop(now) {
 
 // ── 마우스: 물고기 모양(투명하지 않은 부분)에서만 받아요. 그 밖은 클릭이 뒤 창으로 통과 ──
 const fishAt = (x, y) => { for (let i = fishes.length - 1; i >= 0; i--) if (fishes[i].overFish(x, y)) return fishes[i]; return null }
+let drag = null   // 마우스로 잡은 물고기 { f, sx, sy, moved }
 function handleMove(x, y) {
   mouse.x = x; mouse.y = y
-  const over = !!fishAt(x, y)
+  if (drag) {
+    if (!drag.moved && Math.hypot(x - drag.sx, y - drag.sy) > 6) { drag.moved = true; drag.f.grab(drag.sx, drag.sy) }   // 조금 움직여야 '옮기기'로 쳐서, 더블클릭은 그대로 돼요
+    if (drag.moved) drag.f.dragTo(x, y)
+  }
+  const over = !!drag || !!fishAt(x, y)
   if (over !== hover) { hover = over; bridge.ignore(!over) }
 }
+document.addEventListener('mousedown', (e) => { if (e.button !== 0) return; const f = hover ? fishAt(e.clientX, e.clientY) : null; if (f) drag = { f, sx: e.clientX, sy: e.clientY, moved: false } })
+function endDrag() { if (!drag) return; const d = drag; drag = null; if (d.moved) d.f.drop(); handleMove(mouse.x, mouse.y) }
+document.addEventListener('mouseup', endDrag)
+window.addEventListener('blur', endDrag)
 document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY))
 bridge.onCursor && bridge.onCursor((c) => handleMove(c.x, c.y))   // 윈도우가 알려 주는 마우스 위치 (이벤트가 안 와도 동작)
 document.addEventListener('dblclick', (e) => { const f = fishAt(e.clientX, e.clientY); if (f) (ACTIVE(f.pre) ? f.turnAround() : f.flare()) })   // 두 번 누르면: 베타는 꼬리를 활짝 펼치고, 니모·구피는 반대 방향으로 돌아요

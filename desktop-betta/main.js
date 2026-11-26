@@ -64,17 +64,20 @@ function fit() {
   win.webContents.send('layout', l)
 }
 
+let pollStarted = false
 function createWindow() {
   win = new BrowserWindow({
     transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false,
     alwaysOnTop: true, skipTaskbar: true, fullscreenable: false, show: false,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false },
   })
-  win.setIgnoreMouseEvents(true, { forward: true })
+  win.setIgnoreMouseEvents(true)   // forward 옵션은 쓰지 않아요: 윈도우 전역 마우스 훅을 만들어서 빠르게 더블클릭하면 멈추는 원인이 될 수 있어요. 마우스 위치는 아래 50ms 주기로 직접 보내요
   fit()
   win.loadFile('index.html')
   win.once('ready-to-show', () => { if (!cfg.hidden) win.showInactive(); applyLayer() })
   // 마우스 위치는 윈도우 쪽에서 직접 읽어서 보내요 (투명 창이 마우스 이벤트를 무시하는 동안에도 물고기가 알아챌 수 있게)
+  if (pollStarted) return
+  pollStarted = true
   let lastC = ''
   setInterval(() => {
     if (!win || win.isDestroyed() || !win.isVisible()) return
@@ -99,7 +102,7 @@ function showLED(kind) {
     const { x, y, width, height } = d.bounds
     const lw = new BrowserWindow({ x, y, width, height, transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false, skipTaskbar: true, fullscreenable: false, show: false, alwaysOnTop: true, webPreferences: { preload: path.join(__dirname, 'led-preload.js'), contextIsolation: true, nodeIntegration: false } })
     lw.setAlwaysOnTop(true, 'screen-saver')
-    lw.setIgnoreMouseEvents(true, { forward: true })
+    lw.setIgnoreMouseEvents(true)
     lw.loadFile('led.html', { query: { c: color, k: kind, t: String(T) } })
     lw.once('ready-to-show', () => lw.showInactive())
     ledWins.push({ win: lw, bounds: d.bounds, T, ignoring: true })
@@ -112,7 +115,7 @@ function showLED(kind) {
       const { x, y, width, height } = l.bounds, e = l.T + 4
       const inside = p.x >= x && p.x < x + width && p.y >= y && p.y < y + height
       const onEdge = inside && (p.x - x < e || x + width - p.x <= e || p.y - y < e || y + height - p.y <= e)
-      if (onEdge === l.ignoring) { l.ignoring = !onEdge; l.win.setIgnoreMouseEvents(l.ignoring, { forward: true }) }
+      if (onEdge === l.ignoring) { l.ignoring = !onEdge; l.win.setIgnoreMouseEvents(l.ignoring) }
     }
   }, 50)
   ledTimeout = setTimeout(hideLED, 10 * 60 * 1000)   // 아무도 안 눌러도 10분 뒤엔 꺼져요
@@ -126,7 +129,13 @@ function startTimer(min) {
 setInterval(() => { const h = new Date().getHours(); if (h !== lastHour) { lastHour = h; if (cfg.hourly !== false) showLED('hour') } }, 1000)
 ipcMain.on('led-click', hideLED)
 // 물고기를 오른쪽 클릭하면 타이머 메뉴가 떠요 (운영체제 메뉴라서 열린 창 위에도 보여요)
-ipcMain.on('fish-menu', () => { if (win && !win.isDestroyed()) Menu.buildFromTemplate([{ label: timerEnd ? `타이머 (남은 ${Math.max(1, Math.ceil((timerEnd - Date.now()) / 60000))}분)` : '타이머 — 몇 분 뒤에 알려 줄까요?', enabled: false }, { type: 'separator' }, ...timerItems()]).popup({ window: win }) })
+ipcMain.on('fish-menu', () => {
+  if (!win || win.isDestroyed()) return
+  const menu = Menu.buildFromTemplate([{ label: timerEnd ? `타이머 (남은 ${Math.max(1, Math.ceil((timerEnd - Date.now()) / 60000))}분)` : '타이머 — 몇 분 뒤에 알려 줄까요?', enabled: false }, { type: 'separator' }, ...timerItems(), { type: 'separator' }, { label: '닫기' }])
+  // 트레이 아이콘의 메뉴로 띄워요: 포커스가 없는 투명 창에서 띄운 메뉴는 바깥을 눌러도 안 닫혔는데, 트레이 메뉴는 바깥을 누르거나 Esc를 누르면 닫혀요
+  try { if (tray) return tray.popUpContextMenu(menu) } catch (e) { log('트레이 메뉴 실패: ' + e) }
+  menu.popup({ window: win })
+})
 // 트레이 메뉴를 열 때 남은 타이머 시간을 새로 보여 줘요
 const sendCfg = () => win && win.webContents.send('config', cfg)
 function toggleHidden() { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : (win.showInactive(), applyLayer()); tray && tray.setContextMenu(buildMenu()) }
@@ -157,11 +166,20 @@ function buildMenu() {
   ])
 }
 
+// 창 이벤트 연결: 화면 프로세스가 죽으면 앱이 꺼지지 않고 다시 불러와요 (원인은 기록 파일에 남겨요)
+function hookWin() {
+  const w = win, wc = w.webContents
+  wc.on('did-fail-load', (_e, c, d) => log('화면 불러오기 실패: ' + c + ' ' + d))
+  wc.on('render-process-gone', (_e, d) => { log('화면 프로세스 종료: ' + JSON.stringify(d)); try { if (!w.isDestroyed()) w.reload() } catch (e) { log('다시 불러오기 실패: ' + e) } })
+  wc.on('unresponsive', () => log('화면이 응답하지 않아요'))
+  wc.on('responsive', () => log('화면이 다시 응답해요'))
+  wc.on('console-message', (_e, lv, msg) => { if (lv >= 2) log('화면 오류: ' + msg) })
+  w.on('closed', () => log('창이 닫혔어요'))
+}
+
 app.whenReady().then(() => {
   log('시작: ' + app.getVersion() + ' / ' + process.platform + ' / 화면 ' + screen.getAllDisplays().length + '개')
-  createWindow()
-  win.webContents.on('did-fail-load', (_e, c, d) => log('화면 불러오기 실패: ' + c + ' ' + d))
-  win.webContents.on('console-message', (_e, lv, m) => { if (lv >= 2) log('화면 오류: ' + m) })
+  createWindow(); hookWin()
   try { new Notification({ title: '베타가 시작됐어요 🐟', body: '화면을 천천히 헤엄쳐요. 베타를 두 번 누르면 꼬리를 활짝 펼쳐요. 설정은 작업표시줄 오른쪽 아래 물고기 아이콘에서 해요.' }).show() } catch { /* 무시 */ }
   tray = new Tray(nativeImage.createFromPath(path.join(__dirname, 'icon.png')).resize({ width: 32 }))
   tray.setToolTip('fish')
@@ -171,8 +189,13 @@ app.whenReady().then(() => {
 })
 
 // 물고기 위에서는 마우스를 받고(더블클릭), 그 밖에서는 클릭이 뒤 창으로 통과해요
-ipcMain.on('ignore', (_e, ignore) => { win && win.setIgnoreMouseEvents(ignore, { forward: true }) })
+ipcMain.on('ignore', (_e, ignore) => { win && win.setIgnoreMouseEvents(!!ignore) })
 ipcMain.handle('config', () => cfg)
 ipcMain.handle('layout', () => layout())
-app.on('window-all-closed', () => app.quit())
+let quitting = false
+app.on('before-quit', () => { quitting = true })
+app.on('window-all-closed', () => {
+  if (quitting) return app.quit()
+  log('창이 닫혀서 다시 만들어요'); try { createWindow(); hookWin() } catch (e) { log('창 다시 만들기 실패: ' + e); app.quit() }
+})
 app.on('will-quit', () => { globalShortcut.unregisterAll(); try { bottomProc && bottomProc.kill() } catch { /* 무시 */ } })
