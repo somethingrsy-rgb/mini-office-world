@@ -1,0 +1,23 @@
+{
+  "name": "snowglobe-desktop-pet",
+  "version": "1.0.0",
+  "description": "바탕화면에 두는 눈 내리는 오르골 (불 켜기, 눈 내리기, 흔들기)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable zip --x64"
+  },
+  "devDependencies": {
+    "electron": "^33.2.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "local.snowglobe.desktoppet",
+    "productName": "눈 내리는 오르골",
+    "icon": "icon.png",
+    "files": ["main.js", "preload.js", "index.html", "renderer.js", "icon.png", "bottom.ps1", "art/**"],
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "오르골-folder.${ext}", "executableName": "오르골" },
+    "portable": { "artifactName": "오르골.exe" },
+    "directories": { "output": "dist" }
+  }
+}
