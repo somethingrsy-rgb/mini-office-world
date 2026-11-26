@@ -23,6 +23,17 @@ describe('아침 푸시 문구', () => {
     expect(m[0].body).toContain('남은 업무 1건'); expect(m[0].body).toContain('오늘 일정 1건'); expect(m[0].body).toContain('14:00 회의')
     expect(m.map((x: { tag: string }) => x.tag)).toEqual(['brief'])
   })
+  it('오늘 일정(시간·제목·장소 메모)을 업무 건수보다 위에 보여줘요', () => {
+    const m = buildMessages([t('업무', null), { title: '유엘 병원', desc: '3층 접수\n서류', due: today, status: 'todo', kind: 'event', time: '10:30' }, { title: '점심 약속', due: today, status: 'todo', kind: 'event' }, { title: '내일 일정', due: '2026-11-17', status: 'todo', kind: 'event', time: '09:00' }], today)
+    const lines = m[0].body.split('\n')
+    expect(m[0].title).toBe('오늘의 일정·업무 브리핑')
+    expect(lines[0]).toBe('오늘 일정 2건'); expect(lines[1]).toBe('· 10:30 유엘 병원 · 3층 접수'); expect(lines[2]).toBe('· 점심 약속'); expect(lines[3]).toContain('남은 업무 1건')
+    expect(m[0].body).not.toContain('내일 일정')
+  })
+  it('일정만 있어도 아침 브리핑을 보내요', () => {
+    const m = buildMessages([{ title: '치과', due: today, status: 'todo', kind: 'event', time: '15:00' }], today)
+    expect(m).toHaveLength(1); expect(m[0].body).toBe('오늘 일정 1건\n· 15:00 치과')
+  })
   it('1일 전은 따로 보내지 않아요', () => {
     expect(buildMessages([t('내일', '2026-11-17')], today).map((x: { tag: string }) => x.tag)).toEqual(['brief'])
   })

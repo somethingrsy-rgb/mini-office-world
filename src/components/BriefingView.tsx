@@ -6,7 +6,7 @@ import { dueInfo } from '../dates'
 import type { Briefing } from '../entries'
 import type { Task } from '../types'
 
-export default function BriefingView({ b, hasTasks, ordered, onGo, onTodo, onClose }: { b: Briefing; hasTasks: boolean; ordered: Task[]; onGo: () => void; onTodo: () => void; onClose: () => void }) {
+export default function BriefingView({ b, hasTasks, ordered, events = [], onGo, onTodo, onClose }: { b: Briefing; hasTasks: boolean; ordered: Task[]; events?: Task[]; onGo: () => void; onTodo: () => void; onClose: () => void }) {
   const hour = new Date().getHours()
   const greet = hour < 11 ? '좋은 아침이에요!' : hour < 18 ? '안녕하세요!' : '오늘도 수고했어요!'
   const mimi = AVATARS.find((a) => a.id === 'mimi')!
@@ -17,6 +17,14 @@ export default function BriefingView({ b, hasTasks, ordered, onGo, onTodo, onClo
       <div className="brief-head"><img className="face" src={asset('avatars/mimi-stand.webp')} alt="" /><b>{mimi.name}</b><small>오늘의 브리핑</small></div>
       <div className="bubble-msg">
         <p><b>{greet}</b></p>
+        {events.length > 0 && (
+          <>
+            <p>📅 오늘 일정이 <b>{events.length}건</b> 있어요.</p>
+            <ul className="top3">
+              {events.map((t) => (<li key={t.id}><b>{t.time ? `${t.time} ` : ''}{t.title}</b>{t.desc.trim() && <span className="muted"> · {t.desc.trim().split('\n')[0]}</span>}</li>))}
+            </ul>
+          </>
+        )}
         {!hasTasks ? (
           <p>아직 등록된 업무가 없어요. 첫 업무를 등록해 볼까요?</p>
         ) : (

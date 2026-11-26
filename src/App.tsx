@@ -123,6 +123,7 @@ export default function App() {
   const [editing, setEditing] = useState<Task | undefined>()
   const urgent = tasks.filter((t) => ['urgent', 'overdue'].includes(dueInfo(t).level)).length
   const briefing = useMemo(() => makeBriefing(tasks, todayStr(), addDays(todayStr(), 1)), [tasks, real])
+  const todayEvents = useMemo(() => tasks.filter((t) => t.kind === 'event' && t.due === todayStr()).sort((x, y) => (x.time ?? '99').localeCompare(y.time ?? '99')), [tasks, real])   // 오늘 일정: 브리핑 맨 위에 보여줘요
 
   // 하루 한 번 앱을 열면 미미가 오늘의 업무를 브리핑
   useEffect(() => {
@@ -509,7 +510,7 @@ export default function App() {
 
       {view === 'brief' && (
         <Sheet glass tall title="💛 오늘의 업무 브리핑" onClose={close}>
-          <BriefingView b={briefing} hasTasks={tasks.length > 0} ordered={ordered} onClose={close} onTodo={() => setView('todo')}
+          <BriefingView b={briefing} hasTasks={tasks.length > 0} ordered={ordered} events={todayEvents} onClose={close} onTodo={() => setView('todo')}
             onGo={() => { tasks.length > 0 ? setView('list') : (setEditing(undefined), setView('form')) }} />
         </Sheet>
       )}
