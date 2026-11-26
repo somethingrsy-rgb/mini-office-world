@@ -4,7 +4,7 @@
   betta_flare.png 6x4=24장  꼬리 펼치기 (접힘 → 활짝 → 유지 → 접힘)
   betta_idle.png  4x2=8장   가만히 떠 있을 때의 살랑거림
 눈(검은 점)을 기준점으로 맞춰서 프레임이 바뀌어도 몸이 튀지 않고, 네 그림 모두 같은 크기의 판 가운데에 눈이 오게 해요.
-사용법: python3 tools/process_betta.py [orange]   (인자 없으면 분홍 베타, orange면 주황 베타: tools/src_art/betta_o_*.png → 프레임 이름 앞에 o_)"""
+사용법: python3 tools/process_betta.py [orange|purple|yellow]   (인자 없으면 분홍 베타, orange면 주황 베타: tools/src_art/betta_o_*.png → 프레임 이름 앞에 o_)"""
 import json, os, sys, re
 import numpy as np
 from PIL import Image
@@ -12,8 +12,9 @@ import scipy.ndimage as ndi
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'desktop-betta')
-PRE = {'orange': 'o_', 'purple': 'p_'}.get(sys.argv[1] if sys.argv[1:] else '', '')   # 주황 베타는 그림 이름 앞에 o_ 가 붙어요
+PRE = {'orange': 'o_', 'purple': 'p_', 'yellow': 'y_'}.get(sys.argv[1] if sys.argv[1:] else '', '')   # 주황 베타는 그림 이름 앞에 o_ 가 붙어요
 SHEETS = [('swim', 4, 4), ('turn', 4, 3), ('flare', 6, 4), ('idle', 4, 2)]
+if PRE == 'y_': SHEETS.append(('swim2', 4, 4))   # 노랑(연파랑·분홍) 베타: 위·아래로 갈 때 쓰는 헤엄 그림 한 벌이 더 있어요
 FISH_W = 200            # 헤엄 그림에서 물고기(지느러미 포함) 가로 크기 목표(px, 보통 크기)
 MASK_COLS = 56
 
@@ -74,7 +75,7 @@ def extract(name, cols, rows):
 
 raw = {n: extract(n, c, r) for n, c, r in SHEETS}
 # 몸 크기를 맞춰요: 그림마다 고양이처럼 그려진 크기가 달라서, 오른쪽을 보는 처음 몇 장의 분홍 몸(머리·몸통) 넓이가 헤엄 그림과 같아지게 배율을 정해요
-ref_n = {'swim': 16, 'turn': 3, 'flare': 2, 'idle': 8}
+ref_n = {'swim': 16, 'turn': 3, 'flare': 2, 'idle': 8, 'swim2': 16}
 K = 'area' if PRE == 'p_' else 'pink'   # 보라 베타는 몸이 흰빛이라 분홍 픽셀로 크기를 못 재서, 전체 넓이로 재요
 pink_ref = float(np.median([f[K] for f in raw['swim']]))
 swim_w = float(np.median([f['bbox'][2] - f['bbox'][0] for f in raw['swim']]))
@@ -159,7 +160,7 @@ for (n, k), im in list(canv.items()):
 print('머리 크기 보정 범위:', (round(min(ks.values()), 2), round(max(ks.values()), 2)) if ks else '없음(눈 위치로만 맞춤)')
 
 os.makedirs(os.path.join(OUT, 'frames'), exist_ok=True)
-mine = re.compile(rf'^{PRE}(swim|turn|flare|idle)\d+\.webp$' if PRE else r'^(swim|turn|flare|idle)\d+\.webp$')
+mine = re.compile(rf'^{PRE}(swim2|swim|turn|flare|idle)\d+\.webp$' if PRE else r'^(swim|turn|flare|idle)\d+\.webp$')
 for f in os.listdir(os.path.join(OUT, 'frames')):
     if mine.match(f): os.remove(os.path.join(OUT, 'frames', f))
 dims_path = os.path.join(OUT, 'dims.js')

@@ -2,6 +2,7 @@
 눈(판 가운데)을 중심으로 키우거나 줄여요. 이웃 프레임의 중앙값으로 부드럽게 해서 프레임마다 크기가 들쭉날쭉하지 않게 해요.
 사용법: python3 tools/fix_betta_sizes.py  (tools/process_betta.py 로 프레임을 만든 다음에 실행)"""
 import json, os
+ONLY = os.environ.get('ONLY')   # 예: ONLY=y_ python3 tools/fix_betta_sizes.py → 노랑 베타 프레임만 고쳐요
 import numpy as np
 from PIL import Image
 
@@ -32,8 +33,9 @@ def scaled(im, k):
     return im.transform(im.size, Image.AFFINE, (1 / k, 0, cx - cx / k, 0, 1 / k, cy - cy / k), resample=Image.BICUBIC)
 
 
-for pre in ('', 'o_'):   # 보라 베타는 process_betta.py 에서 이미 눈~코끝 기준으로 맞춰서 여기서는 건드리지 않아요
-    ims = {f: [Image.open(os.path.join(FR, f'{pre}{f}{i}.webp')).convert('RGBA') for i in range(n)] for f, n in FAM.items()}
+for pre in [p for p in ('', 'o_', 'y_') if not ONLY or p == ONLY]:   # 보라 베타는 process_betta.py 에서 이미 눈~코끝 기준으로 맞춰서 여기서는 건드리지 않아요
+    FAMP = dict(FAM, swim2=16) if pre == 'y_' else FAM   # 노랑 베타는 위·아래 헤엄(swim2) 한 벌이 더 있어요
+    ims = {f: [Image.open(os.path.join(FR, f'{pre}{f}{i}.webp')).convert('RGBA') for i in range(n)] for f, n in FAMP.items()}
     d = {f: [nose(im) for im in lst] for f, lst in ims.items()}
     target = float(np.median([x for x in d['swim'] if x]))
     for f, lst in ims.items():
@@ -54,8 +56,8 @@ for pre in ('', 'o_'):   # 보라 베타는 process_betta.py 에서 이미 눈~�
 open(dims_path, 'w').write('window.DIMS = ' + json.dumps(D, ensure_ascii=False) + '\n')
 
 # 크기를 키운 프레임이 가장자리에서 잘리면, 그 물고기의 모든 프레임을 같은 비율로 더 큰 판(눈이 정중앙)에 옮겨 담아요
-for pre in ('', 'o_', 'p_'):
-    names = [f'{pre}{f}{i}' for f, n in FAM.items() for i in range(n)]
+for pre in [p for p in ('', 'o_', 'p_', 'y_') if not ONLY or p == ONLY]:
+    names = [f'{pre}{f}{i}' for f, n in (dict(FAM, swim2=16) if pre == 'y_' else FAM).items() for i in range(n)]
     ims = {k: Image.open(os.path.join(FR, k + '.webp')).convert('RGBA') for k in names}
     def touches(im):
         a = np.asarray(im.getchannel('A')) > 8

@@ -5,8 +5,8 @@
 //  · 물고기 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
 let dims = null, size = 1   // size: 가장 마지막으로 계산한 물고기의 크기 (만남 거리 계산용, 마리마다 따로 있어요)
 // 종류마다 따로: show 보이기, count 마리 수, size 크기, speed 속도. pre 는 그림 이름 앞(''분홍 / o_ 주황 / p_ 보라)
-const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_']]
-let fishConf = { pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 } }
+const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_'], ['yellow', 'y_']]
+let fishConf = { pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 }, yellow: { show: true, count: 1, size: 0.5, speed: 1 } }
 // 종류별 움직임: horiz 가로로 쭉 가는 비율, vert 세로로 쭉 가는 비율(누적 기준 아님, 나머지는 비스듬히), maxAng 위/아래로 갈 때 기울어지는 최대 각도
 const MOVE = { g_: { horiz: 0.7, vert: 0, slant: 20, maxAng: 20 } }   // 구피: 70%는 가로로 쭉, 30%는 위나 아래로 20도 비스듬히(몸도 20도 기울어서 가는 방향과 몸 방향이 같아요). 수직으로 곧장 오르내리지 않아요
 const moveOf = (pre) => MOVE[pre] || { horiz: 0.45, vert: 0.3, maxAng: 20 }
@@ -115,12 +115,13 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       const tt = (now - st.flareT) / FLARE_MS
       if (tt >= cnt('flare')) { st.mode = 'swim'; st.flareStill = false } else pose = seq('flare', tt, cnt('flare'), false)
     }
-    if (!pose) pose = (has('idle') && resting) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
+    // 노랑 베타는 위·아래로 갈 때 쓰는 헤엄 그림(swim2)이 따로 있어요
+    if (!pose) pose = (has('idle') && resting) ? seq('idle', now / idleMs, cnt('idle'), true) : (() => { const fam = (has('swim2') && Math.abs(st.vy) > Math.abs(st.vx) * 0.35) ? 'swim2' : 'swim'; return seq(fam, now / swimMs, cnt(fam), true) })()
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = ACTIVE(pre) ? 0 : Math.sin(now / 2200 + st.phase) * 3 * size   // 니모·구피는 천천히 위아래로 출렁이는 움직임을 없앴어요
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
     // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
-    const moving = pose.fam === 'swim' && Math.hypot(st.vx, st.vy) > speed * 0.25
+    const moving = (pose.fam === 'swim' || pose.fam === 'swim2') && Math.hypot(st.vx, st.vy) > speed * 0.25
     let wantAng = 0
     if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -moveOf(pre).maxAng, moveOf(pre).maxAng) * (flip ? -1 : 1) }
     st.ang = (st.ang || 0) + (wantAng - (st.ang || 0)) * Math.min(1, dt * 1.6)         // 천천히 부드럽게 기울어져요

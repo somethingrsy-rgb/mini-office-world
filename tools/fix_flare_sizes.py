@@ -3,6 +3,7 @@
 눈 뒤쪽 몸통·꼬리 부분의 세로 두께(눈에서 왼쪽으로 40~90px 구간, 알파 기준)를 재서, 헤엄 그림의 중앙값보다 작은 장면만 눈을 중심으로 키워요 (최대 1.3배: 머리가 너무 커져 보이지 않게).
 사용법: python3 tools/fix_flare_sizes.py   (분홍·주황·보라 모두. 이미 키운 프레임에 또 실행하면 한 번 더 커지니, git 의 원본 프레임에서 한 번만 실행하세요)"""
 import json, os
+ONLY = os.environ.get('ONLY')   # 예: ONLY=y_ 이면 노랑 베타만
 import numpy as np
 from PIL import Image
 
@@ -34,7 +35,7 @@ def thick(im):
     return float(np.median(v))
 
 
-for pre in ('', 'o_', 'p_'):
+for pre in [p for p in ('', 'o_', 'p_', 'y_') if not ONLY or p == ONLY]:
     nf = D['count'].get(pre + 'flare', 0)
     if not nf: continue
     swim = [Image.open(os.path.join(FR, f'{pre}swim{i}.webp')).convert('RGBA') for i in range(D['count'][pre + 'swim'])]
@@ -48,7 +49,7 @@ for pre in ('', 'o_', 'p_'):
             out = scaled(im, s); out.save(p, 'WEBP', quality=90, method=6); D['mask'][f'{pre}flare{i}'] = mask_of(out)
     print(repr(pre), '펼치기 배율 (최대 %.2f, 키운 장수 %d/%d)' % (max(sc), sum(1 for s in sc if s > 1.001), nf))
     # 가장자리에 닿아 잘렸으면 그 물고기의 모든 그림을 더 큰 판에 옮겨 담아요
-    names = [f'{pre}{f}{i}' for f in ('swim', 'idle', 'turn', 'flare') for i in range(D['count'].get(pre + f, 0))]
+    names = [f'{pre}{f}{i}' for f in ('swim', 'swim2', 'idle', 'turn', 'flare') for i in range(D['count'].get(pre + f, 0))]
     ims = {k: Image.open(os.path.join(FR, k + '.webp')).convert('RGBA') for k in names}
     def touches(im):
         a = np.asarray(im.getchannel('A')) > 8
