@@ -48,8 +48,11 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     st.ty = clamp(disp.y + rnd(0, disp.h), disp.y + p * 0.6, disp.y + disp.h - p * 0.6)
   }
   pickTarget()
+  st.nextFlare = performance.now() + rnd(8000, 20000)   // 처음엔 조금 일찍 한 번 보여 줘요
 
   function update(now, dt) {
+    // 니모는 헤엄치다가 가끔(30~80초에 한 번) 저절로 지느러미를 펼쳐요 (더블클릭하지 않아도 보여요)
+    if (pre === 'n_' && st.mode === 'swim' && st.wait <= 0 && now > st.nextFlare) { flare(false, now); st.nextFlare = now + rnd(30000, 80000) }
     const size = fc().size, speedMul = fc().speed
     const speed = BASE_SPEED * speedMul * size
     const dx = st.tx - st.x, dy = st.ty - st.y
@@ -139,7 +142,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     }
     return false
   }
-  const flare = (still) => { if (st.mode === 'swim' && dims.count[pre + 'flare'] > 0) { st.mode = 'flare'; st.flareT = performance.now(); st.flareStill = !!still } }
+  const flare = (still, t) => { if (st.mode === 'swim' && dims.count[pre + 'flare'] > 0) { st.mode = 'flare'; st.flareT = t === undefined ? performance.now() : t; st.flareStill = !!still } }
   return { st, el, pre, update, overFish, flare, remove: () => el.remove() }
 }
 
