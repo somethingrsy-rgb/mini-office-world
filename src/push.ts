@@ -1,7 +1,7 @@
 import { getSyncCreds } from './sync'
 
 /** 푸시 알림 (iPhone: 홈 화면에 추가한 앱에서만 돼요). 알림 받을 기기 정보는 동기화 저장소의 mini-office-push.json 에 저장돼요 */
-export const VAPID_PUBLIC = 'BFqv_s8ENzep_mp3emOLG4a7afTz-qCNygB07ZBnhxjcKP8he3GhW1iZcb8T5slTmecfcuuBqSlfbbtUy6UIwGw'
+export const VAPID_PUBLIC = 'BMOxCdd-uptRNARFjCgAM1xmEaz2ckFCc2rn87sIernoDwSqOIo2GP4vZNtbLUkdvzrUAk_-goE2zLVci7oMXzY'
 const FILE = 'mini-office-push.json'
 
 export const isStandalone = () => (navigator as unknown as { standalone?: boolean }).standalone === true || window.matchMedia?.('(display-mode: standalone)').matches
