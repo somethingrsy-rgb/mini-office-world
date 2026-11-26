@@ -74,7 +74,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     st.x += st.vx * dt; st.y += st.vy * dt
 
     // 지금 보여 줄 그림: 그림 장수를 시간으로 나눠 '몇 번째 + 다음 장과 얼마나 섞을지(frac)'를 구해요. 다음 장을 frac만큼 겹쳐 그려서 장면이 부드럽게 이어져요
-    const swimMs = SWIM_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.25) * (pre === 'n_' ? 1.9 : 1)   // 니모 헤엄 그림은 꼬리가 크게 움직여서 천천히 돌려요         // 느리게 갈수록 지느러미도 천천히 살랑거려요
+    const swimMs = SWIM_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.25)         // 느리게 갈수록 지느러미도 천천히 살랑거려요
     const idleMs = IDLE_MS * (1 + (3 - clamp(speedMul, 1, 3)) * 0.15)
     const cnt = (fam) => dims.count[pre + fam]
     const has = (fam) => cnt(fam) > 0          // 보라 베타는 지금 헤엄 그림만 있어서, 없는 동작은 헤엄 그림으로 대신해요
