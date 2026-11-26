@@ -75,7 +75,8 @@ self.addEventListener('push', (e) => {
   let d = {}
   try { d = e.data ? e.data.json() : {} } catch (err) { /* 무시 */ }
   e.waitUntil(self.registration.showNotification(d.title || 'MINI OFFICE WORLD', {
-    body: d.body || '', tag: d.tag || 'mow', icon: './icon-192.png', badge: './favicon.png', data: { url: './' },
+    body: d.body || '', tag: d.tag || 'mow', renotify: true,   // 같은 종류(tag)의 알림이 이미 떠 있어도 새 알림은 다시 소리·진동으로 알려요 (renotify가 없으면 조용히 덮어써서 안 온 것처럼 보여요)
+    icon: './icon-192.png', badge: './favicon.png', data: { url: './' },
   }))
 })
 self.addEventListener('notificationclick', (e) => {
