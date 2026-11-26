@@ -16,8 +16,8 @@
     "productName": "루비 고양이",
     "icon": "icon.png",
     "files": ["main.js", "preload.js", "settings.html", "settings.js", "index.html", "renderer.js", "play.js", "fsparse.js", "dims.js", "icon.png", "winlist.ps1", "frames/**"],
-    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "Ruby-Cat-folder.${ext}" },
-    "portable": { "artifactName": "Ruby-Cat.exe" },
+    "win": { "target": [{ "target": "portable", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }], "artifactName": "고양이-folder.${ext}", "executableName": "고양이" },
+    "portable": { "artifactName": "고양이.exe" },
     "directories": { "output": "dist" }
   }
 }

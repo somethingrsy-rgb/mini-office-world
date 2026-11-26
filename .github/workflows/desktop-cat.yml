@@ -1,6 +1,6 @@
 name: Desktop cat (Windows)
 
-# 바탕화면 고양이 프로그램(Ruby-Cat.exe)을 만들어요. Actions 탭에서 Run workflow를 누르세요.
+# 바탕화면 고양이 프로그램(고양이.exe)을 만들어요. Actions 탭에서 Run workflow를 누르세요.
 on:
   workflow_dispatch:
 
@@ -24,8 +24,8 @@ jobs:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: actions/upload-artifact@v4
         with:
-          name: Ruby-Cat
+          name: 고양이
           path: |
-            desktop-cat/dist/Ruby-Cat.exe
-            desktop-cat/dist/Ruby-Cat-folder.zip
+            desktop-cat/dist/고양이.exe
+            desktop-cat/dist/고양이-folder.zip
           if-no-files-found: error
