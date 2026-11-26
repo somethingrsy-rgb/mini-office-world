@@ -5,8 +5,9 @@
 //  · 물고기 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
 let dims = null, size = 1   // size: 가장 마지막으로 계산한 물고기의 크기 (만남 거리 계산용, 마리마다 따로 있어요)
 // 종류마다 따로: show 보이기, count 마리 수, size 크기, speed 속도. pre 는 그림 이름 앞(''분홍 / o_ 주황 / p_ 보라)
-const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_']]
-let fishConf = { pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 } }
+const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_']]
+let fishConf = { pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 }, guppy: { show: true, count: 1, size: 1, speed: 1 } }
+const ACTIVE = (pre) => pre === 'n_' || pre === 'g_'   // 니모·구피: 활발해서 방향을 빨리 돌고, 가끔 저절로 지느러미를 펼쳐요
 const kindOf = (pre) => KINDS.find((k) => k[1] === pre)[0]
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onCursor() {} }
 const SCALE = 0.8            // 그림 1px이 화면에서 차지하는 크기
@@ -44,15 +45,20 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     let r = Math.random() * tot, disp = layout.displays[0]
     for (const d of layout.displays) { r -= d.w * d.h; if (r <= 0) { disp = d; break } }
     const p = pad()
-    st.tx = clamp(disp.x + rnd(0, disp.w), disp.x + p, disp.x + disp.w - p)
-    st.ty = clamp(disp.y + rnd(0, disp.h), disp.y + p * 0.6, disp.y + disp.h - p * 0.6)
+    // 가로로 쭉, 세로로 쭉 헤엄치는 구간을 늘려요: 45%는 거의 수평으로 멀리, 30%는 거의 수직으로 멀리, 나머지 25%만 비스듬히 가요 (너무 자주 방향을 바꾸지 않아요)
+    const far = (cur, lo, hi, minD) => { let v = rnd(lo, hi); if (Math.abs(v - cur) < minD) v = cur - lo > hi - cur ? rnd(lo, Math.max(lo, cur - minD)) : rnd(Math.min(hi, cur + minD), hi); return v }
+    const mode = Math.random()
+    const xlo = disp.x + p, xhi = disp.x + disp.w - p, ylo = disp.y + p * 0.6, yhi = disp.y + disp.h - p * 0.6
+    if (mode < 0.45) { st.tx = far(st.x, xlo, xhi, disp.w * 0.3); st.ty = clamp(st.y + rnd(-25, 25), ylo, yhi) }
+    else if (mode < 0.75) { st.tx = clamp(st.x + rnd(-25, 25), xlo, xhi); st.ty = far(st.y, ylo, yhi, disp.h * 0.25) }
+    else { st.tx = clamp(disp.x + rnd(0, disp.w), xlo, xhi); st.ty = clamp(disp.y + rnd(0, disp.h), ylo, yhi) }
   }
   pickTarget()
   st.nextFlare = performance.now() + rnd(8000, 20000)   // 처음엔 조금 일찍 한 번 보여 줘요
 
   function update(now, dt) {
-    // 니모는 헤엄치다가 가끔(30~80초에 한 번) 저절로 지느러미를 펼쳐요 (더블클릭하지 않아도 보여요)
-    if (pre === 'n_' && st.mode === 'swim' && st.wait <= 0 && now > st.nextFlare) { flare(false, now); st.nextFlare = now + rnd(30000, 80000) }
+    // 니모·구피는 헤엄치다가 가끔(30~80초에 한 번) 저절로 지느러미를 펼쳐요 (더블클릭하지 않아도 보여요)
+    if (ACTIVE(pre) && st.mode === 'swim' && st.wait <= 0 && now > st.nextFlare) { flare(false, now); st.nextFlare = now + rnd(30000, 80000) }
     const size = fc().size, speedMul = fc().speed
     const speed = BASE_SPEED * speedMul * size
     const dx = st.tx - st.x, dy = st.ty - st.y
@@ -60,7 +66,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     let want = 1, resting = false
     if (st.mode === 'turn' || st.mode === 'flare') want = 0
     else if (st.wait > 0) { st.wait -= dt; want = 0.12; resting = true }      // 목표에 닿으면 잠깐 쉬어요
-    else if (dist < 18) { st.wait = rnd(1, 4); pickTarget() }
+    else if (dist < 18) { st.wait = rnd(3, 9); pickTarget() }   // 목표에 닿으면 가만히 떠서 쉬는 시간을 길게 가져요
     else if (dist < 120) want = 0.35 + 0.65 * (dist / 120)                    // 닿기 전에 부드럽게 느려져요
     // 가려는 방향이 보던 방향과 반대(가로로 충분히 멀 때)면 먼저 몸을 돌려요
     if (st.mode === 'swim' && want > 0 && Math.abs(dx) > 50 && Math.sign(dx) !== st.face) {
@@ -86,7 +92,7 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
       else { pose = seq('swim', now / swimMs, cnt('swim'), true); flip = (tt < 0.5 ? st.turnFrom : -st.turnFrom) < 0; pose.sx = Math.max(0.12, Math.abs(Math.cos(Math.PI * tt))) }
     } else if (st.mode === 'turn') {
       const pace = dims.pace && dims.pace[pre + 'turn']   // 장마다 머무는 시간 배율 (없으면 모두 같은 시간)
-      const turnMs = pre === 'n_' ? 40 : TURN_MS   // 니모는 활발해서 더 빨리 돌아요
+      const turnMs = ACTIVE(pre) ? 40 : TURN_MS   // 니모·구피는 활발해서 더 빨리 돌아요
       let tt = (now - st.turnT) / turnMs
       if (pace) { let el = (now - st.turnT) / turnMs, i = 0; while (i < pace.length && el >= pace[i]) { el -= pace[i]; i++ } tt = i >= pace.length ? pace.length : i + el / pace[i] }
       if (tt >= cnt('turn')) { st.face = -st.turnFrom; st.mode = 'swim'; flip = st.face < 0 }
@@ -98,11 +104,11 @@ function makeFish(i, pre) {   // pre: '' 분홍 베타, 'o_' 주황 베타 (그�
     if (!pose) pose = (has('idle') && resting) ? seq('idle', now / idleMs, cnt('idle'), true) : seq('swim', now / swimMs, cnt('swim'), true)
     const dd = dims.dim[pose.key], w = dd.w * SCALE * size, h = dd.h * SCALE * size
     const bob = Math.sin(now / 2200 + st.phase) * 3 * size
-    // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 25도), 내려갈 때는 얼굴이 4시 방향쯤(30도) 아래로. 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
-    // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 25도), 내려갈 때는 얼굴이 4시 방향쯤(30도) 아래로. 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
+    // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
+    // 가는 방향으로 몸을 기울여요: 올라갈 때는 얼굴이 위로(최대 20도), 내려갈 때는 얼굴이 아래로(최대 20도). 옆으로만 갈 때나 돌기·꼬리 펼치기·쉬기 중에는 수평이에요
     const moving = pose.fam === 'swim' && Math.hypot(st.vx, st.vy) > speed * 0.25
     let wantAng = 0
-    if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -25, 30) * (flip ? -1 : 1) }
+    if (moving) { const deg = Math.atan2(st.vy, Math.max(Math.abs(st.vx), speed * 0.15)) * 180 / Math.PI; wantAng = clamp(deg, -20, 20) * (flip ? -1 : 1) }
     st.ang = (st.ang || 0) + (wantAng - (st.ang || 0)) * Math.min(1, dt * 1.6)         // 천천히 부드럽게 기울어져요
     const tilt = st.ang
     // 다른 동작으로 바뀌는 순간에는 직전 모습을 0.2초 동안 남겨서 서서히 바꿔요

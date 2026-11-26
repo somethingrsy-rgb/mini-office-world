@@ -16,7 +16,7 @@ else app.on('second-instance', () => { try { new Notification({ title: '베타�
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
 // 물고기 종류마다 따로: show 보이기, count 마리 수(1~5), size 크기, speed 속도(1 = 아주 천천히)
-const defFish = () => ({ pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 } })
+const defFish = () => ({ pink: { show: true, count: 2, size: 1, speed: 1 }, orange: { show: false, count: 1, size: 1, speed: 1 }, purple: { show: false, count: 1, size: 1, speed: 1 }, nemo: { show: true, count: 1, size: 1, speed: 1 }, guppy: { show: true, count: 1, size: 1, speed: 1 } })
 let cfg = { hidden: false, behind: true, hourly: true, fish: defFish() }
 try {
   const saved = JSON.parse(fs.readFileSync(cfgFile(), 'utf8'))
@@ -131,7 +131,7 @@ const sendCfg = () => win && win.webContents.send('config', cfg)
 function toggleHidden() { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : (win.showInactive(), applyLayer()); tray && tray.setContextMenu(buildMenu()) }
 
 const timerItems = () => [10, 15, 20, 25, 30, 60].map((n) => ({ label: `${n}분`, click: () => startTimer(n) })).concat([{ type: 'separator' }, { label: '타이머 취소', enabled: !!timerEnd, click: () => startTimer(0) }])
-const KINDS = [['pink', '분홍 베타'], ['orange', '주황 베타'], ['purple', '보라 베타'], ['nemo', '니모']]
+const KINDS = [['pink', '분홍 베타'], ['orange', '주황 베타'], ['purple', '보라 베타'], ['nemo', '니모'], ['guppy', '구피']]
 function buildMenu() {
   const setFish = (k, key, v) => () => { cfg.fish[k][key] = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
   return Menu.buildFromTemplate([
