@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron')
 contextBridge.exposeInMainWorld('api', {
+  fishMenu: () => ipcRenderer.send('fish-menu'),
   ignore: (v) => ipcRenderer.send('ignore', v),
   config: () => ipcRenderer.invoke('config'),
   layout: () => ipcRenderer.invoke('layout'),

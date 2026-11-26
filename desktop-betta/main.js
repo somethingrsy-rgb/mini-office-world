@@ -113,10 +113,13 @@ function startTimer(min) {
 // 정각 알림: 시(hour)가 바뀌는 순간을 알아채요 (컴퓨터가 잠들었다 깨어나도 한 번만)
 setInterval(() => { const h = new Date().getHours(); if (h !== lastHour) { lastHour = h; if (cfg.hourly !== false) showLED('hour') } }, 1000)
 ipcMain.on('led-click', hideLED)
+// 물고기를 오른쪽 클릭하면 타이머 메뉴가 떠요 (운영체제 메뉴라서 열린 창 위에도 보여요)
+ipcMain.on('fish-menu', () => { if (win && !win.isDestroyed()) Menu.buildFromTemplate([{ label: timerEnd ? `타이머 (남은 ${Math.max(1, Math.ceil((timerEnd - Date.now()) / 60000))}분)` : '타이머 — 몇 분 뒤에 알려 줄까요?', enabled: false }, { type: 'separator' }, ...timerItems()]).popup({ window: win }) })
 // 트레이 메뉴를 열 때 남은 타이머 시간을 새로 보여 줘요
 const sendCfg = () => win && win.webContents.send('config', cfg)
 function toggleHidden() { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : (win.showInactive(), applyLayer()); tray && tray.setContextMenu(buildMenu()) }
 
+const timerItems = () => [10, 15, 20, 25, 30, 60].map((n) => ({ label: `${n}분`, click: () => startTimer(n) })).concat([{ type: 'separator' }, { label: '타이머 취소', enabled: !!timerEnd, click: () => startTimer(0) }])
 const KINDS = [['pink', '분홍 베타'], ['orange', '주황 베타'], ['purple', '보라 베타'], ['nemo', '니모']]
 function buildMenu() {
   const setFish = (k, key, v) => () => { cfg.fish[k][key] = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
@@ -132,7 +135,7 @@ function buildMenu() {
       ] },
     ]),
     { type: 'separator' },
-    { label: timerEnd ? `타이머 (남은 ${Math.max(1, Math.ceil((timerEnd - Date.now()) / 60000))}분)` : '타이머', submenu: [10, 15, 20, 25, 30, 60].map((n) => ({ label: `${n}분`, click: () => startTimer(n) })).concat([{ type: 'separator' }, { label: '타이머 취소', enabled: !!timerEnd, click: () => startTimer(0) }]) },
+    { label: timerEnd ? `타이머 (남은 ${Math.max(1, Math.ceil((timerEnd - Date.now()) / 60000))}분)` : '타이머', submenu: timerItems() },
     { label: '정각 알림 (연보라 LED)', type: 'checkbox', checked: cfg.hourly !== false, click: (m) => { cfg.hourly = m.checked; save() } },
     { type: 'separator' },
     { label: '열린 창 뒤에서만 헤엄치기 (바탕화면에만 보여요)', type: 'checkbox', checked: cfg.behind !== false, click: (m) => { cfg.behind = m.checked; save(); applyLayer() } },

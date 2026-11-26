@@ -198,6 +198,7 @@ function handleMove(x, y) {
 document.addEventListener('mousemove', (e) => handleMove(e.clientX, e.clientY))
 bridge.onCursor && bridge.onCursor((c) => handleMove(c.x, c.y))   // 윈도우가 알려 주는 마우스 위치 (이벤트가 안 와도 동작)
 document.addEventListener('dblclick', (e) => { const f = fishAt(e.clientX, e.clientY); if (f) f.flare() })   // 두 번 누르면 꼬리를 활짝 펼쳐요
+document.addEventListener('contextmenu', (e) => { if (fishAt(e.clientX, e.clientY)) { e.preventDefault(); bridge.fishMenu && bridge.fishMenu() } })   // 오른쪽 클릭: 타이머 메뉴
 window.__fishes = fishes; window.__resetMeet = () => { lastMeet = -1e9 }   // 시험용
 
 init()
