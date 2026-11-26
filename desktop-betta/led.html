@@ -2,13 +2,15 @@
 <html lang="ko"><head><meta charset="utf-8"><title>알림 LED</title>
 <style>
   html, body { margin:0; width:100%; height:100%; overflow:hidden; background:transparent; cursor:pointer; }
-  #b { position:absolute; inset:0; animation:p 1.4s ease-in-out infinite alternate; }
+  /* 화면 테두리 한 장: 모서리까지 끊김 없이 이어져요 (안쪽으로만 은은하게 번져요) */
+  #b { position:absolute; inset:0; box-sizing:border-box; pointer-events:none; animation:p 1.4s ease-in-out infinite alternate; }
   #b.timer { animation:none; opacity:1; }   /* 타이머: 깜빡이지 않고 켜져 있어요 */
   @keyframes p { from { opacity:.55 } to { opacity:1 } }
 </style></head>
 <body><div id="b"></div><script>
-  const c = new URLSearchParams(location.search).get('c') || '#7fd8ff'
-  const b = document.getElementById('b'); b.style.background = c; b.style.boxShadow = `0 0 10px 2px ${c}`
-  if (new URLSearchParams(location.search).get('k') === 'timer') b.className = 'timer'
+  const q = new URLSearchParams(location.search), c = q.get('c') || '#0a5cff', t = parseInt(q.get('t') || '10', 10)
+  const b = document.getElementById('b')
+  b.style.border = `${t}px solid ${c}`; b.style.boxShadow = `inset 0 0 10px 2px ${c}`
+  if (q.get('k') === 'timer') b.className = 'timer'
   document.addEventListener('mousedown', () => window.ledApi && window.ledApi.click())
 </script></body></html>

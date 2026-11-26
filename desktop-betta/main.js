@@ -84,25 +84,36 @@ function createWindow() {
   screen.on('display-metrics-changed', () => win && fit())
 }
 
-// ── 알림 LED: 모니터마다 테두리 네 변에 얇은 막대 창을 맨 위에 띄워요 (베타 창은 열린 창 뒤에 있어서 따로 만들어요). 누르면 사라져요 ──
+// ── 알림 LED: 모니터마다 투명한 창 하나를 맨 위에 띄우고 테두리를 한 장으로 이어서 그려요 (네 변을 따로 만들면 모서리가 끊겨 보였어요). 평소엔 클릭이 뒤 창으로 통과하고, 마우스가 테두리 위에 있을 때만 눌려서 누르면 사라져요 ──
 const LED_COLORS = { timer: '#0a5cff', hour: '#c9a8ff' }   // 타이머 끝: 진한 파란색 / 정각: 연보라색
-let ledWins = [], ledTimeout = 0, timerEnd = 0, timerTimeout = 0, lastHour = new Date().getHours()
+let ledWins = [], ledTimeout = 0, ledPoll = 0, timerEnd = 0, timerTimeout = 0, lastHour = new Date().getHours()
 function hideLED() {
-  clearTimeout(ledTimeout); ledWins.forEach((w) => { try { w.destroy() } catch { /* 무시 */ } }); ledWins = []
+  clearTimeout(ledTimeout); clearInterval(ledPoll); ledPoll = 0
+  ledWins.forEach((l) => { try { l.win.destroy() } catch { /* 무시 */ } }); ledWins = []
 }
 function showLED(kind) {
   hideLED()
   const T = kind === 'timer' ? 10 : 14, color = LED_COLORS[kind]   // 타이머 LED는 얇게
   for (const d of screen.getAllDisplays()) {
-    const { x, y, width: w, height: h } = d.bounds
-    for (const b of [{ x, y, width: w, height: T }, { x, y: y + h - T, width: w, height: T }, { x, y: y + T, width: T, height: h - 2 * T }, { x: x + w - T, y: y + T, width: T, height: h - 2 * T }]) {
-      const lw = new BrowserWindow({ ...b, transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false, skipTaskbar: true, fullscreenable: false, show: false, alwaysOnTop: true, webPreferences: { preload: path.join(__dirname, 'led-preload.js'), contextIsolation: true, nodeIntegration: false } })
-      lw.setAlwaysOnTop(true, 'screen-saver')
-      lw.loadFile('led.html', { query: { c: color, k: kind } })
-      lw.once('ready-to-show', () => lw.showInactive())
-      ledWins.push(lw)
-    }
+    const { x, y, width, height } = d.bounds
+    const lw = new BrowserWindow({ x, y, width, height, transparent: true, frame: false, resizable: false, movable: false, focusable: false, hasShadow: false, skipTaskbar: true, fullscreenable: false, show: false, alwaysOnTop: true, webPreferences: { preload: path.join(__dirname, 'led-preload.js'), contextIsolation: true, nodeIntegration: false } })
+    lw.setAlwaysOnTop(true, 'screen-saver')
+    lw.setIgnoreMouseEvents(true, { forward: true })
+    lw.loadFile('led.html', { query: { c: color, k: kind, t: String(T) } })
+    lw.once('ready-to-show', () => lw.showInactive())
+    ledWins.push({ win: lw, bounds: d.bounds, T, ignoring: true })
   }
+  // 마우스가 테두리 위에 있을 때만 클릭을 받아요
+  ledPoll = setInterval(() => {
+    const p = screen.getCursorScreenPoint()
+    for (const l of ledWins) {
+      if (l.win.isDestroyed()) continue
+      const { x, y, width, height } = l.bounds, e = l.T + 4
+      const inside = p.x >= x && p.x < x + width && p.y >= y && p.y < y + height
+      const onEdge = inside && (p.x - x < e || x + width - p.x <= e || p.y - y < e || y + height - p.y <= e)
+      if (onEdge === l.ignoring) { l.ignoring = !onEdge; l.win.setIgnoreMouseEvents(l.ignoring, { forward: true }) }
+    }
+  }, 50)
   ledTimeout = setTimeout(hideLED, 10 * 60 * 1000)   // 아무도 안 눌러도 10분 뒤엔 꺼져요
 }
 function startTimer(min) {
