@@ -17,13 +17,14 @@ else app.on('second-instance', () => { try { new Notification({ title: '오르�
 const G = JSON.parse(fs.readFileSync(path.join(__dirname, 'art', 'geom.json'), 'utf8'))   // 그림 크기
 const PAD = 42   // 흔들 때 잘리지 않게 그림 둘레에 두는 여백 (그림 기준 px, renderer.js와 같아야 해요)
 const RATIO = (G.h + 2 * PAD) / (G.w + 2 * PAD)
-const SIZES = [['아주 작게', 110], ['작게', 160], ['보통', 220], ['크게', 320], ['아주 크게', 440]]   // 오르골 폭(px)
+const SIZES = [['아주 작게', 110], ['작게', 160], ['조금 작게', 220], ['약간 작게', 320], ['보통', 440]]   // 오르골 폭(px). 가장 큰 440이 보통(기본)이에요
 const winW = (size) => Math.round(size * (G.w + 2 * PAD) / G.w)
 const winH = (size) => Math.round(winW(size) * RATIO)
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
-let cfg = { light: true, snow: true, density: 1, size: 220, behind: false, hidden: false, x: null, y: null }
+let cfg = { light: true, snow: true, density: 1, size: 440, behind: false, hidden: false, x: null, y: null }
 try { cfg = { ...cfg, ...JSON.parse(fs.readFileSync(cfgFile(), 'utf8')) } } catch { /* 처음 실행 */ }
+if (!cfg.sizeV2) { cfg.size = 440; cfg.x = null; cfg.y = null; cfg.sizeV2 = true }   // 예전 기본 크기(220)를 새 기본(440)으로 한 번만 바꾸고, 커진 크기에 맞게 위치도 다시 잡아요
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
 let win = null, tray = null, bottomProc = null, drag = null, pollTimer = 0, ignoring = true

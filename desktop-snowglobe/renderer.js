@@ -31,7 +31,7 @@ function drawSnow(tile, alpha, tSec) {
     const twinkle = 0.82 + 0.18 * Math.sin(tSec * 2.1 + s.ph * 3)
     ctx.globalAlpha = alpha * al * twinkle
     const ox = ((s.x % T) + T) % T, oy = ((s.y % T) + T) % T
-    for (let x = -ox + PAD + G.cx - G.r - T; x < CW; x += T) for (let y = -oy + PAD + G.cy - G.r - T; y < CH; y += T) {
+    for (let x = -ox + PAD + G.cx - G.r - T; x < CW; x += T) for (let y = oy + PAD + G.cy - G.r - T; y < CH; y += T) {   // y가 커질수록 눈이 아래로 내려가요
       if (x + T < PAD + G.cx - G.r || x > PAD + G.cx + G.r || y + T < PAD + G.cy - G.r || y > PAD + G.floorY) continue
       ctx.drawImage(tile, x, y, T, T)
     }
@@ -69,7 +69,9 @@ function frame(now) {
   if (snowAmt > 0.003) {
     LAYERS.forEach(([, sp], i) => {
       const s = st[i]
-      s.y += (sp * (1 - e * 7 * Math.cos(t * 2.4 + s.ph)) + 0) * dt * (cfg.snow ? 1 : 0.4)   // 흔들리면 눈이 위아래로 휘몰아쳐요
+      // 평소에도 눈이 위로 갔다 아래로 갔다 제멋대로 떠다녀요 (겹마다 박자가 달라요). 평균으로는 천천히 내려오고, 흔들면 더 세게 휘몰아쳐요
+      const drift = 0.3 + 0.95 * Math.sin(t * 0.41 + s.ph) * (0.65 + 0.35 * Math.sin(t * 0.13 + s.ph * 2))
+      s.y += sp * (drift - e * 7 * Math.cos(t * 2.4 + s.ph)) * dt * (cfg.snow ? 1 : 0.4)
       s.x += (Math.sin(t * 0.45 + s.ph) * 6 + e * 120 * Math.sin(t * 3.1 + s.ph * 2)) * dt
     })
   }
