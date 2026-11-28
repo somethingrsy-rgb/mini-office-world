@@ -5,12 +5,12 @@
 //  · 물고기 모양이 있는 곳만 클릭돼요(나머지는 뒤 창으로 통과)
 let dims = null, size = 1   // size: 가장 마지막으로 계산한 물고기의 크기 (만남 거리 계산용, 마리마다 따로 있어요)
 // 종류마다 따로: show 보이기, count 마리 수, size 크기, speed 속도. pre 는 그림 이름 앞(''분홍 / o_ 주황 / p_ 보라)
-const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_'], ['yellow', 'y_']]
-let fishConf = { pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 }, yellow: { show: true, count: 1, size: 0.5, speed: 1 } }
+const KINDS = [['pink', ''], ['orange', 'o_'], ['purple', 'p_'], ['nemo', 'n_'], ['guppy', 'g_'], ['guppy2', 'g2_'], ['yellow', 'y_']]
+let fishConf = { pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 }, guppy2: { show: true, count: 5, size: 0.5, speed: 1 }, yellow: { show: true, count: 1, size: 0.5, speed: 1 } }
 // 종류별 움직임: horiz 가로로 쭉 가는 비율, vert 세로로 쭉 가는 비율(누적 기준 아님, 나머지는 비스듬히), maxAng 위/아래로 갈 때 기울어지는 최대 각도
-const MOVE = { g_: { horiz: 0.7, vert: 0, slant: 20, maxAng: 20 } }   // 구피: 70%는 가로로 쭉, 30%는 위나 아래로 20도 비스듬히(몸도 20도 기울어서 가는 방향과 몸 방향이 같아요). 수직으로 곧장 오르내리지 않아요
+const MOVE = { g_: { horiz: 0.7, vert: 0, slant: 20, maxAng: 20 }, g2_: { horiz: 0.7, vert: 0, slant: 20, maxAng: 20 } }   // 구피: 70%는 가로로 쭉, 30%는 위나 아래로 20도 비스듬히(몸도 20도 기울어서 가는 방향과 몸 방향이 같아요). 수직으로 곧장 오르내리지 않아요
 const moveOf = (pre) => MOVE[pre] || { horiz: 0.45, vert: 0.3, maxAng: 20 }
-const ACTIVE = (pre) => pre === 'n_' || pre === 'g_'   // 니모·구피: 활발해서 방향을 빨리 돌고, 가끔 저절로 지느러미를 펼쳐요
+const ACTIVE = (pre) => pre === 'n_' || pre === 'g_' || pre === 'g2_'   // 니모·구피: 활발해서 방향을 빨리 돌고, 가끔 저절로 지느러미를 펼쳐요
 const kindOf = (pre) => KINDS.find((k) => k[1] === pre)[0]
 const bridge = window.api || { ignore() {}, config: async () => ({ size: 1 }), layout: async () => null, onConfig() {}, onLayout() {}, onCursor() {} }
 const SCALE = 0.8            // 그림 1px이 화면에서 차지하는 크기

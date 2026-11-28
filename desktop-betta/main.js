@@ -16,7 +16,7 @@ else app.on('second-instance', () => { try { new Notification({ title: '베타�
 
 const cfgFile = () => path.join(app.getPath('userData'), 'config.json')
 // 물고기 종류마다 따로: show 보이기, count 마리 수(1~5), size 크기, speed 속도(1 = 아주 천천히)
-const defFish = () => ({ pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: true, count: 1, size: 0.5, speed: 1 }, yellow: { show: true, count: 1, size: 0.5, speed: 1 } })
+const defFish = () => ({ pink: { show: true, count: 2, size: 0.5, speed: 1 }, orange: { show: false, count: 1, size: 0.5, speed: 1 }, purple: { show: false, count: 1, size: 0.5, speed: 1 }, nemo: { show: true, count: 1, size: 0.5, speed: 1 }, guppy: { show: false, count: 1, size: 0.5, speed: 1 }, guppy2: { show: true, count: 5, size: 0.5, speed: 1 }, yellow: { show: true, count: 1, size: 0.5, speed: 1 } })
 let cfg = { hidden: false, behind: true, hourly: true, fish: defFish() }
 try {
   const saved = JSON.parse(fs.readFileSync(cfgFile(), 'utf8'))
@@ -27,6 +27,7 @@ try {
     for (const k of ['pink', 'orange', 'purple']) cfg.fish[k] = { show: kinds.includes(k), count: old.count, size: old.size, speed: old.speed }
   }
 } catch { /* 처음 실행 */ }
+if (!cfg.guppy2V1) { cfg.fish.guppy.show = false; cfg.guppy2V1 = true }   // 새 구피(구피 2)가 기본이에요: 예전 구피는 한 번만 끄고, 원하면 메뉴에서 다시 켜요
 if (!cfg.sizeV2) { for (const k of Object.keys(cfg.fish)) cfg.fish[k].size = 0.5; cfg.sizeV2 = true }   // 예전의 가장 작은 크기(0.5)가 이제 기본 크기예요: 저장된 크기를 한 번만 새 기본으로 맞춰요
 const save = () => { try { fs.writeFileSync(cfgFile(), JSON.stringify(cfg)) } catch { /* 무시 */ } }
 
@@ -141,7 +142,7 @@ const sendCfg = () => win && win.webContents.send('config', cfg)
 function toggleHidden() { cfg.hidden = !cfg.hidden; save(); cfg.hidden ? win.hide() : (win.showInactive(), applyLayer()); tray && tray.setContextMenu(buildMenu()) }
 
 const timerItems = () => [10, 15, 20, 25, 30, 60].map((n) => ({ label: `${n}분`, click: () => startTimer(n) })).concat([{ type: 'separator' }, { label: '타이머 취소', enabled: !!timerEnd, click: () => startTimer(0) }])
-const KINDS = [['pink', '분홍 베타'], ['orange', '주황 베타'], ['purple', '보라 베타'], ['nemo', '니모'], ['guppy', '구피'], ['yellow', '노랑 베타']]
+const KINDS = [['pink', '분홍 베타'], ['orange', '주황 베타'], ['purple', '보라 베타'], ['nemo', '니모'], ['guppy', '구피'], ['guppy2', '구피 2 (하얀 몸·파란 꼬리)'], ['yellow', '노랑 베타']]
 function buildMenu() {
   const setFish = (k, key, v) => () => { cfg.fish[k][key] = v; save(); sendCfg(); tray.setContextMenu(buildMenu()) }
   return Menu.buildFromTemplate([
