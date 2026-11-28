@@ -47,21 +47,32 @@ FIT = 0.96
 length = float(np.median([stats(c)[0] for c in cells])); b = TARGET_W * FIT / length
 
 
-def place(c):   # 같은 판 가운데에, 몸 무게중심 높이를 같게
-    r = c.resize((round(c.width * b), round(c.height * b)), Image.LANCZOS); _, cx, cy = stats(r)
-    f = Image.new('RGBA', (CW, CH), (0, 0, 0, 0)); f.alpha_composite(r, (round(CX - cx), round(CY - cy))); return f
+HEAD = 0.22   # 머리 쪽 22%
+
+
+def head_pos(im):   # 코끝 x, 머리 부분 무게중심 y
+    al = np.asarray(im.getchannel('A')) > 128; ys, xs = np.nonzero(al); snout = xs.max(); L = snout - xs.min()
+    sel = al.copy(); sel[:, :int(snout - HEAD * L)] = False; hy, _ = np.nonzero(sel)
+    return float(snout), float(hy.mean())
+
+
+# 기존 구피의 헤엄 그림에서 코끝과 머리 높이를 읽어서, 새 구피도 같은 자리에 오게 해요 (헤엄에서 돌기로 바뀔 때 머리가 튀지 않게)
+old = [head_pos(Image.open(os.path.join(FR, f'g_swim{i}.webp')).convert('RGBA')) for i in range(D['count']['g_swim'])]
+SNOUT, HEADY = float(np.median([o[0] for o in old])), float(np.median([o[1] for o in old]))
+
+
+def place(c):   # 머리(코끝 x·머리 높이)를 기준으로 놓아요: 꼬리가 크게 움직이는 그림은 몸 전체 무게중심으로 맞추면 머리가 따라 움직여서 울렁거려 보여요
+    r = c.resize((round(c.width * b), round(c.height * b)), Image.LANCZOS); sx, hy = head_pos(r)
+    f = Image.new('RGBA', (CW, CH), (0, 0, 0, 0)); f.alpha_composite(r, (round(SNOUT - sx), round(HEADY - hy))); return f
 
 
 full = [place(c) for c in cells]
-# 3) 꼬리가 크게 휘지 않는 장면만 골라요: 장면 높이(꼬리가 위아래로 얼마나 휘었나)가 가장 낮은 쪽
-hts = np.array([np.ptp(np.nonzero(np.asarray(f.getchannel('A')).max(axis=1) > 128)[0]) + 1 for f in full], float)
-low = [i for i in range(16) if hts[i] <= np.percentile(hts, 45)]
-print('장면 높이(px)', np.round(hts).astype(int).tolist(), '→ 고른 장면', low)
-
-
-def diff(i, j):
-    x, y = np.asarray(full[i].getchannel('A')).astype(float) / 255, np.asarray(full[j].getchannel('A')).astype(float) / 255
-    return float(np.abs(x - y).sum() / max(1.0, x.sum()))
+A = [np.asarray(f.getchannel('A')).astype(float) / 255 for f in full]
+diff = lambda i, j: float(np.abs(A[i] - A[j]).sum() / max(1.0, A[i].sum()))   # 두 장면이 얼마나 다른가 (겹치지 않는 넓이 비율)
+# 3) 서로 가장 비슷한 K장을 골라요: 꼬리가 크게 휘는 장면을 섞으면 앞뒤 장면이 많이 달라 몸이 울렁거려 보여요 (기존 구피 12장 사이 최대 차이는 0.067)
+K = 5
+low = list(min(itertools.combinations(range(16), K), key=lambda s: max(diff(i, j) for i in s for j in s)))
+print('고른 장면', low, '| 서로 가장 다른 쌍 %.3f' % max(diff(i, j) for i in low for j in low))
 
 
 # 4) 고른 장면을 이웃끼리 모양이 가장 비슷하게 이어지는 순서로 늘어놓고, 앞뒤로 오가요 (끝에서 처음으로 튀지 않게)
